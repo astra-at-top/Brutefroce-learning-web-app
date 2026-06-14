@@ -728,7 +728,13 @@ html, body {
   padding: 0;
   height: 100%;
   background: var(--bg);
+  overflow: hidden;   /* body itself never scrolls */
 }
+
+/* Hide scrollbars globally — content scrolls without visible track */
+*::-webkit-scrollbar { display: none; }
+* { scrollbar-width: none; -ms-overflow-style: none; }
+/* Scrollable areas (e.g. .main-area) keep overflow-y: auto but bar is hidden */
 
 #app {
   flex: 1;
