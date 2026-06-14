@@ -19,19 +19,29 @@ Font family:    Monospace only
                 "JetBrains Mono", "Fira Code", "Cascadia Code",
                 "Hack", "Iosevka", "Courier New" (fallback)
 
-Font sizes:
-  xs            11px  — status bars, footnotes
-  sm            12px  — body, labels, table data
-  md            13–14px — default UI text
-  lg            16px  — section headers
-  xl            20–24px — panel titles
-  display       40–80px — big stat numbers (LED/dot-matrix style)
+Font sizes (viewport-scaled via root clamp):
+  base          clamp(12px, 1.6vh, 28px) — root, everything uses rem
 
-Line height:    1.4–1.6 (tighter than web norms)
-Letter spacing: 0 to 0.05em (never loose)
+  xs            0.8rem  — status bars, footnotes, legends
+  sm            0.85rem — keybind bar, muted labels
+  md            0.95rem — body, table data, filter bar
+  lg            1rem    — default UI text
+  xl            1.8rem  — stat card numbers
+  title         0.9rem  — panel titles (uppercase)
+  display       3rem    — LED big stat numbers
+
+  Reference:    1rem = 13px at 810px viewport height
+                1rem = 17px at 1080p
+                1rem = 23px at 1440p
+                1rem = 28px at 4K (clamped)
+
+Line height:    1.5 (body), 1 (display numbers), 1.3 (panel titles)
+Letter spacing: 0 to 0.08em (tighter for body, wider for labels)
 ```
 
-**LED / Dot-matrix display text** — for big numbers and hero titles, simulate a segmented display using a font like `"Digital-7"`, `"Share Tech Mono"`, or CSS pixel-block rendering.
+All font sizes use `rem` units so the entire UI scales proportionally with viewport height via the root `font-size: clamp(12px, 1.6vh, 28px)`.
+
+**LED / Dot-matrix display text** — `font-family: var(--font-display); font-size: 3rem; line-height: 1`. For big numbers and hero titles, simulate a segmented display using a font like `"Share Tech Mono"`, `"Courier New"`, or CSS pixel-block rendering.
 
 ---
 
@@ -114,13 +124,27 @@ Dashed:         ╌ ╎
 
 ## Layout System
 
-TUI layouts are **grid-based with fixed character columns**, not fluid.
+TUI layouts are **grid-based with fixed character columns**, not fluid. The entire UI scales proportionally to viewport height.
 
 ```
-Max width:        900–1100px (simulates an 80–120 col terminal)
-Padding:          16–24px outer, 8–12px inner panels
-Gap between cols: 8–12px
-Aspect:           Panels in rows of 2 or 4 equal-width cards
+Max width:        full viewport (no cap), content centered
+                  optional: max-width: min(86rem, 1100px) for constrained layout
+Base font:        clamp(12px, 1.6vh, 28px) on <html>
+Scaling:          pure CSS via rem/em units — no JS transforms
+
+Outer padding:    0.5em 1em   (main-area)
+Gap between panels: 1em       (screen-content gap)
+Gap in stat row:  0.8em       (stat-4up gap)
+Panel padding:    3.5em 1em 1em  (top, sides, bottom)
+Panel title:      absolute at top: -0.9em, font-size: 0.9rem
+Header bar:       padding: 0.5em 1.2em, margin: 0.7em 1em 0
+Title bar:        padding: 0.55em 1em
+Keybind bar:      padding: 0.45em 1em
+Status bar:       padding: 0.3em 1em
+
+Stat card:        padding: 1.5em 0.8em
+  number:         font-size: 1.8rem, line-height: 1
+  label:          font-size: 0.8rem, margin-top: 0.6em, uppercase
 ```
 
 ### Panel Types
@@ -201,9 +225,9 @@ TUI UIs are **mostly static** — animations should feel like terminal output, n
 /* Bottom/top single-line bar */
 background: #0d0d0f;
 border-top: 1px solid #2a2d3a;
-font-size: 11px;
+font-size: 0.85rem;
 color: #5a5f72;
-padding: 4px 16px;
+padding: 0.3em 1em;
 ```
 
 Content pattern:
@@ -242,6 +266,9 @@ Always prefix with `> ` or `›` to evoke a terminal prompt.
   --font-mono:   "JetBrains Mono", "Fira Code", "Cascadia Code", monospace;
   --font-display:"Share Tech Mono", "Courier New", monospace;
 }
+
+/* Viewport-adaptive scaling — base font drives all rem/em sizes */
+html { font-size: clamp(12px, 1.6vh, 28px); }
 ```
 
 ---
@@ -271,13 +298,16 @@ Always prefix with `> ` or `›` to evoke a terminal prompt.
 ## Quick Reference: Key Patterns
 
 ```
-Big stat display:    font: var(--font-display); font-size: 48px; color: var(--yellow);
-Panel border:        border: 1px solid var(--border);
-Active tab:          background: var(--purple); color: #1a1030;
-Muted label:         font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em;
-Progress bar track:  background: repeating-linear-gradient(90deg, var(--border) 0, var(--border) 8px, transparent 8px, transparent 10px);
-Progress fill:       background: var(--yellow); height: 10px;
-Status bar:          border-top: 1px solid var(--border); color: var(--text-dim); font-size: 11px;
+Viewport scaling:  html { font-size: clamp(12px, 1.6vh, 28px); }
+Big stat display:  font: var(--font-display); font-size: 1.8rem; line-height: 1; color: var(--yellow);
+Panel:             border: 1px solid var(--border); padding: 3.5em 1em 1em;
+Panel title:       position: absolute; top: -0.9em; font-size: 0.9rem; line-height: 1.3; text-transform: uppercase;
+Active tab:        color: var(--purple); border-bottom: 2px solid var(--purple); font-weight: bold;
+Muted label:       font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em;
+Progress bar:      █ fill chars + ░ empty chars (colored spans over block-char background)
+Status bar:        border-top: 1px solid var(--border); padding: 0.3em 1em; font-size: 0.85rem; color: var(--text-dim);
+Keybind bar:       border-top: 1px solid var(--border); padding: 0.45em 1em; font-size: 0.85rem;
+Header bar:        border: 1px solid var(--purple); padding: 0.5em 1.2em; margin: 0.7em 1em 0;
 ```
 
 ---
@@ -558,9 +588,9 @@ BruteForce Learning — Dashboard
 ```css
 background: #1a1d26;
 border-bottom: 1px solid var(--border);
-padding: 7px 16px;
+padding: 0.55em 1em;
 text-align: center;
-font-size: 12px;
+font-size: 0.95rem;
 color: var(--text-muted);
 user-select: none;
 ```
@@ -573,7 +603,8 @@ rating 1847   solved 31/48   streak 10d   xp 450/600
 /* Layout: stats spread across bar */
 display: flex; justify-content: space-between; align-items: center;
 border: 1px solid var(--purple);
-padding: 6px 16px;
+padding: 0.5em 1.2em;
+margin: 0.7em 1em 0;
 
 /* Stats */
 rating label: color: var(--text-muted);
@@ -592,8 +623,8 @@ Line 2:  › Press 'r' to sync with Codeforces and CSES
 ```
 ```css
 border-top: 1px solid var(--border);
-padding: 6px 16px;
-font-size: 11–12px;
+padding: 0.45em 1em;
+font-size: 0.85rem;
 
 /* Line 1 keybinds */
 key:     color: var(--text); font-weight: bold;
@@ -601,6 +632,7 @@ action:  color: var(--text-muted);
 
 /* Line 2 prompt */
 color: var(--text-dim);
+padding: 0.3em 1em;
 prefix: "› " — muted angle quote, not ">"
 ```
 
@@ -612,18 +644,18 @@ Title sits on the top border — absolutely positioned with `background: var(--b
 .panel {
   border: 1px solid var(--border);
   position: relative;
-  padding: 22px 10px 10px;
-  margin-bottom: 8px;
+  padding: 3.5em 1em 1em;
 }
 .panel-title {
   position: absolute;
-  top: -8px;
-  left: 12px;
+  top: -0.9em;
+  left: 0.8em;
   background: var(--bg);
-  padding: 0 6px;
+  padding: 0 0.6em;
   color: var(--purple);
   font-weight: bold;
-  font-size: 11px;
+  font-size: 0.9rem;
+  line-height: 1.3;
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
@@ -677,16 +709,39 @@ Always truncate at a fixed character column, not with CSS `text-overflow` (maint
 
 ---
 
-## Responsive / Size Notes
+## Responsive / Viewport Scaling
 
-The UI is designed to fill the full viewport. All inner panels, tabs, tables use `border-radius: 0`.
+The UI is designed to fill the full viewport. All inner panels, tabs, tables use `border-radius: 0`. The entire interface scales proportionally with viewport height using pure CSS — no JavaScript transforms required.
 
 ```css
+html {
+  font-size: clamp(12px, 1.6vh, 28px);
+  /* 1rem scales with viewport height:
+     - 12px minimum (small screens / mobile)
+     - 1.6vh fluid (17px at 1080p, 23px at 1440p)
+     - 28px maximum (large screens / 4K)
+  */
+}
+
 html, body {
   margin: 0;
   padding: 0;
   height: 100%;
   background: var(--bg);
 }
+
+#app {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  width: 100%;           /* full-width layout */
+  margin: 0 auto;
+}
 ```
+
+**How it works:** The root `font-size` uses `clamp()` with a `vh`-based value. All component sizes use `rem` or `em` units, so they automatically scale proportionally with the viewport height. On a 1440p display the UI is ~1.8× larger than on 720p — no zoom transforms, no JS, no media queries.
+
+**Stat card numbers** use `font-size: 1.8rem` with `line-height: 1` for large display values that scale naturally with the viewport.
+
+**Optional max-width:** If a narrower layout is preferred (simulating an 80–120 col terminal), use `max-width: min(86rem, 1100px)` on `#app`.
 
