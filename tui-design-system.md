@@ -135,7 +135,7 @@ Scaling:          pure CSS via rem/em units — no JS transforms
 Outer padding:    0.5em 1em   (main-area)
 Gap between panels: 1em       (screen-content gap)
 Gap in stat row:  0.8em       (stat-4up gap)
-Panel padding:    1.2em 0.8em 0.7em  (top, sides, bottom)
+Panel padding:    0.8em  (top, sides, bottom)
 Panel title:      absolute at top: -0.9em, font-size: 0.9rem
 Header bar:       padding: 0.5em 1.2em, margin: 0.7em 1em 0
 Title bar:        padding: 0.55em 1em
@@ -300,7 +300,7 @@ html { font-size: clamp(12px, 1.6vh, 28px); }
 ```
 Viewport scaling:  html { font-size: clamp(12px, 1.6vh, 28px); }
 Big stat display:  font: var(--font-display); font-size: 1.8rem; line-height: 1; color: var(--yellow);
-Panel:             border: 1px solid var(--border); padding: 1.2em 0.8em 0.7em;
+Panel:             border: 1px solid var(--border); padding: 0.8em;
 Panel title:       position: absolute; top: -0.9em; font-size: 0.9rem; line-height: 1.3; text-transform: uppercase;
 Active tab:        color: var(--purple); border-bottom: 2px solid var(--purple); font-weight: bold;
 Muted label:       font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em;
@@ -670,7 +670,7 @@ Title sits on the top border — absolutely positioned with `background: var(--b
 .panel {
   border: 1px solid var(--border);
   position: relative;
-  padding: 1.2em 0.8em 0.7em;
+  padding: 0.8em;
 }
 .panel-title {
   position: absolute;
