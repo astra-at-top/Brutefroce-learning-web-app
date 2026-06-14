@@ -608,15 +608,17 @@ user-select: none;
   top: 50%;
   transform: translateY(-50%);
   cursor: pointer;
-  color: var(--text-dim);
-  font-size: 0.85rem;
-  background: none;
-  border: 1px solid var(--border-dim);
-  padding: 0.15em 0.5em;
+  font-size: 0.8rem;
+  letter-spacing: 0.08em;
+  background: var(--purple);
+  color: #fff;
+  border: none;
+  padding: 0.2em 0.6em;
   font-family: var(--font-mono);
   text-transform: uppercase;
+  font-weight: bold;
+  line-height: 1;
 }
-.tb-toggle:hover { color: var(--text); border-color: var(--border); }
 ```
 
 ### Header Bar (persistent across all screens)
