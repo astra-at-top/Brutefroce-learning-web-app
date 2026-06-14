@@ -613,7 +613,7 @@ user-select: none;
   background: var(--purple);
   color: #fff;
   border: none;
-  padding: 0.2em 0.6em;
+  padding: 0.35em 0.7em;
   font-family: var(--font-mono);
   text-transform: uppercase;
   font-weight: bold;
