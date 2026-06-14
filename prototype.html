@@ -29,11 +29,22 @@ body {
   flex: 1; display: flex; flex-direction: column; min-height: 0;
   width: 100%; margin: 0 auto;
 }
+#app.layout-wide { max-width: none; }
+#app.layout-narrow { max-width: min(86rem, 1100px); }
 .title-bar {
   background: #1a1d26; border-bottom: 1px solid var(--border);
-  padding: 0.55em 1em; text-align: center; font-size: 0.95rem;
-  color: var(--text-muted); user-select: none; flex-shrink: 0;
+  padding: 0.55em 1em; display: flex; align-items: center; justify-content: center;
+  font-size: 0.95rem; color: var(--text-muted); user-select: none; flex-shrink: 0;
+  position: relative;
 }
+.title-bar .tb-center { margin: 0 auto; }
+.title-bar .tb-toggle {
+  position: absolute; right: 1em; top: 50%; transform: translateY(-50%);
+  cursor: pointer; color: var(--text-dim); font-size: 0.85rem;
+  background: none; border: 1px solid var(--border-dim); padding: 0.15em 0.5em;
+  font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.05em;
+}
+.title-bar .tb-toggle:hover { color: var(--text); border-color: var(--border); }
 .header-bar {
   display: flex; justify-content: space-between; align-items: center;
   padding: 0.5em 1.2em; border: 1px solid var(--purple);
@@ -276,7 +287,10 @@ body {
 </head>
 <body>
 <div id="app">
-  <div class="title-bar">BruteForce Learning — TUI Component Prototype</div>
+  <div class="title-bar">
+    <span class="tb-center">BruteForce Learning — TUI Component Prototype</span>
+    <button class="tb-toggle" id="widthToggle">[––]</button>
+  </div>
 
   <div class="header-bar">
     <div class="h-stat"><span class="h-l">rating</span> <span class="h-y">1847</span></div>
@@ -642,6 +656,21 @@ function renderRecommend() {
 
 function init() {
   currentScreen = getParam('s') || 'dashboard';
+
+  // Width toggle
+  const app = document.getElementById('app');
+  const toggle = document.getElementById('widthToggle');
+  let wide = localStorage.getItem('tui-wide') === 'true';
+  function applyWidth(w) {
+    wide = w;
+    app.classList.toggle('layout-wide', wide);
+    app.classList.toggle('layout-narrow', !wide);
+    toggle.textContent = wide ? '[==]' : '[––]';
+    localStorage.setItem('tui-wide', wide);
+  }
+  applyWidth(wide);
+  toggle.addEventListener('click', () => applyWidth(!wide));
+
   document.querySelectorAll('.screen-tab').forEach(t => {
     t.addEventListener('click', () => setScreen(t.dataset.screen));
   });

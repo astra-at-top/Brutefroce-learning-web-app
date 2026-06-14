@@ -583,16 +583,40 @@ greedy, sortings, two pointers
 A single line across the top showing the app title or page context. No traffic lights, no OS chrome.
 
 ```
-BruteForce Learning — Dashboard
+BruteForce Learning — Dashboard  [==]   ← width toggle on right
 ```
 ```css
 background: #1a1d26;
 border-bottom: 1px solid var(--border);
 padding: 0.55em 1em;
-text-align: center;
+display: flex;
+align-items: center;
+justify-content: center;
+position: relative;
 font-size: 0.95rem;
 color: var(--text-muted);
 user-select: none;
+}
+
+/* Center text */
+.tb-center { margin: 0 auto; }
+
+/* Width toggle button (right side) */
+.tb-toggle {
+  position: absolute;
+  right: 1em;
+  top: 50%;
+  transform: translateY(-50%);
+  cursor: pointer;
+  color: var(--text-dim);
+  font-size: 0.85rem;
+  background: none;
+  border: 1px solid var(--border-dim);
+  padding: 0.15em 0.5em;
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+}
+.tb-toggle:hover { color: var(--text); border-color: var(--border); }
 ```
 
 ### Header Bar (persistent across all screens)
@@ -740,14 +764,16 @@ html, body {
   flex: 1;
   display: flex;
   flex-direction: column;
-  width: 100%;           /* full-width layout */
+  width: 100%;
   margin: 0 auto;
 }
+#app.layout-wide  { max-width: none; }
+#app.layout-narrow { max-width: min(86rem, 1100px); }
 ```
 
 **How it works:** The root `font-size` uses `clamp()` with a `vh`-based value. All component sizes use `rem` or `em` units, so they automatically scale proportionally with the viewport height. On a 1440p display the UI is ~1.8× larger than on 720p — no zoom transforms, no JS, no media queries.
 
-**Stat card numbers** use `font-size: 1.8rem` with `line-height: 1` for large display values that scale naturally with the viewport.
+**Width toggle:** A button in the title bar (top-right) toggles between `[==]` (full-width) and `[––]` (narrow, ~86rem/1100px). Preference is persisted in localStorage. Full-width is the terminal-authentic default; narrow mode simulates an 80–120 col terminal.
 
-**Optional max-width:** If a narrower layout is preferred (simulating an 80–120 col terminal), use `max-width: min(86rem, 1100px)` on `#app`.
+**Stat card numbers** use `font-size: 1.8rem` with `line-height: 1` for large display values that scale naturally with the viewport.
 
