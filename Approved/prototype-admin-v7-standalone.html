@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BruteForce Learning — Admin Table + Wizard [v7]</title>
+<style>
+:root {
+  --bg: #0d0d0f; --surface: #111318; --surface-alt: #161820;
+  --border: #2a2d3a; --border-dim: #1e2130;
+  --text: #c8ccd8; --text-muted: #5a5f72; --text-dim: #3f4252;
+  --purple: #9d7dea; --cyan: #4ec9b0; --yellow: #e5c07b;
+  --red: #e06c75; --green: #98c379; --blue: #61afef;
+  --font-mono: "JetBrains Mono","Fira Code","Cascadia Code","Hack","Courier New",monospace;
+}
+*::-webkit-scrollbar { display: none; }
+* { scrollbar-width: none; -ms-overflow-style: none; }
+html { font-size: clamp(12px, 1.6vh, 28px); }
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--text);
+  font-family: var(--font-mono); font-size: 1rem; line-height: 1.5;
+  height: 100vh; overflow: hidden;
+  display: flex; flex-direction: column;
+}
+#app { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+
+.title-bar {
+  background: #1a1d26; border-bottom: 1px solid var(--border);
+  padding: 0.55em 1em; display: flex; align-items: center;
+  font-size: 0.95rem; color: var(--text-muted); user-select: none; flex-shrink: 0;
+}
+.title-bar .tb-brand { color: var(--purple); font-weight: bold; }
+.title-bar .tb-sub { color: var(--text-dim); font-size: 0.85rem; margin-left: 0.5em; }
+
+.main-area { flex: 1; padding: 0.5em 1em; display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
+
+/* ===== Shared form elements ===== */
+.fld { margin-bottom: 0.6em; }
+.fld-label {
+  font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase;
+  letter-spacing: 0.08em; margin-bottom: 0.15em; display: block;
+}
+.fld-input {
+  width: 100%; background: var(--surface); border: 1px solid var(--border-dim);
+  color: var(--text); font-family: var(--font-mono); font-size: 0.8rem;
+  padding: 0.35em 0.5em; outline: none;
+}
+.fld-input:focus { border-color: var(--purple); }
+.fld-textarea {
+  width: 100%; background: var(--surface); border: 1px solid var(--border-dim);
+  color: var(--text); font-family: var(--font-mono); font-size: 0.8rem;
+  padding: 0.35em 0.5em; outline: none; min-height: 3em; resize: vertical;
+}
+.fld-textarea:focus { border-color: var(--purple); }
+
+.btn {
+  background: var(--purple); color: #fff; border: none;
+  font-family: var(--font-mono); font-size: 0.75rem; text-transform: uppercase;
+  letter-spacing: 0.06em; padding: 0.3em 0.6em; cursor: pointer; font-weight: bold;
+}
+.btn:hover { opacity: 0.85; }
+.btn-alt { background: transparent; color: var(--purple); border: 1px solid var(--purple); }
+.btn-sm { font-size: 0.65rem; padding: 0.2em 0.4em; }
+.btn-red { background: var(--red); border-color: var(--red); }
+.btn-green { background: var(--green); border-color: var(--green); color: #000; }
+.btn-grp { display: flex; gap: 0.3em; align-items: center; }
+.btn-icon { background: none; border: none; color: var(--text-dim); cursor: pointer; font-size: 0.9rem; padding: 0.1em; }
+.btn-icon:hover { color: var(--text); }
+
+.tag {
+  display: inline-flex; align-items: center; gap: 0.2em;
+  font-size: 0.65rem; padding: 0.05em 0.3em;
+  border: 1px solid var(--border-dim); color: var(--text-muted);
+}
+
+.status-badge {
+  font-size: 0.6rem; padding: 0.05em 0.3em; text-transform: uppercase;
+  letter-spacing: 0.05em; border: 1px solid;
+  display: inline-block; line-height: 1.3;
+}
+.sb-locked { color: var(--text-dim); border-color: var(--border-dim); }
+.sb-avail { color: var(--text-muted); border-color: var(--border-dim); }
+.sb-prog { color: var(--yellow); border-color: var(--yellow); }
+.sb-done { color: var(--green); border-color: var(--green); }
+
+.empty-state {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 2em; color: var(--text-dim); text-align: center;
+}
+.empty-state .empty-icon { font-size: 1.5rem; margin-bottom: 0.3em; }
+
+@keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0; } }
+@keyframes fadeSlide { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+.mount-anim { animation: fadeSlide 0.25s ease; }
+
+.keybind-bar {
+  border-top: 1px solid var(--border); padding: 0.45em 1em;
+  font-size: 0.85rem; display: flex; gap: 0.7em; flex-shrink: 0;
+}
+.kb-key { color: var(--text); font-weight: bold; }
+.kb-action { color: var(--text-muted); }
+
+.status-bar {
+  border-top: 1px solid var(--border); padding: 0.3em 1em;
+  font-size: 0.85rem; color: var(--text-dim); display: flex; align-items: center; gap: 0.3em; flex-shrink: 0;
+}
+.status-bar .prefix { color: var(--text-muted); }
+
+/* ===== Split layout (from V1) ===== */
+.v1-split { display: flex; gap: 0.6em; flex: 1; min-height: 0; }
+.v1-table-panel { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+.v1-editor-panel { flex: 2; display: flex; flex-direction: column; min-width: 0; }
+
+.v1-box {
+  border: 1px solid var(--border); display: flex; flex-direction: column;
+  overflow: hidden; height: 100%;
+}
+.v1-box .v1-header {
+  padding: 0.3em 0.5em; font-size: 0.7rem; text-transform: uppercase;
+  letter-spacing: 0.08em; color: var(--text-muted);
+  border-bottom: 1px solid var(--border-dim); display: flex; justify-content: space-between; align-items: center;
+  flex-shrink: 0;
+}
+.v1-box .v1-body { flex: 1; overflow-y: auto; padding: 0; }
+
+.v1-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+.v1-table th {
+  padding: 0.25em 0.4em; text-align: left; font-weight: normal;
+  color: var(--text-muted); font-size: 0.65rem; text-transform: uppercase;
+  letter-spacing: 0.05em; border-bottom: 1px solid var(--border);
+  background: var(--surface); position: sticky; top: 0;
+}
+.v1-table td { padding: 0.2em 0.4em; border-bottom: 1px solid var(--border-dim); color: var(--text); }
+.v1-table tr { cursor: pointer; }
+.v1-table tr:hover td { background: #1a1d2e; }
+.v1-table tr.sel td { background: #2a1f5a; }
+.v1-table .v1-depth1 { padding-left: 1em; font-weight: bold; }
+.v1-table .v1-depth2 { padding-left: 2em; }
+
+.v1-editor-scroll { padding: 0.5em; overflow-y: auto; flex: 1; }
+.v1-editor-scroll .v1-ename { color: var(--yellow); font-weight: bold; font-size: 0.9rem; margin-bottom: 0.4em; }
+
+.v1-split.v7-split .v1-table-panel { flex: 1; }
+.v1-split.v7-split .v1-editor-panel { flex: 2; }
+
+/* ===== Stepper (from V6) ===== */
+.v6-steps {
+  display: flex; align-items: center; gap: 0; padding: 0.5em 0; flex-shrink: 0;
+}
+.v6-step {
+  display: flex; align-items: center; gap: 0.4em; flex: 1;
+}
+.v6-step .v6-s-num {
+  width: 1.6em; height: 1.6em; display: flex; align-items: center; justify-content: center;
+  border: 1px solid var(--border-dim); font-size: 0.75rem; color: var(--text-dim);
+  flex-shrink: 0;
+}
+.v6-step.active .v6-s-num { border-color: var(--purple); color: var(--purple); font-weight: bold; }
+.v6-step.done .v6-s-num { border-color: var(--green); color: var(--green); }
+.v6-step .v6-s-label { font-size: 0.7rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.05em; }
+.v6-step.active .v6-s-label { color: var(--text); font-weight: bold; }
+.v6-step.done .v6-s-label { color: var(--green); }
+.v6-step .v6-s-line { flex: 1; height: 1px; background: var(--border-dim); margin: 0 0.4em; }
+.v6-step.done .v6-s-line { background: var(--green); }
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="title-bar">
+    <span class="tb-brand">BF Learning</span>
+    <span class="tb-sub">Admin — Table + Wizard [v7]</span>
+  </div>
+
+  <div class="main-area" id="mainArea">
+    <div id="content" style="flex:1;display:flex;flex-direction:column;min-height:0"></div>
+  </div>
+
+  <div class="keybind-bar">
+    <span class="kb-key">←</span><span class="kb-action">/</span><span class="kb-key">→</span><span class="kb-action"> wizard step</span>
+    <span style="flex:1"></span>
+    <span class="kb-key">⌘S</span><span class="kb-action"> save</span>
+  </div>
+  <div class="status-bar">
+    <span class="prefix">›</span> <span id="statusLabel">Table + Wizard — table left, step editor right</span>
+  </div>
+</div>
+
+<script>
+// =====================================================================
+// DATA
+// =====================================================================
+let TREE = [
+  { id: 'react', name: 'React', type: 'course',
+    children: [
+      { id: 'js-basics', name: 'JS Basics', type: 'course',
+        children: [
+          { id: 'vars-types', name: 'Variables & Types', type: 'lesson', status: 'done', notes: 'Variables store data. JS has let, const, var.', mnemonic: 'SNOB NUN', quiz: 3, coding: 1, flashcards: 2 },
+          { id: 'functions-scope', name: 'Functions & Scope', type: 'lesson', status: 'done', notes: 'Functions are reusable blocks.', mnemonic: 'GLB', quiz: 2, coding: 1, flashcards: 1 },
+          { id: 'arrays-objects', name: 'Arrays & Objects', type: 'lesson', status: 'in_progress', notes: 'Arrays store ordered collections.', mnemonic: '', quiz: 1, coding: 1, flashcards: 0 },
+          { id: 'closures', name: 'Closures', type: 'lesson', status: 'available', notes: 'Function remembers outer variables.', mnemonic: 'Backpack', quiz: 1, coding: 1, flashcards: 1 },
+        ] },
+      { id: 'usestate', name: 'useState', type: 'course',
+        children: [
+          { id: 'what-is-state', name: 'What is state?', type: 'lesson', status: 'locked', notes: '', mnemonic: '', quiz: 0, coding: 0, flashcards: 1 },
+          { id: 'counter', name: 'Counter exercise', type: 'coding', status: 'locked', notes: '', mnemonic: '', quiz: 0, coding: 1, flashcards: 0 },
+        ] },
+    ] },
+  { id: 'js', name: 'JavaScript', type: 'course',
+    children: [
+      { id: 'js-vars', name: 'Variables & Types', type: 'lesson', status: 'done', notes: '', mnemonic: '', quiz: 1, coding: 0, flashcards: 1 },
+      { id: 'js-funcs', name: 'Functions & Scope', type: 'lesson', status: 'done', notes: '', mnemonic: '', quiz: 1, coding: 1, flashcards: 0 },
+      { id: 'js-closures', name: 'Closures', type: 'lesson', status: 'in_progress', notes: '', mnemonic: '', quiz: 1, coding: 1, flashcards: 1 },
+    ] },
+];
+let nextId = 100;
+function genId() { return 'node-' + (nextId++); }
+
+function getAllNodes(nodes) {
+  let list = [];
+  for (const n of nodes) { list.push(n); if (n.children) list = list.concat(getAllNodes(n.children)); }
+  return list;
+}
+function findNode(id, nodes) {
+  if (!nodes) nodes = TREE;
+  for (const n of nodes) { if (n.id === id) return n; if (n.children) { const f = findNode(id, n.children); if (f) return f; } }
+  return null;
+}
+function findParent(id, nodes, parent) {
+  if (!nodes) nodes = TREE;
+  for (const n of nodes) { if (n.id === id) return parent; if (n.children) { const f = findParent(id, n.children, n); if (f) return f; } }
+  return null;
+}
+function isLeaf(n) { return !n.children || !n.children.length; }
+function statusColor(s) { return s === 'locked' ? 'var(--text-dim)' : s === 'available' ? 'var(--text-muted)' : s === 'in_progress' ? 'var(--yellow)' : s === 'done' ? 'var(--green)' : 'var(--text-dim)'; }
+function statusBadge(s) {
+  if (!s) return '';
+  const cls = s === 'locked' ? 'sb-locked' : s === 'available' ? 'sb-avail' : s === 'in_progress' ? 'sb-prog' : s === 'done' ? 'sb-done' : 'sb-locked';
+  return '<span class="status-badge ' + cls + '">' + s.replace('_',' ') + '</span>';
+}
+
+// =====================================================================
+// STATE
+// =====================================================================
+let selNodeId = 'vars-types';
+let v7Step = 1;
+
+// =====================================================================
+// V7: Table + Wizard
+// =====================================================================
+function renderV7() {
+  const all = getAllNodes(TREE);
+  let html = '<div class="v1-split v7-split mount-anim">';
+
+  // Left: table
+  html += '<div class="v1-table-panel"><div class="v1-box">';
+  html += '<div class="v1-header"><span>All Items</span><div><button class="btn btn-sm" onclick="v7Add()">+ Add</button></div></div>';
+  html += '<div class="v1-body"><table class="v1-table">';
+  html += '<tr><th>Name</th><th>Type</th><th>Status</th></tr>';
+  for (const n of all) {
+    const depth = n.children ? 1 : 2;
+    const sel = n.id === selNodeId ? ' sel' : '';
+    html += '<tr class="' + sel + '" onclick="v7Select(\'' + n.id + '\')">';
+    const d = 'v1-depth' + Math.min(depth, 2);
+    html += '<td class="' + d + '">' + n.name + '</td>';
+    html += '<td>' + (n.type || '—') + '</td>';
+    html += '<td>' + statusBadge(n.status) + '</td>';
+    html += '</tr>';
+  }
+  html += '</table></div></div></div>';
+
+  // Right: wizard editor
+  html += '<div class="v1-editor-panel"><div class="v1-box">';
+  const node = findNode(selNodeId);
+  if (node) {
+    html += '<div class="v1-header"><span class="v1-ename" style="margin:0;font-size:0.8rem">' + node.name + '</span><div class="btn-grp">';
+    html += '<button class="btn btn-sm btn-green" onclick="v7Save()">Save</button>';
+    html += '<button class="btn btn-sm btn-red" onclick="v7Delete(\'' + node.id + '\')">✕</button>';
+    html += '</div></div>';
+
+    if (isLeaf(node)) {
+      // Steps bar
+      const steps = ['Info', 'Notes', 'Quiz', 'Coding', 'Flashcards'];
+      html += '<div style="padding:0.4em 0.5em;border-bottom:1px solid var(--border-dim);flex-shrink:0">';
+      html += '<div class="v6-steps" style="padding:0">';
+      for (let i = 0; i < steps.length; i++) {
+        const num = i + 1;
+        const cls = num === v7Step ? 'active' : num < v7Step ? 'done' : '';
+        html += '<div class="v6-step ' + cls + '">';
+        html += '<span class="v6-s-num">' + (num < v7Step ? '✓' : num) + '</span>';
+        html += '<span class="v6-s-label">' + steps[i] + '</span>';
+        if (i < steps.length - 1) html += '<span class="v6-s-line"></span>';
+        html += '</div>';
+      }
+      html += '</div></div>';
+
+      // Step content
+      html += '<div class="v1-editor-scroll">';
+
+      if (v7Step === 1) {
+        html += '<div class="v1-ename" style="font-size:0.85rem">Step 1: Basic Info</div>';
+        html += '<div class="fld"><label class="fld-label">Lesson Name</label><input class="fld-input" id="v7Name" value="' + node.name + '"></div>';
+        html += '<div style="display:flex;gap:0.5em">';
+        html += '<div class="fld" style="flex:1"><label class="fld-label">Type</label><select class="fld-input" id="v7Type"><option value="lesson"' + (node.type==='lesson'?' selected':'') + '>Lesson</option><option value="coding"' + (node.type==='coding'?' selected':'') + '>Coding</option></select></div>';
+        html += '<div class="fld" style="flex:1"><label class="fld-label">Status</label><select class="fld-input" id="v7Status"><option value="locked"' + (node.status==='locked'?' selected':'') + '>Locked</option><option value="available"' + (node.status==='available'?' selected':'') + '>Available</option><option value="in_progress"' + (node.status==='in_progress'?' selected':'') + '>In Progress</option><option value="done"' + (node.status==='done'?' selected':'') + '>Done</option></select></div>';
+        html += '</div>';
+        html += '<div class="fld"><label class="fld-label">Course</label><input class="fld-input" placeholder="Parent course" value="' + (findParent(node.id) || {name:''}).name + '" disabled style="opacity:0.5"></div>';
+      } else if (v7Step === 2) {
+        html += '<div class="v1-ename" style="font-size:0.85rem">Step 2: Notes & Mnemonic</div>';
+        html += '<div class="fld"><label class="fld-label">Lesson Notes</label><textarea class="fld-textarea" id="v7Notes" style="min-height:8em">' + (node.notes || '') + '</textarea></div>';
+        html += '<div class="fld"><label class="fld-label">Memory Hook / Mnemonic</label><input class="fld-input" id="v7Mnemonic" placeholder="e.g. SNOB NUN" value="' + (node.mnemonic || '') + '"></div>';
+        html += '<div style="color:var(--text-dim);font-size:0.7rem;padding:0.2em 0">Short, weird, visual — that is how mnemonics stick.</div>';
+      } else if (v7Step === 3) {
+        html += '<div class="v1-ename" style="font-size:0.85rem">Step 3: Quiz Questions <span style="color:var(--text-dim);font-weight:normal;font-size:0.75rem">(' + (node.quiz || 0) + ' questions)</span></div>';
+        for (let i = 0; i < (node.quiz || 2); i++) {
+          html += '<div class="a2-card" style="border:1px solid var(--border-dim);padding:0.4em;margin-bottom:0.3em">';
+          html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.2em">';
+          html += '<span style="font-size:0.75rem;color:var(--text-muted)">Q' + (i+1) + '</span>';
+          html += '<span class="btn-icon" onclick="v7RemoveQuiz(' + i + ')" style="font-size:0.7rem;color:var(--red)">✕</span>';
+          html += '</div>';
+          html += '<div class="fld" style="margin:0"><input class="fld-input" placeholder="Question" value="Sample question ' + (i+1) + '" id="v7q_q_' + i + '"></div>';
+          html += '<div style="display:flex;gap:0.2em;margin-top:0.2em">';
+          for (let j = 0; j < 4; j++) {
+            html += '<input class="fld-input" style="flex:1;font-size:0.7rem" placeholder="Opt ' + String.fromCharCode(65+j) + '" id="v7q_o' + j + '_' + i + '">';
+          }
+          html += '</div></div>';
+        }
+        html += '<button class="btn btn-sm btn-alt" onclick="v7AddQuiz()">+ Add Question</button>';
+      } else if (v7Step === 4) {
+        html += '<div class="v1-ename" style="font-size:0.85rem">Step 4: Coding Exercise</div>';
+        html += '<div class="fld"><label class="fld-label">Prompt / Description</label><textarea class="fld-textarea" id="v7CodingPrompt" style="min-height:3em"></textarea></div>';
+        html += '<div class="fld"><label class="fld-label">Starter Code</label><textarea class="fld-textarea" id="v7CodingStarter" style="min-height:4em;font-family:var(--font-mono)"></textarea></div>';
+        html += '<div class="fld"><label class="fld-label">Solution</label><textarea class="fld-textarea" id="v7CodingSolution" style="min-height:4em;font-family:var(--font-mono)"></textarea></div>';
+      } else if (v7Step === 5) {
+        html += '<div class="v1-ename" style="font-size:0.85rem">Step 5: Flashcards <span style="color:var(--text-dim);font-weight:normal;font-size:0.75rem">(' + (node.flashcards || 0) + ' cards)</span></div>';
+        for (let i = 0; i < (node.flashcards || 2); i++) {
+          html += '<div class="a2-card" style="border:1px solid var(--border-dim);padding:0.4em;margin-bottom:0.3em">';
+          html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.2em">';
+          html += '<span style="font-size:0.75rem;color:var(--text-muted)">Card ' + (i+1) + '</span>';
+          html += '<span class="btn-icon" onclick="v7RemoveFlashcard(' + i + ')" style="font-size:0.7rem;color:var(--red)">✕</span>';
+          html += '</div>';
+          html += '<div class="fld" style="margin:0"><input class="fld-input" placeholder="Front (question)" id="v7f_f_' + i + '"></div>';
+          html += '<div class="fld" style="margin:0;margin-top:0.15em"><textarea class="fld-textarea" placeholder="Back (answer)" id="v7f_b_' + i + '" style="min-height:2em"></textarea></div>';
+          html += '</div>';
+        }
+        html += '<button class="btn btn-sm btn-alt" onclick="v7AddFlashcard()">+ Add Card</button>';
+      }
+
+      html += '</div>'; // scroll
+
+      // Footer nav
+      html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:0.3em 0.5em;border-top:1px solid var(--border-dim);flex-shrink:0;background:var(--surface)">';
+      html += '<button class="btn btn-sm" onclick="v7Prev()" ' + (v7Step <= 1 ? 'disabled style="opacity:0.3"' : '') + '>◀ Back</button>';
+      html += '<span style="font-size:0.75rem;color:var(--text-dim)">Step ' + v7Step + ' / 5</span>';
+      html += '<button class="btn btn-sm" onclick="v7Next()" ' + (v7Step >= 5 ? 'disabled style="opacity:0.3"' : '') + '>Next ▶</button>';
+      html += '</div>';
+
+    } else {
+      // Course node
+      html += '<div class="v1-header"><span class="v1-ename" style="margin:0;font-size:0.8rem">' + node.name + '</span></div>';
+      html += '<div class="v1-editor-scroll">';
+      html += '<div style="color:var(--text-dim);font-size:0.85rem;padding:0.5em">Course node — select a leaf lesson from the table to edit its content with the wizard.</div>';
+      html += '<div style="color:var(--text-muted);font-size:0.8rem">Children: ' + (node.children ? node.children.length : 0) + '</div>';
+      html += '</div>';
+    }
+  } else {
+    html += '<div class="v1-header"><span>Select an item</span></div>';
+    html += '<div class="v1-editor-scroll"><div class="empty-state"><div class="empty-icon">◈</div><div class="empty-text">Select a lesson from the table to edit</div></div></div>';
+  }
+  html += '</div></div></div>';
+
+  return html;
+}
+
+function v7Select(id) { selNodeId = id; v7Step = 1; render(); }
+function v7Prev() { if (v7Step > 1) { v7Step--; render(); } }
+function v7Next() { if (v7Step < 5) { v7Step++; render(); } }
+function v7Add() {
+  const id = genId();
+  TREE.push({ id, name: 'New Lesson', type: 'lesson', status: 'locked', notes: '', mnemonic: '', quiz: 0, coding: 0, flashcards: 0 });
+  selNodeId = id; v7Step = 1; render();
+}
+function v7Delete(id) {
+  if (!confirm('Delete?')) return;
+  const p = findParent(id); if (p) p.children = p.children.filter(c => c.id !== id); else TREE = TREE.filter(c => c.id !== id);
+  selNodeId = TREE[0] ? TREE[0].id : null; render();
+}
+function v7Save() {
+  const n = findNode(selNodeId); if (!n) return;
+  const name = document.getElementById('v7Name'); if (name) n.name = name.value;
+  const type = document.getElementById('v7Type'); if (type) n.type = type.value;
+  const status = document.getElementById('v7Status'); if (status) n.status = status.value;
+  const notes = document.getElementById('v7Notes'); if (notes) n.notes = notes.value;
+  const mnemonic = document.getElementById('v7Mnemonic'); if (mnemonic) n.mnemonic = mnemonic.value;
+}
+function v7AddQuiz() { const n = findNode(selNodeId); if (n) n.quiz = (n.quiz || 0) + 1; render(); }
+function v7RemoveQuiz(idx) { const n = findNode(selNodeId); if (n && n.quiz > 0) n.quiz--; render(); }
+function v7AddFlashcard() { const n = findNode(selNodeId); if (n) n.flashcards = (n.flashcards || 0) + 1; render(); }
+function v7RemoveFlashcard(idx) { const n = findNode(selNodeId); if (n && n.flashcards > 0) n.flashcards--; render(); }
+
+// =====================================================================
+// RENDER
+// =====================================================================
+function render() {
+  document.getElementById('content').innerHTML = renderV7();
+}
+
+// Keyboard
+document.addEventListener('keydown', (e) => {
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable) return;
+  if (e.key === 'ArrowLeft') v7Prev();
+  if (e.key === 'ArrowRight') v7Next();
+});
+
+document.addEventListener('keydown', (e) => {
+  if ((e.metaKey || e.ctrlKey) && (e.key === 's' || e.key === 'S')) {
+    e.preventDefault(); v7Save();
+  }
+});
+
+// Init
+render();
+</script>
+</body>
+</html>
