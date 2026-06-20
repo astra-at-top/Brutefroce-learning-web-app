@@ -327,8 +327,8 @@ body {
 .v6-step .v6-s-label { font-size: 0.7rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.05em; transition: color 0.15s; }
 .v6-step.active .v6-s-label { color: var(--text); font-weight: bold; }
 .v6-step.done .v6-s-label { color: var(--green); }
-.v6-step .v6-s-line { flex: 1; height: 1px; background: var(--border-dim); margin: 0 0.4em; }
-.v6-step.done .v6-s-line { background: var(--green); }
+.v6-step + .v6-s-line { flex: 1; height: 1px; background: var(--border-dim); margin: 0 0.4em; }
+.v6-step.done + .v6-s-line { background: var(--green); }
 
 .empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 2em; color: var(--text-dim); text-align: center; }
 
@@ -1303,7 +1303,7 @@ function renderAdminFull(screen) {
       const cls = adminStep === i ? 'active' : adminStep > i ? 'done' : '';
       const labels = ['Info', 'Notes', 'Quiz', 'Coding', 'Flashcards'];
       const clickable = i === 1 || (i > 1 && infoFilled) ? ' clickable' : '';
-      h += '<div class="v6-step' + cls + clickable + '" data-adm-goto="' + i + '"><span class="v6-s-num">' + i + '</span><span class="v6-s-label">' + labels[i - 1] + '</span>';
+      h += '<div class="v6-step ' + cls + clickable + '" data-adm-goto="' + i + '"><span class="v6-s-num">' + i + '</span><span class="v6-s-label">' + labels[i - 1] + '</span>';
       if (i < 5) h += '<span class="v6-s-line"></span>';
       h += '</div>';
     }
