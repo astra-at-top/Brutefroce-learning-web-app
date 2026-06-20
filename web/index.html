@@ -475,16 +475,6 @@ body {
 </div>
 
 <script>
-const TABS = ['learn', 'admin'];
-let activeTab = restore('activeTab', 'learn');
-
-// ============ API ============
-async function api(path) {
-  const res = await fetch(path);
-  return res.json();
-}
-
-// ============ PERSISTENCE ============
 const LS_PREFIX = 'bfl_';
 
 function persist(key, value) {
@@ -492,6 +482,15 @@ function persist(key, value) {
 }
 function restore(key, def) {
   try { const v = localStorage.getItem(LS_PREFIX + key); return v !== null ? JSON.parse(v) : def; } catch { return def; }
+}
+
+const TABS = ['learn', 'admin'];
+let activeTab = restore('activeTab', 'learn');
+
+// ============ API ============
+async function api(path) {
+  const res = await fetch(path);
+  return res.json();
 }
 
 // ============ TABS ============
