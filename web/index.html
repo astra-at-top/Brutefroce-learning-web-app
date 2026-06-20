@@ -476,7 +476,7 @@ body {
 
 <script>
 const TABS = ['learn', 'admin'];
-let activeTab = 'learn';
+let activeTab = restore('activeTab', 'learn');
 
 // ============ API ============
 async function api(path) {
@@ -484,9 +484,20 @@ async function api(path) {
   return res.json();
 }
 
+// ============ PERSISTENCE ============
+const LS_PREFIX = 'bfl_';
+
+function persist(key, value) {
+  try { localStorage.setItem(LS_PREFIX + key, JSON.stringify(value)); } catch {}
+}
+function restore(key, def) {
+  try { const v = localStorage.getItem(LS_PREFIX + key); return v !== null ? JSON.parse(v) : def; } catch { return def; }
+}
+
 // ============ TABS ============
 function switchTab(tab) {
   activeTab = tab;
+  persist('activeTab', tab);
   document.querySelectorAll('.screen-tab').forEach(el => el.classList.toggle('active', el.dataset.tab === tab));
   document.getElementById('kbPos').textContent = tab.charAt(0).toUpperCase() + tab.slice(1);
   if (tab === 'learn') {
@@ -690,7 +701,7 @@ function renderStreakCalendar() {
 }
 
 // ============ LEARN ============
-let learnState = { selectedNodeId: null, activeModule: 'learn' };
+let learnState = { selectedNodeId: restore('learnSelected', null), activeModule: restore('learnModule', 'learn') };
 let learnDirty = false;
 
 async function renderLearn(screen) {
@@ -699,6 +710,7 @@ async function renderLearn(screen) {
   if (!learnState.selectedNodeId && TREE_DATA.length > 0) {
     learnState.selectedNodeId = TREE_DATA[0].id;
   }
+  if (learnState.selectedNodeId) persist('learnSelected', learnState.selectedNodeId);
   const node = findNode(learnState.selectedNodeId);
   const isCourse = isCourseNode(node);
   let html = '<div class="tab-panel active"><div class="tree-split">';
@@ -768,6 +780,7 @@ function bindLearnEvents() {
         return;
       }
       learnState.selectedNodeId = id;
+      persist('learnSelected', id);
       renderLearn(document.getElementById('screenContent'));
     });
   });
@@ -775,12 +788,13 @@ function bindLearnEvents() {
     el.addEventListener('click', (e) => {
       e.stopPropagation();
       const id = el.dataset.id;
-      if (id) { learnState.selectedNodeId = id; renderLearn(document.getElementById('screenContent')); }
+      if (id) { learnState.selectedNodeId = id; persist('learnSelected', id); renderLearn(document.getElementById('screenContent')); }
     });
   });
   document.querySelectorAll('.module-tab').forEach(el => {
     el.addEventListener('click', () => {
       learnState.activeModule = el.dataset.module;
+      persist('learnModule', learnState.activeModule);
       const node = findNode(learnState.selectedNodeId);
       if (!isCourseNode(node)) loadLearnModule(learnState.selectedNodeId);
     });
@@ -1208,8 +1222,8 @@ async function renderProgress(screen) {
 // ============ ADMIN ============
 // ============ ADMIN ============
 let adminData = [];
-let adminSelId = null;
-let adminStep = 1;
+let adminSelId = restore('adminSel', null);
+let adminStep = restore('adminStep', 1);
 let adminForm = null;
 let adminDirty = false;
 
@@ -1254,6 +1268,7 @@ async function renderAdmin(screen) {
   await loadAdminTree();
   if (adminSelId && !flattenTree(adminData).find(n => n.id === adminSelId)) {
     adminSelId = null;
+    persist('adminSel', null);
   }
   renderAdminFull(screen);
 }
@@ -1376,6 +1391,7 @@ function renderAdminFull(screen) {
         await loadAdminLesson(id);
       }
       adminSelId = id;
+      persist('adminSel', id);
       renderAdminFull(screen);
     });
   });
@@ -1389,6 +1405,7 @@ function renderAdminFull(screen) {
       const infoOk = adminForm.title && adminForm.title.trim().length > 0;
       if (targetStep === 1 || infoOk) {
         adminStep = targetStep;
+        persist('adminStep', targetStep);
         renderAdminFull(screen);
       }
     });
@@ -1396,7 +1413,7 @@ function renderAdminFull(screen) {
 
   // Prev/Next buttons
   document.querySelectorAll('[data-adm-step]').forEach(el => {
-    el.addEventListener('click', () => { collectForm(); adminStep = parseInt(el.dataset.admStep); renderAdminFull(screen); });
+    el.addEventListener('click', () => { collectForm(); adminStep = parseInt(el.dataset.admStep); persist('adminStep', adminStep); renderAdminFull(screen); });
   });
 
   // Bind form field changes
@@ -1491,6 +1508,7 @@ function renderAdminFull(screen) {
     adminDirty = true;
     await loadAdminTree();
     adminSelId = id;
+    persist('adminSel', id);
     await loadAdminLesson(id);
     renderAdminFull(screen);
   });
@@ -1520,6 +1538,7 @@ function renderAdminFull(screen) {
       await fetch('/api/admin/courses/' + adminSelId, { method: 'DELETE' });
     }
     adminSelId = null;
+    persist('adminSel', null);
     adminDirty = true;
     await loadAdminTree();
     renderAdminFull(screen);
@@ -1946,7 +1965,7 @@ function init() {
 
   updateStreakWarning();
   markActive();
-  renderTab('learn');
+  switchTab(activeTab);
 }
 
 document.addEventListener('DOMContentLoaded', init);
