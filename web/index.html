@@ -449,11 +449,7 @@ body {
 
   <div class="main-area">
     <div class="screen-tabs" id="tabs">
-      <div class="screen-tab active" data-tab="dashboard">Dashboard</div>
-      <div class="screen-tab" data-tab="learn">Learn</div>
-      <div class="screen-tab" data-tab="quiz">Quiz</div>
-      <div class="screen-tab" data-tab="code">Code</div>
-      <div class="screen-tab" data-tab="progress">Progress</div>
+      <div class="screen-tab active" data-tab="learn">Learn</div>
       <div class="screen-tab" data-tab="admin">Admin</div>
     </div>
     <div class="screen-content" id="screenContent"></div>
@@ -479,8 +475,8 @@ body {
 </div>
 
 <script>
-const TABS = ['dashboard', 'learn', 'quiz', 'code', 'progress', 'admin'];
-let activeTab = 'dashboard';
+const TABS = ['learn', 'admin'];
+let activeTab = 'learn';
 
 // ============ API ============
 async function api(path) {
@@ -506,11 +502,7 @@ function switchTab(tab) {
 function renderTab(tab) {
   const screen = document.getElementById('screenContent');
   switch (tab) {
-    case 'dashboard': renderDashboard(screen); break;
     case 'learn': renderLearn(screen); break;
-    case 'quiz': renderQuiz(screen); break;
-    case 'code': renderCode(screen); break;
-    case 'progress': renderProgress(screen); break;
     case 'admin': renderAdmin(screen); break;
   }
 }
@@ -1954,7 +1946,7 @@ function init() {
 
   updateStreakWarning();
   markActive();
-  renderTab('dashboard');
+  renderTab('learn');
 }
 
 document.addEventListener('DOMContentLoaded', init);
