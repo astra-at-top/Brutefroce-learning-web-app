@@ -1296,6 +1296,12 @@ async function renderAdmin(screen) {
     adminSelId = null;
     persist('adminSel', null);
   }
+  if (adminSelId) {
+    const node = flattenTree(adminData).find(n => n.id === adminSelId);
+    if (node && node.type && node.type !== 'course') {
+      await loadAdminLesson(adminSelId);
+    }
+  }
   renderAdminFull(screen);
 }
 
@@ -1736,8 +1742,7 @@ function renderAdminFull(screen) {
           : 'lesson: ' + (result.lesson_imported || 'ok');
         document.getElementById('jsonImportStatus').textContent = '✅ Imported: ' + info;
         adminDirty = true;
-        await loadAdminTree();
-        renderAdminFull(screen);
+        await renderAdmin(screen);
       } else {
         document.getElementById('jsonImportStatus').textContent = '❌ ' + (result.error || 'import failed');
       }
