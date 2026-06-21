@@ -523,7 +523,7 @@ function renderTab(tab) {
 // ============ DASHBOARD ============
 async function renderDashboard(screen) {
   const [stats, ps] = await Promise.all([
-    api('/api/progress').catch(() => ({ problems: 48, streak: 10, mastery: 73, solved: 31, xp: 450, xpMax: 600 })),
+    api('/api/progress').catch(() => ({ problems: 18, streak: 5, mastery: 42, solved: 18, xp: 320, xpMax: 500 })),
     api('/api/powerscore').catch(() => ({ power_score: 0 })),
   ]);
   document.getElementById('headerStreak').textContent = stats.streak + 'd';
@@ -985,11 +985,11 @@ function bindModuleActions(lessonId) {
 // ============ QUIZ TAB (independent from Learn module) ============
 let quizTabState = {};
 async function renderQuiz(screen) {
-  const lessons = ['vars-types', 'functions-scope', 'arrays-objects', 'closures', 'what-is-state', 'counter'];
+  const lessons = ['vars-types', 'functions-scope', 'arrays-objects', 'closures', 'js-promises', 'jsx-components', 'usestate-hook', 'useeffect-hook', 'data-fetching', 'git-basics', 'git-branching', 'node-intro'];
   let html = '<div class="tab-panel active"><div class="dash-unified"><div class="panel"><div class="panel-title">Quick Quiz</div>';
   html += '<div class="panel-body" style="padding:0.4em">';
   html += '<div class="fld"><label class="fld-label">Select Lesson</label><select class="fld-select" id="quizLesson">';
-  const lessonNames = { 'vars-types': 'Variables & Types', 'functions-scope': 'Functions & Scope', 'arrays-objects': 'Arrays & Objects', 'closures': 'Closures', 'what-is-state': 'What is state?', 'counter': 'Counter' };
+  const lessonNames = { 'vars-types': 'Variables & Types', 'functions-scope': 'Functions & Scope', 'arrays-objects': 'Arrays & Objects', 'closures': 'Closures', 'js-promises': 'Promises & Async', 'jsx-components': 'JSX & Components', 'usestate-hook': 'useState Hook', 'useeffect-hook': 'useEffect Hook', 'data-fetching': 'Data Fetching', 'git-basics': 'Git Basics', 'git-branching': 'Branching & Merging', 'node-intro': 'Node.js Basics' };
   for (const id of lessons) {
     html += '<option value="' + id + '">' + (lessonNames[id] || id) + '</option>';
   }
@@ -1052,10 +1052,12 @@ async function renderQuiz(screen) {
 // ============ CODE TAB ============
 async function renderCode(screen) {
   const exData = {
-    'Declare & Reassign': { prompt: 'Declare a variable name with value "Alice". Then reassign it to "Bob".', starter: '// declare name\n', solution: 'let name = "Alice";\nname = "Bob";' },
-    'Arrow Function': { prompt: 'Write an arrow function add that returns the sum of two numbers.', starter: 'const add = ', solution: 'const add = (a, b) => a + b;' },
-    'Closure Counter': { prompt: 'Write makeCounter that returns a function counting up.', starter: 'function makeCounter() {', solution: 'function makeCounter() {\n  let count = 0;\n  return () => ++count;\n}' },
-    'Array Methods': { prompt: 'Create array nums with 1,2,3. Push 4, then map to double.', starter: 'let nums = ', solution: 'let nums = [1,2,3];\nnums.push(4);\nnums.map(n => n * 2);' },
+    'Variables & Types': { prompt: 'Declare const name = "Alice". Declare let age = 30. Write strictEq(a,b) that checks strict equality.', starter: 'const name = "Alice";\nlet age = 30;\n', solution: 'const name = "Alice";\nlet age = 30;\nfunction strictEq(a, b) { return a === b; }' },
+    'Functions & Scope': { prompt: 'Write arrow function multiply(a,b). Write function declaration isEven(n).', starter: 'const multiply = ', solution: 'const multiply = (a, b) => a * b;\nfunction isEven(n) { return n % 2 === 0; }' },
+    'Arrays & Objects': { prompt: 'Create nums=[1,2,3]. Push 4, map to double. Destructure {name,age} from person.', starter: 'let nums = [1, 2, 3];\nconst person = {name: "Alice", age: 30};', solution: 'let nums = [1, 2, 3];\nnums.push(4);\nconst doubled = nums.map(n => n * 2);\nconst {name, age} = person;' },
+    'Closure Counter': { prompt: 'Write createCounter() that returns {increment(), getCount()} with private count.', starter: 'function createCounter() {', solution: 'function createCounter() {\n  let count = 0;\n  return { increment: () => ++count, getCount: () => count };\n}' },
+    'Promises & Async': { prompt: 'Write async fetchUser(id) that fetches and returns JSON. Handle errors.', starter: 'async function fetchUser(id) {', solution: 'async function fetchUser(id) {\n  try {\n    const res = await fetch("/api/user/" + id);\n    if (!res.ok) throw new Error("fetch failed");\n    return await res.json();\n  } catch (err) { console.error(err); return null; }\n}' },
+    'useState Hook': { prompt: 'Write Counter with increment/decrement buttons using functional updater.', starter: 'function Counter() {\n  const [count, setCount] = ', solution: 'function Counter() {\n  const [count, setCount] = useState(0);\n  return (\n    <div>\n      <p>{count}</p>\n      <button onClick={() => setCount(c => c + 1)}>+</button>\n      <button onClick={() => setCount(c => c - 1)}>-</button>\n    </div>\n  );\n}' },
   };
 
   let html = '<div class="tab-panel active"><div class="dash-unified">';
@@ -1761,13 +1763,16 @@ function markActive() {
 
 // ============ LEADERBOARD ============
 const AI_COMPETITORS = [
-  { name: 'CodeWizard_42', score: 2847, ai: true },
-  { name: 'PixelPusher', score: 2650, ai: true },
-  { name: 'ByteNinja', score: 2512, ai: true },
-  { name: 'you', score: 2350, ai: false },
-  { name: 'DataMage', score: 2210, ai: true },
-  { name: 'AlgoAce', score: 2180, ai: true },
-  { name: 'ScriptKiddie_99', score: 1950, ai: true },
+  { name: 'null_ptr_exception', score: 3720, ai: true },
+  { name: 'async_await_99', score: 3580, ai: true },
+  { name: 'callback_hell_42', score: 3410, ai: true },
+  { name: 'you', score: 3200, ai: false },
+  { name: 'closure_trap', score: 2890, ai: true },
+  { name: 'segfault_slayer', score: 2750, ai: true },
+  { name: 'off_by_one', score: 2630, ai: true },
+  { name: 'stack_overflow', score: 2480, ai: true },
+  { name: 'infinite_loop', score: 2310, ai: true },
+  { name: 'race_condition', score: 2150, ai: true },
 ];
 
 function renderLeaderboard() {
@@ -1840,13 +1845,16 @@ function initTimer() {
 
 // ============ DAILY CHECKLIST ============
 const CHECKLIST_ITEMS = [
-  { id: 'vars-types', label: 'Study Variables & Types', xp: 15, topic: 'JS Basics' },
-  { id: 'functions-scope', label: 'Study Functions & Scope', xp: 15, topic: 'JS Basics' },
-  { id: 'arrays-objects', label: 'Study Arrays & Objects', xp: 15, topic: 'JS Basics' },
-  { id: 'closures', label: 'Study Closures', xp: 20, topic: 'JS Basics' },
-  { id: 'what-is-state', label: 'Study What is State?', xp: 15, topic: 'React' },
-  { id: 'counter', label: 'Do Counter Exercise', xp: 25, topic: 'React' },
-  { id: 'js-closures', label: 'Study JS Closures', xp: 20, topic: 'JavaScript' },
+  { id: 'vars-types', label: 'Study Variables & Types', xp: 15, topic: 'JavaScript' },
+  { id: 'functions-scope', label: 'Study Functions & Scope', xp: 15, topic: 'JavaScript' },
+  { id: 'arrays-objects', label: 'Study Arrays & Objects', xp: 15, topic: 'JavaScript' },
+  { id: 'closures', label: 'Study Closures', xp: 20, topic: 'JavaScript' },
+  { id: 'js-promises', label: 'Study Promises & Async', xp: 20, topic: 'JavaScript' },
+  { id: 'jsx-components', label: 'Study JSX & Components', xp: 15, topic: 'React' },
+  { id: 'usestate-hook', label: 'Practice useState', xp: 25, topic: 'React' },
+  { id: 'useeffect-hook', label: 'Practice useEffect', xp: 25, topic: 'React' },
+  { id: 'data-fetching', label: 'Practice Data Fetching', xp: 25, topic: 'React' },
+  { id: 'git-basics', label: 'Study Git Basics', xp: 15, topic: 'Git' },
   { id: 'streak', label: 'Keep streak alive', xp: 5, topic: '' },
 ];
 
@@ -1904,12 +1912,14 @@ function bindChecklist() {
 
 // ============ ACHIEVEMENTS ============
 const ACHIEVEMENTS = [
-  { id: 'first-quiz', icon: '📝', name: 'First Quiz', desc: 'Complete your first quiz' },
-  { id: 'streak-3', icon: '🔥', name: 'On Fire', desc: '3-day streak' },
-  { id: 'streak-7', icon: '💥', name: 'Unstoppable', desc: '7-day streak' },
-  { id: 'code-5', icon: '💻', name: 'Coder', desc: 'Solve 5 coding exercises' },
-  { id: 'quiz-10', icon: '🎯', name: 'Quiz Master', desc: 'Complete 10 quizzes' },
-  { id: 'all-topics', icon: '🌐', name: 'Explorer', desc: 'Study all topics' },
+  { id: 'first-quiz', icon: '🎯', name: 'Quick Draw', desc: 'Complete your first quiz' },
+  { id: 'streak-3', icon: '🔥', name: 'Heat Wave', desc: '3-day streak' },
+  { id: 'streak-7', icon: '💥', name: 'Inferno', desc: '7-day streak' },
+  { id: 'code-5', icon: '⌨️', name: 'Keyboard Warrior', desc: 'Solve 5 coding exercises' },
+  { id: 'quiz-10', icon: '🏛️', name: 'Socratic', desc: 'Complete 10 quizzes' },
+  { id: 'all-topics', icon: '🗺️', name: 'Cartographer', desc: 'Study all topics' },
+  { id: 'speed-demon', icon: '⚡', name: 'Speed Demon', desc: 'Complete a lesson in under 2 minutes' },
+  { id: 'contributor', icon: '🤝', name: 'Contributor', desc: 'Add your own lesson via admin' },
 ];
 
 function getAchievementState() {
