@@ -334,6 +334,7 @@ body {
 
 @keyframes fadeSlide { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0; } }
+.report-category { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.2em; padding: 0.1em 0.3em; display: flex; align-items: center; gap: 0.3em; }
 
 /* ===== Streak Loss Warning ===== */
 .streak-warning {
@@ -450,6 +451,7 @@ body {
   <div class="main-area">
     <div class="screen-tabs" id="tabs">
       <div class="screen-tab active" data-tab="learn">Learn</div>
+      <div class="screen-tab" data-tab="progress">Progress</div>
       <div class="screen-tab" data-tab="admin">Admin</div>
     </div>
     <div class="screen-content" id="screenContent"></div>
@@ -484,7 +486,7 @@ function restore(key, def) {
   try { const v = localStorage.getItem(LS_PREFIX + key); return v !== null ? JSON.parse(v) : def; } catch { return def; }
 }
 
-const TABS = ['learn', 'admin'];
+const TABS = ['learn', 'progress', 'admin'];
 let activeTab = restore('activeTab', 'learn');
 
 // ============ API ============
@@ -513,6 +515,7 @@ function renderTab(tab) {
   const screen = document.getElementById('screenContent');
   switch (tab) {
     case 'learn': renderLearn(screen); break;
+    case 'progress': renderProgress(screen); break;
     case 'admin': renderAdmin(screen); break;
   }
 }
@@ -1190,9 +1193,6 @@ async function renderProgress(screen) {
   // Achievements
   html += '<div class="panel"><div class="panel-title">Achievements</div><div class="panel-body" style="padding:0.4em">' + renderAchievements() + '</div></div>';
 
-  // Leaderboard
-  html += '<div class="panel"><div class="panel-title">Leaderboard</div><div class="panel-body" style="padding:0.2em 0.4em">' + renderLeaderboard() + '</div></div>';
-
   // Enhanced habit calendar
   html += '<div class="panel"><div class="panel-title">Activity Calendar</div><div class="panel-body" style="padding:0.4em">';
   html += '<div style="display:flex;gap:0.5em;margin-bottom:0.5em">';
@@ -1201,19 +1201,44 @@ async function renderProgress(screen) {
   html += renderStreakCalendar();
   html += '</div></div>';
 
-  // Topics mastery breakdown
-  html += '<div class="panel" style="flex:1"><div class="panel-title">Topic Mastery</div><div class="panel-body" style="padding:0.15em 0">';
-  for (const topic of stats.topics) {
-    const color = topic.progress < 30 ? 'var(--red)' : topic.progress < 70 ? 'var(--yellow)' : 'var(--green)';
-    const cls = topic.progress < 30 ? 'c0' : topic.progress < 70 ? 'c1' : 'c2';
-    html += '<div class="pb-row"><span class="pb-label">' + topic.name + '</span>';
-    html += '<div class="pb-track">████████████████████████████████<span class="pb-fill-text" style="width:' + topic.progress + '%;color:' + color + '">' + '█'.repeat(Math.floor(topic.progress / 3)) + '</span></div>';
-    html += '<span class="pb-pct ' + cls + '">' + topic.progress + '%</span></div>';
+  // Strengths & Weaknesses report
+  const weak = stats.topics.filter(t => t.progress < 40);
+  const medium = stats.topics.filter(t => t.progress >= 40 && t.progress < 70);
+  const strong = stats.topics.filter(t => t.progress >= 70);
+
+  html += '<div class="panel" style="flex:1"><div class="panel-title">Topic Report</div><div class="panel-body" style="padding:0.3em 0">';
+
+  if (weak.length > 0) {
+    html += '<div style="font-size:0.75rem;color:var(--red);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:0.2em;padding:0 0.3em">🔴 Weak — Needs Focus</div>';
+    for (const t of weak) {
+      html += '<div class="pb-row"><span class="pb-label">' + t.name + '</span>';
+      html += '<div class="pb-track">████████████████████████████████<span class="pb-fill-text" style="width:' + t.progress + '%;color:var(--red)">' + '█'.repeat(Math.floor(t.progress / 3)) + '</span></div>';
+      html += '<span class="pb-pct c0">' + t.progress + '%</span></div>';
+    }
   }
+
+  if (medium.length > 0) {
+    html += '<div style="font-size:0.75rem;color:var(--yellow);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:0.2em;margin-top:0.4em;padding:0 0.3em">🟡 Medium — Improving</div>';
+    for (const t of medium) {
+      html += '<div class="pb-row"><span class="pb-label">' + t.name + '</span>';
+      html += '<div class="pb-track">████████████████████████████████<span class="pb-fill-text" style="width:' + t.progress + '%;color:var(--yellow)">' + '█'.repeat(Math.floor(t.progress / 3)) + '</span></div>';
+      html += '<span class="pb-pct c1">' + t.progress + '%</span></div>';
+    }
+  }
+
+  if (strong.length > 0) {
+    html += '<div style="font-size:0.75rem;color:var(--green);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:0.2em;margin-top:0.4em;padding:0 0.3em">🟢 Strong — Mastered</div>';
+    for (const t of strong) {
+      html += '<div class="pb-row"><span class="pb-label">' + t.name + '</span>';
+      html += '<div class="pb-track">████████████████████████████████<span class="pb-fill-text" style="width:' + t.progress + '%;color:var(--green)">' + '█'.repeat(Math.floor(t.progress / 3)) + '</span></div>';
+      html += '<span class="pb-pct c2">' + t.progress + '%</span></div>';
+    }
+  }
+
   html += '</div></div></div></div>';
 
   screen.innerHTML = html;
-  document.getElementById('statusBar').innerHTML = '<span class="prefix">›</span> Progress — timer, checklist, XP, achievements, leaderboard, habits';
+  document.getElementById('statusBar').innerHTML = '<span class="prefix">›</span> Progress — timer, checklist, XP, achievements, habits, topics';
   initTimer();
   bindChecklist();
 }
@@ -1815,11 +1840,14 @@ function initTimer() {
 
 // ============ DAILY CHECKLIST ============
 const CHECKLIST_ITEMS = [
-  { id: 'review', label: 'Review flashcards', xp: 10 },
-  { id: 'quiz', label: 'Complete a quiz', xp: 20 },
-  { id: 'code', label: 'Solve a coding exercise', xp: 25 },
-  { id: 'lesson', label: 'Study one lesson', xp: 15 },
-  { id: 'streak', label: 'Keep streak alive', xp: 5 },
+  { id: 'vars-types', label: 'Study Variables & Types', xp: 15, topic: 'JS Basics' },
+  { id: 'functions-scope', label: 'Study Functions & Scope', xp: 15, topic: 'JS Basics' },
+  { id: 'arrays-objects', label: 'Study Arrays & Objects', xp: 15, topic: 'JS Basics' },
+  { id: 'closures', label: 'Study Closures', xp: 20, topic: 'JS Basics' },
+  { id: 'what-is-state', label: 'Study What is State?', xp: 15, topic: 'React' },
+  { id: 'counter', label: 'Do Counter Exercise', xp: 25, topic: 'React' },
+  { id: 'js-closures', label: 'Study JS Closures', xp: 20, topic: 'JavaScript' },
+  { id: 'streak', label: 'Keep streak alive', xp: 5, topic: '' },
 ];
 
 function getChecklistState() {
@@ -1835,7 +1863,12 @@ function renderChecklist() {
   const today = new Date().toISOString().split('T')[0];
   const dayState = state[today] || {};
   let html = '<div class="checklist">';
+  let lastTopic = '';
   for (const item of CHECKLIST_ITEMS) {
+    if (item.topic && item.topic !== lastTopic) {
+      lastTopic = item.topic;
+      html += '<div style="font-size:0.65rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin:0.3em 0 0.1em 0.3em">' + item.topic + '</div>';
+    }
     const done = dayState[item.id] || false;
     html += '<div class="cl-item' + (done ? ' done' : '') + '" data-cl-id="' + item.id + '">';
     html += '<span class="cl-cb">' + (done ? '✓' : '') + '</span>';
