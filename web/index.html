@@ -1640,7 +1640,113 @@ function renderAdminFull(screen) {
     }
   });
 
-  document.getElementById('statusBar').innerHTML = '<span class="prefix">›</span> Admin — content editor with wizard + sync';
+  // JSON Import section
+  const jsonArea = document.createElement('div');
+  jsonArea.style.cssText = 'border-top:1px solid var(--border-dim);flex-shrink:0';
+  jsonArea.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:0.4em 1em;cursor:pointer;background:var(--bg2)" id="jsonImportToggle">
+      <span style="font-size:0.7rem;color:var(--green);letter-spacing:0.05em;text-transform:uppercase">📥 JSON Import — paste course/topic data</span>
+      <span style="font-size:0.65rem;color:var(--text-dim)" id="jsonImportArrow">▼</span>
+    </div>
+    <div id="jsonImportBody" style="padding:0.5em 1em">
+      <div style="display:flex;gap:0.5em;margin-bottom:0.4em">
+        <select id="jsonImportMode" class="fld-select" style="font-size:0.75rem;width:auto">
+          <option value="courses">Import Courses (replaces all)</option>
+          <option value="lesson">Import Single Lesson</option>
+        </select>
+        <input class="fld-input" id="jsonImportCourseId" placeholder="Course ID (for lesson import)" style="width:12em;font-size:0.75rem;display:none">
+      </div>
+      <textarea id="jsonImportTextarea" placeholder='Paste your JSON here...' style="width:100%;min-height:120px;font-family:'Courier New',monospace;font-size:0.7rem;padding:0.5em;background:var(--bg);border:1px solid var(--border-dim);border-radius:4px;color:var(--text);resize:vertical">{
+  "courses": [
+    {
+      "id": "javascript",
+      "name": "JavaScript",
+      "lessons": [
+        {
+          "id": "vars-types",
+          "title": "Variables & Types",
+          "status": "done",
+          "notes": "...",
+          "quiz": [{"question":"...","options":["a","b","c","d"],"correct_index":0}],
+          "flashcards": [{"front":"...","back":"..."}]
+        }
+      ]
+    }
+  ]
+}</textarea>
+      <div class="btn-grp" style="margin-top:0.4em">
+        <button class="btn btn-green" id="jsonImportBtn">▶ Import JSON</button>
+        <span id="jsonImportStatus" style="font-size:0.7rem;color:var(--text-dim);align-self:center"></span>
+      </div>
+      <div style="font-size:0.6rem;color:var(--text-dim);margin-top:0.3em;line-height:1.6">
+        <strong>Format:</strong> Course import → <code>{ "courses": [...] }</code> with nested lessons (quiz, coding, flashcards).
+        Lesson import → <code>{ "lesson": { "id":"...", "title":"...", ... } }</code> with <code>course_id</code> in parent.
+      </div>
+    </div>`;
+  document.querySelector('.admin-box')?.closest('.admin-editor-panel')?.after(jsonArea);
+
+  // Show/hide course_id input based on import mode
+  document.getElementById('jsonImportMode')?.addEventListener('change', () => {
+    const mode = document.getElementById('jsonImportMode').value;
+    document.getElementById('jsonImportCourseId').style.display = mode === 'lesson' ? '' : 'none';
+  });
+
+  // Collapse toggle
+  let jsonExpanded = true;
+  document.getElementById('jsonImportToggle')?.addEventListener('click', () => {
+    jsonExpanded = !jsonExpanded;
+    document.getElementById('jsonImportBody').style.display = jsonExpanded ? '' : 'none';
+    document.getElementById('jsonImportArrow').textContent = jsonExpanded ? '▼' : '▶';
+  });
+
+  // Import button
+  document.getElementById('jsonImportBtn')?.addEventListener('click', async () => {
+    const raw = document.getElementById('jsonImportTextarea').value.trim();
+    if (!raw) { document.getElementById('jsonImportStatus').textContent = '❌ Paste JSON first'; return; }
+
+    let parsed;
+    try { parsed = JSON.parse(raw); } catch (e) {
+      document.getElementById('jsonImportStatus').textContent = '❌ Invalid JSON: ' + e.message;
+      return;
+    }
+
+    const mode = document.getElementById('jsonImportMode').value;
+    if (mode === 'lesson') {
+      const cid = document.getElementById('jsonImportCourseId').value.trim();
+      if (cid) parsed.course_id = cid;
+      if (!parsed.lesson) {
+        document.getElementById('jsonImportStatus').textContent = '❌ For lesson import, JSON must have a "lesson" key';
+        return;
+      }
+    } else if (!parsed.courses) {
+      document.getElementById('jsonImportStatus').textContent = '❌ For course import, JSON must have a "courses" array';
+      return;
+    }
+
+    document.getElementById('jsonImportStatus').textContent = '⏳ Importing...';
+    try {
+      const res = await fetch('/api/admin/import', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(parsed),
+      });
+      const result = await res.json();
+      if (res.ok) {
+        const info = result.courses_imported
+          ? result.courses_imported + ' courses, ' + result.lessons_imported + ' lessons'
+          : 'lesson: ' + (result.lesson_imported || 'ok');
+        document.getElementById('jsonImportStatus').textContent = '✅ Imported: ' + info;
+        adminDirty = true;
+        await loadAdminTree();
+        renderAdminFull(screen);
+      } else {
+        document.getElementById('jsonImportStatus').textContent = '❌ ' + (result.error || 'import failed');
+      }
+    } catch (e) {
+      document.getElementById('jsonImportStatus').textContent = '❌ Network error: ' + e.message;
+    }
+  });
+
+  document.getElementById('statusBar').innerHTML = '<span class="prefix">›</span> Admin — content editor with wizard + sync + json';
 }
 
 function escHtml(s) {

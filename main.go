@@ -66,6 +66,7 @@ func main() {
 	mux.HandleFunc("/api/admin/courses/", handleAdminCourseByID)
 	mux.HandleFunc("/api/admin/lessons", handleAdminLessons)
 	mux.HandleFunc("/api/admin/lessons/", handleAdminLessonByID)
+	mux.HandleFunc("/api/admin/import", handleAdminImport)
 
 	subFS, _ := fs.Sub(webFS, "web")
 	mux.Handle("/", http.FileServer(http.FS(subFS)))
@@ -619,6 +620,233 @@ func handleAdminLessonByID(w http.ResponseWriter, r *http.Request) {
 	default:
 		jsonError(w, "method not allowed", 405)
 	}
+}
+
+func handleAdminImport(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "POST" {
+		jsonError(w, "method not allowed", 405)
+		return
+	}
+
+	body, _ := io.ReadAll(r.Body)
+	var data map[string]interface{}
+	if err := json.Unmarshal(body, &data); err != nil {
+		jsonError(w, "invalid JSON: "+err.Error(), 400)
+		return
+	}
+
+	// Mode 1: Import full courses array (replaces all courses + lessons)
+	if coursesRaw, ok := data["courses"]; ok {
+		coursesList, ok := coursesRaw.([]interface{})
+		if !ok {
+			jsonError(w, "courses must be an array", 400)
+			return
+		}
+
+		// Wipe existing data
+		db.Exec("DELETE FROM flashcard_reviews")
+		db.Exec("DELETE FROM flashcard_data")
+		db.Exec("DELETE FROM lessons")
+		db.Exec("DELETE FROM courses")
+
+		courseCount := 0
+		lessonCount := 0
+
+		for _, cr := range coursesList {
+			c, _ := cr.(map[string]interface{})
+			if c == nil {
+				continue
+			}
+			id, _ := c["id"].(string)
+			name, _ := c["name"].(string)
+			parentID, _ := c["parent_id"].(string)
+			sort := 0
+			if s, ok := c["sort_order"].(float64); ok {
+				sort = int(s)
+			}
+			if id == "" || name == "" {
+				continue
+			}
+
+			db.Exec("INSERT INTO courses (id,name,parent_id,sort_order) VALUES (?,?,?,?)", id, name, parentID, sort)
+			courseCount++
+
+			// Import lessons for this course
+			if lessonsRaw, ok := c["lessons"]; ok {
+				lessonsList, ok := lessonsRaw.([]interface{})
+				if !ok {
+					continue
+				}
+				for _, lr := range lessonsList {
+					lesson, _ := lr.(map[string]interface{})
+					if lesson == nil {
+						continue
+					}
+					lid, _ := lesson["id"].(string)
+					title, _ := lesson["title"].(string)
+					if lid == "" || title == "" {
+						continue
+					}
+
+					ltype, _ := lesson["type"].(string)
+					if ltype == "" {
+						ltype = "lesson"
+					}
+					status, _ := lesson["status"].(string)
+					if status == "" {
+						status = "locked"
+					}
+					notes, _ := lesson["notes"].(string)
+					mnemonic, _ := lesson["mnemonic"].(string)
+					progress := 0
+					if p, ok := lesson["progress"].(float64); ok {
+						progress = int(p)
+					}
+
+					// Quiz data
+					quizData := "[]"
+					if quizRaw, ok := lesson["quiz"]; ok {
+						if qb, err := json.Marshal(quizRaw); err == nil {
+							quizData = string(qb)
+						}
+					}
+
+					// Coding data
+					codingData := "{}"
+					if codingRaw, ok := lesson["coding"]; ok {
+						if cb, err := json.Marshal(codingRaw); err == nil {
+							codingData = string(cb)
+						}
+					}
+
+					// Count quiz questions
+					quizCount := 0
+					if qArr, ok := lesson["quiz"].([]interface{}); ok {
+						quizCount = len(qArr)
+					}
+
+					db.Exec("INSERT INTO lessons (id,title,notes,mnemonic,status,type,course_id,progress,quiz_count,quiz_data,coding_data) VALUES (?,?,?,?,?,?,?,?,?,?,?)",
+						lid, title, notes, mnemonic, status, ltype, id, progress, quizCount, quizData, codingData)
+					lessonCount++
+
+					// Flashcards
+					if fcRaw, ok := lesson["flashcards"]; ok {
+						fcList, ok := fcRaw.([]interface{})
+						if ok {
+							for _, fcr := range fcList {
+								fc, _ := fcr.(map[string]interface{})
+								if fc == nil {
+									continue
+								}
+								front, _ := fc["front"].(string)
+								back, _ := fc["back"].(string)
+								if front == "" || back == "" {
+									continue
+								}
+								db.Exec("INSERT INTO flashcard_data (lesson_id,front,back) VALUES (?,?,?)", lid, front, back)
+								db.Exec("INSERT INTO flashcard_reviews (lesson_id,front,back,ease,interval_days,repetitions,next_review) VALUES (?,?,?,2.5,1,0,?)",
+									lid, front, back, time.Now().Format(time.RFC3339))
+							}
+						}
+					}
+				}
+			}
+		}
+
+		jsonResp(w, map[string]interface{}{
+			"status": "ok", "courses_imported": courseCount, "lessons_imported": lessonCount,
+		})
+		return
+	}
+
+	// Mode 2: Import single lesson
+	if lessonRaw, ok := data["lesson"]; ok {
+		lesson, _ := lessonRaw.(map[string]interface{})
+		if lesson == nil {
+			jsonError(w, "lesson must be an object", 400)
+			return
+		}
+
+		lid, _ := lesson["id"].(string)
+		title, _ := lesson["title"].(string)
+		if lid == "" || title == "" {
+			jsonError(w, "lesson id and title are required", 400)
+			return
+		}
+
+		courseID, _ := lesson["course_id"].(string)
+		if courseID == "" {
+			if cid, ok := data["course_id"].(string); ok {
+				courseID = cid
+			}
+		}
+
+		ltype, _ := lesson["type"].(string)
+		if ltype == "" {
+			ltype = "lesson"
+		}
+		status, _ := lesson["status"].(string)
+		if status == "" {
+			status = "locked"
+		}
+		notes, _ := lesson["notes"].(string)
+		mnemonic, _ := lesson["mnemonic"].(string)
+		progress := 0
+		if p, ok := lesson["progress"].(float64); ok {
+			progress = int(p)
+		}
+
+		quizData := "[]"
+		if quizRaw, ok := lesson["quiz"]; ok {
+			if qb, err := json.Marshal(quizRaw); err == nil {
+				quizData = string(qb)
+			}
+		}
+		codingData := "{}"
+		if codingRaw, ok := lesson["coding"]; ok {
+			if cb, err := json.Marshal(codingRaw); err == nil {
+				codingData = string(cb)
+			}
+		}
+		quizCount := 0
+		if qArr, ok := lesson["quiz"].([]interface{}); ok {
+			quizCount = len(qArr)
+		}
+
+		db.Exec("DELETE FROM lessons WHERE id=?", lid)
+		db.Exec("DELETE FROM flashcard_data WHERE lesson_id=?", lid)
+		db.Exec("DELETE FROM flashcard_reviews WHERE lesson_id=?", lid)
+
+		db.Exec("INSERT INTO lessons (id,title,notes,mnemonic,status,type,course_id,progress,quiz_count,quiz_data,coding_data) VALUES (?,?,?,?,?,?,?,?,?,?,?)",
+			lid, title, notes, mnemonic, status, ltype, courseID, progress, quizCount, quizData, codingData)
+
+		if fcRaw, ok := lesson["flashcards"]; ok {
+			fcList, ok := fcRaw.([]interface{})
+			if ok {
+				for _, fcr := range fcList {
+					fc, _ := fcr.(map[string]interface{})
+					if fc == nil {
+						continue
+					}
+					front, _ := fc["front"].(string)
+					back, _ := fc["back"].(string)
+					if front == "" || back == "" {
+						continue
+					}
+					db.Exec("INSERT INTO flashcard_data (lesson_id,front,back) VALUES (?,?,?)", lid, front, back)
+					db.Exec("INSERT INTO flashcard_reviews (lesson_id,front,back,ease,interval_days,repetitions,next_review) VALUES (?,?,?,2.5,1,0,?)",
+						lid, front, back, time.Now().Format(time.RFC3339))
+				}
+			}
+		}
+
+		jsonResp(w, map[string]interface{}{
+			"status": "ok", "lesson_imported": lid, "course_id": courseID,
+		})
+		return
+	}
+
+	jsonError(w, "provide 'courses' (array) or 'lesson' (object) in JSON", 400)
 }
 
 func buildAdminTree(courses []map[string]interface{}) []map[string]interface{} {
