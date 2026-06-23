@@ -243,8 +243,11 @@ body {
 .code-prompt { font-weight: bold; font-size: 0.9rem; margin-bottom: 0.5em; }
 .code-editor { background: var(--surface); border: 1px solid var(--border-dim); padding: 0.6em; font-size: 0.85rem; font-family: var(--font-mono); min-height: 5em; white-space: pre-wrap; color: var(--text-dim); margin-bottom: 0.4em; }
 .code-out { background: var(--surface-alt); border: 1px solid var(--border-dim); padding: 0.5em; font-size: 0.85rem; margin-top: 0.3em; min-height: 2em; color: var(--text-muted); white-space: pre-wrap; }
+
 .code-out.solution { border-color: var(--purple); color: var(--cyan); }
 
+.code-review { background: var(--surface); border: 1px solid var(--purple); padding: 0.6em; font-size: 0.85rem; white-space: pre-wrap; margin-top: 0.4em; color: var(--text); line-height: 1.6; }
+.code-review-loading { color: var(--text-muted); font-style: italic; }
 .fc-card { border: 2px solid var(--border); padding: 2em 1.5em; min-height: 8em; cursor: pointer; display: flex; align-items: center; justify-content: center; text-align: center; font-size: 1.1rem; user-select: none; background: var(--surface); transition: border-color 0.2s; }
 .fc-card:hover { border-color: var(--purple); }
 .fc-card .fc-front { color: var(--text); }
@@ -451,6 +454,7 @@ body {
   <div class="main-area">
     <div class="screen-tabs" id="tabs">
       <div class="screen-tab active" data-tab="learn">Learn</div>
+      <div class="screen-tab" data-tab="code">Code</div>
       <div class="screen-tab" data-tab="progress">Progress</div>
       <div class="screen-tab" data-tab="admin">Admin</div>
     </div>
@@ -486,7 +490,7 @@ function restore(key, def) {
   try { const v = localStorage.getItem(LS_PREFIX + key); return v !== null ? JSON.parse(v) : def; } catch { return def; }
 }
 
-const TABS = ['learn', 'progress', 'admin'];
+const TABS = ['learn', 'code', 'progress', 'admin'];
 let activeTab = restore('activeTab', 'learn');
 
 // ============ API ============
@@ -515,6 +519,7 @@ function renderTab(tab) {
   const screen = document.getElementById('screenContent');
   switch (tab) {
     case 'learn': renderLearn(screen); break;
+    case 'code': renderCode(screen); break;
     case 'progress': renderProgress(screen); break;
     case 'admin': renderAdmin(screen); break;
   }
@@ -1081,6 +1086,7 @@ async function renderCode(screen) {
   html += '<div class="code-editor" contenteditable="true" id="codePlayEditor">' + first.starter + '<span style="animation:blink 1s step-end infinite">_</span></div>';
   html += '<div class="btn-grp"><button class="quiz-btn" id="codePlayRun">▶ Run</button>';
   html += '<button class="quiz-btn alt" id="codePlayReveal">Reveal</button>';
+  html += '<button class="quiz-btn alt" id="codePlayAiReview">AI Review</button>';
   html += '<button class="quiz-btn alt" id="codePlayReset">Reset</button></div>';
   html += '<div id="codePlayOutput"></div>';
   html += '</div></div></div></div>';
@@ -1151,6 +1157,28 @@ function setupCodePlay(exData) {
       ? '<div class="code-out solution">// Solution<br>' + ex.solution.replace(/\n/g, '<br>') + '</div>'
       : '';
     document.getElementById('codePlayReveal').textContent = showSolution ? 'Hide' : 'Reveal';
+  });
+  document.getElementById('codePlayAiReview').addEventListener('click', async () => {
+    const editor = document.getElementById('codePlayEditor');
+    const code = editor.textContent || editor.innerText;
+    const ex = exData[currentEx];
+    const output = document.getElementById('codePlayOutput');
+    output.innerHTML = '<div class="code-review-loading">› Reviewing code...</div>';
+    try {
+      const res = await fetch('/api/ai/review', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code, prompt: ex.prompt, solution: ex.solution }),
+      });
+      const data = await res.json();
+      if (data.error) {
+        output.innerHTML = '<div class="code-out" style="color:var(--red)">✗ ' + data.error + '</div>';
+      } else {
+        output.innerHTML = '<div class="code-review">' + data.review.replace(/\n/g, '<br>') + '</div>';
+      }
+    } catch (err) {
+      output.innerHTML = '<div class="code-out" style="color:var(--red)">✗ AI review failed: ' + err.message + '</div>';
+    }
   });
   document.getElementById('codePlayReset').addEventListener('click', () => loadExercise(currentEx));
 
@@ -1646,18 +1674,83 @@ function renderAdminFull(screen) {
     }
   });
 
+  // Export as JSON section
+  const exportArea = document.createElement('div');
+  exportArea.style.cssText = 'border-top:1px solid var(--border-dim);flex-shrink:0';
+  exportArea.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:0.4em 1em;cursor:pointer;background:var(--bg2)" id="jsonExportToggle">
+      <span style="font-size:0.7rem;color:var(--blue);letter-spacing:0.05em;text-transform:uppercase">📤 Export as JSON — copy current data to modify</span>
+      <span style="font-size:0.65rem;color:var(--text-dim)" id="jsonExportArrow">▼</span>
+    </div>
+    <div id="jsonExportBody" style="padding:0.5em 1em">
+      <div class="btn-grp" style="margin-bottom:0.4em">
+        <button class="btn" id="jsonExportBtn">▶ Export as JSON</button>
+        <button class="btn btn-alt" id="jsonExportCopyBtn" style="display:none">📋 Copy</button>
+        <span id="jsonExportStatus" style="font-size:0.7rem;color:var(--text-dim);align-self:center"></span>
+      </div>
+      <textarea id="jsonExportTextarea" readonly placeholder="Click 'Export as JSON' to load current data..." style="width:100%;min-height:120px;font-family:'Courier New',monospace;font-size:0.7rem;padding:0.5em;background:var(--surface-alt);border:1px solid var(--border-dim);border-radius:4px;color:var(--text);resize:vertical"></textarea>
+      <div style="font-size:0.6rem;color:var(--text-dim);margin-top:0.3em;line-height:1.6">
+        <strong>Usage:</strong> Export → Copy → Modify in AI → Paste into <strong>JSON Import</strong> below → Import
+      </div>
+    </div>`;
+  document.querySelector('.admin-box')?.closest('.admin-editor-panel')?.after(exportArea);
+
+  let exportExpanded = true;
+  document.getElementById('jsonExportToggle')?.addEventListener('click', () => {
+    exportExpanded = !exportExpanded;
+    document.getElementById('jsonExportBody').style.display = exportExpanded ? '' : 'none';
+    document.getElementById('jsonExportArrow').textContent = exportExpanded ? '▼' : '▶';
+  });
+
+  document.getElementById('jsonExportBtn')?.addEventListener('click', async () => {
+    const btn = document.getElementById('jsonExportBtn');
+    const status = document.getElementById('jsonExportStatus');
+    const textarea = document.getElementById('jsonExportTextarea');
+    const copyBtn = document.getElementById('jsonExportCopyBtn');
+    btn.textContent = '⏳ Exporting...';
+    btn.disabled = true;
+    try {
+      const res = await fetch('/api/admin/export');
+      const data = await res.json();
+      const pretty = JSON.stringify(data, null, 2);
+      textarea.value = pretty;
+      textarea.style.display = '';
+      copyBtn.style.display = '';
+      const courseCount = data.courses ? data.courses.length : 0;
+      let lessonCount = 0;
+      if (data.courses) for (const c of data.courses) lessonCount += (c.lessons || []).length;
+      status.textContent = '✅ ' + courseCount + ' courses, ' + lessonCount + ' lessons — ' + (pretty.length / 1024).toFixed(1) + ' KB';
+    } catch (e) {
+      status.textContent = '❌ Export failed: ' + e.message;
+    }
+    btn.textContent = '▶ Export as JSON';
+    btn.disabled = false;
+  });
+
+  document.getElementById('jsonExportCopyBtn')?.addEventListener('click', async () => {
+    const textarea = document.getElementById('jsonExportTextarea');
+    try {
+      await navigator.clipboard.writeText(textarea.value);
+      document.getElementById('jsonExportStatus').textContent = '✅ Copied to clipboard!';
+    } catch {
+      textarea.select();
+      document.execCommand('copy');
+      document.getElementById('jsonExportStatus').textContent = '✅ Copied!';
+    }
+  });
+
   // JSON Import section
   const jsonArea = document.createElement('div');
   jsonArea.style.cssText = 'border-top:1px solid var(--border-dim);flex-shrink:0';
   jsonArea.innerHTML = `
     <div style="display:flex;justify-content:space-between;align-items:center;padding:0.4em 1em;cursor:pointer;background:var(--bg2)" id="jsonImportToggle">
-      <span style="font-size:0.7rem;color:var(--green);letter-spacing:0.05em;text-transform:uppercase">📥 JSON Import — paste course/topic data</span>
+      <span style="font-size:0.7rem;color:var(--green);letter-spacing:0.05em;text-transform:uppercase">📥 JSON Import (Merge) — paste modified data here</span>
       <span style="font-size:0.65rem;color:var(--text-dim)" id="jsonImportArrow">▼</span>
     </div>
     <div id="jsonImportBody" style="padding:0.5em 1em">
       <div style="display:flex;gap:0.5em;margin-bottom:0.4em">
         <select id="jsonImportMode" class="fld-select" style="font-size:0.75rem;width:auto">
-          <option value="courses">Import Courses (replaces all)</option>
+          <option value="courses">Import Courses (merge)</option>
           <option value="lesson">Import Single Lesson</option>
         </select>
         <input class="fld-input" id="jsonImportCourseId" placeholder="Course ID (for lesson import)" style="width:12em;font-size:0.75rem;display:none">
@@ -1685,8 +1778,9 @@ function renderAdminFull(screen) {
         <span id="jsonImportStatus" style="font-size:0.7rem;color:var(--text-dim);align-self:center"></span>
       </div>
       <div style="font-size:0.6rem;color:var(--text-dim);margin-top:0.3em;line-height:1.6">
-        <strong>Format:</strong> Course import → <code>{ "courses": [...] }</code> with nested lessons (quiz, coding, flashcards).
+        <strong>Format:</strong> Same as Export format above. Course import → <code>{ "courses": [...] }</code> with nested lessons (quiz, coding, flashcards).
         Lesson import → <code>{ "lesson": { "id":"...", "title":"...", ... } }</code> with <code>course_id</code> in parent.
+        Uses <strong>merge mode</strong> — existing courses/lessons are updated, new ones added, items not in JSON preserved, progress and flashcard reviews kept.
       </div>
     </div>`;
   document.querySelector('.admin-box')?.closest('.admin-editor-panel')?.after(jsonArea);
@@ -1731,6 +1825,7 @@ function renderAdminFull(screen) {
 
     document.getElementById('jsonImportStatus').textContent = '⏳ Importing...';
     try {
+      parsed.mode = 'merge';
       const res = await fetch('/api/admin/import', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(parsed),

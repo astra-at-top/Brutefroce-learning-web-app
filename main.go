@@ -1,6 +1,8 @@
 package main
 
 import (
+	"bufio"
+	"context"
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/rand"
@@ -15,6 +17,7 @@ import (
 	"math"
 	"net/http"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -27,6 +30,9 @@ import (
 var webFS embed.FS
 
 var db *sql.DB
+
+var opencodeCmd *exec.Cmd
+var opencodePort = "4099"
 
 func main() {
 	port := os.Getenv("PORT")
@@ -61,18 +67,30 @@ func main() {
 	mux.HandleFunc("/api/sync/export", handleSyncExport)
 	mux.HandleFunc("/api/sync/import", handleSyncImport)
 
+	// AI endpoint
+	mux.HandleFunc("/api/ai/review", handleAIReview)
+
 	// Admin endpoints
 	mux.HandleFunc("/api/admin/courses", handleAdminCourses)
 	mux.HandleFunc("/api/admin/courses/", handleAdminCourseByID)
 	mux.HandleFunc("/api/admin/lessons", handleAdminLessons)
 	mux.HandleFunc("/api/admin/lessons/", handleAdminLessonByID)
 	mux.HandleFunc("/api/admin/import", handleAdminImport)
+	mux.HandleFunc("/api/admin/export", handleAdminExport)
 
 	subFS, _ := fs.Sub(webFS, "web")
 	mux.Handle("/", http.FileServer(http.FS(subFS)))
 
+	startOpencodeServe()
+
 	log.Printf("BruteForce Learning running on :%s (data: %s)", port, dataDir)
-	log.Fatal(http.ListenAndServe(":"+port, mux))
+	if err := http.ListenAndServe(":"+port, mux); err != nil {
+		log.Printf("server stopped: %v", err)
+	}
+	if opencodeCmd != nil && opencodeCmd.Process != nil {
+		opencodeCmd.Process.Kill()
+		opencodeCmd.Wait()
+	}
 }
 
 func initSchema() {
@@ -622,6 +640,101 @@ func handleAdminLessonByID(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func handleAdminExport(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "GET" {
+		jsonError(w, "method not allowed", 405)
+		return
+	}
+
+	type lessonExport struct {
+		ID         string                   `json:"id"`
+		Title      string                   `json:"title"`
+		Notes      string                   `json:"notes"`
+		Mnemonic   string                   `json:"mnemonic"`
+		Status     string                   `json:"status"`
+		Type       string                   `json:"type"`
+		Quiz       []map[string]interface{} `json:"quiz"`
+		Coding     map[string]interface{}   `json:"coding"`
+		Flashcards []map[string]string      `json:"flashcards"`
+	}
+	type courseExport struct {
+		ID       string         `json:"id"`
+		Name     string         `json:"name"`
+		ParentID string         `json:"parent_id"`
+		Lessons  []lessonExport `json:"lessons"`
+	}
+
+	rows, err := db.Query("SELECT id, name, parent_id, sort_order FROM courses ORDER BY sort_order")
+	if err != nil {
+		jsonError(w, err.Error(), 500)
+		return
+	}
+	defer rows.Close()
+
+	courseMap := map[string]*courseExport{}
+	var courseOrder []string
+	for rows.Next() {
+		var id, name, parentID string
+		var sort int
+		rows.Scan(&id, &name, &parentID, &sort)
+		courseMap[id] = &courseExport{ID: id, Name: name, ParentID: parentID}
+		courseOrder = append(courseOrder, id)
+	}
+
+	lRows, err := db.Query("SELECT id, title, notes, mnemonic, status, type, course_id, quiz_data, coding_data FROM lessons ORDER BY id")
+	if err != nil {
+		jsonError(w, err.Error(), 500)
+		return
+	}
+	defer lRows.Close()
+
+	type lessonRow struct {
+		ID, Title, Notes, Mnemonic, Status, Ltype, CourseID, QuizData, CodingData string
+	}
+	lessonMap := map[string][]lessonRow{}
+	for lRows.Next() {
+		var l lessonRow
+		lRows.Scan(&l.ID, &l.Title, &l.Notes, &l.Mnemonic, &l.Status, &l.Ltype, &l.CourseID, &l.QuizData, &l.CodingData)
+		lessonMap[l.CourseID] = append(lessonMap[l.CourseID], l)
+	}
+
+	fcRows, err := db.Query("SELECT lesson_id, front, back FROM flashcard_data ORDER BY id")
+	fcMap := map[string][]map[string]string{}
+	if err == nil {
+		defer fcRows.Close()
+		for fcRows.Next() {
+			var lessonID, front, back string
+			fcRows.Scan(&lessonID, &front, &back)
+			fcMap[lessonID] = append(fcMap[lessonID], map[string]string{"front": front, "back": back})
+		}
+	}
+
+	for _, cid := range courseOrder {
+		c := courseMap[cid]
+		for _, l := range lessonMap[cid] {
+			var quiz []map[string]interface{}
+			json.Unmarshal([]byte(l.QuizData), &quiz)
+			var coding map[string]interface{}
+			json.Unmarshal([]byte(l.CodingData), &coding)
+			fcs := fcMap[l.ID]
+			if fcs == nil {
+				fcs = []map[string]string{}
+			}
+			c.Lessons = append(c.Lessons, lessonExport{
+				ID: l.ID, Title: l.Title, Notes: l.Notes, Mnemonic: l.Mnemonic,
+				Status: l.Status, Type: l.Ltype, Quiz: quiz, Coding: coding, Flashcards: fcs,
+			})
+		}
+	}
+
+	courses := make([]courseExport, 0, len(courseOrder))
+	for _, cid := range courseOrder {
+		courses = append(courses, *courseMap[cid])
+	}
+
+	jsonResp(w, map[string]interface{}{"courses": courses})
+}
+
 func handleAdminImport(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "POST" {
 		jsonError(w, "method not allowed", 405)
@@ -635,7 +748,12 @@ func handleAdminImport(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Mode 1: Import full courses array (replaces all courses + lessons)
+	mode := "merge"
+	if m, ok := data["mode"].(string); ok {
+		mode = m
+	}
+
+	// Mode 1: Import full courses array (replaces or merges courses + lessons)
 	if coursesRaw, ok := data["courses"]; ok {
 		coursesList, ok := coursesRaw.([]interface{})
 		if !ok {
@@ -643,11 +761,12 @@ func handleAdminImport(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		// Wipe existing data
-		db.Exec("DELETE FROM flashcard_reviews")
-		db.Exec("DELETE FROM flashcard_data")
-		db.Exec("DELETE FROM lessons")
-		db.Exec("DELETE FROM courses")
+		if mode == "replace" {
+			db.Exec("DELETE FROM flashcard_reviews")
+			db.Exec("DELETE FROM flashcard_data")
+			db.Exec("DELETE FROM lessons")
+			db.Exec("DELETE FROM courses")
+		}
 
 		courseCount := 0
 		lessonCount := 0
@@ -668,7 +787,11 @@ func handleAdminImport(w http.ResponseWriter, r *http.Request) {
 				continue
 			}
 
-			db.Exec("INSERT INTO courses (id,name,parent_id,sort_order) VALUES (?,?,?,?)", id, name, parentID, sort)
+			if mode == "replace" {
+				db.Exec("INSERT INTO courses (id,name,parent_id,sort_order) VALUES (?,?,?,?)", id, name, parentID, sort)
+			} else {
+				db.Exec("INSERT INTO courses (id,name,parent_id,sort_order) VALUES (?,?,?,?) ON CONFLICT(id) DO UPDATE SET name=excluded.name, parent_id=excluded.parent_id, sort_order=excluded.sort_order", id, name, parentID, sort)
+			}
 			courseCount++
 
 			// Import lessons for this course
@@ -725,8 +848,15 @@ func handleAdminImport(w http.ResponseWriter, r *http.Request) {
 						quizCount = len(qArr)
 					}
 
-					db.Exec("INSERT INTO lessons (id,title,notes,mnemonic,status,type,course_id,progress,quiz_count,quiz_data,coding_data) VALUES (?,?,?,?,?,?,?,?,?,?,?)",
-						lid, title, notes, mnemonic, status, ltype, id, progress, quizCount, quizData, codingData)
+					if mode == "replace" {
+						db.Exec("DELETE FROM lessons WHERE id=?", lid)
+						db.Exec("INSERT INTO lessons (id,title,notes,mnemonic,status,type,course_id,progress,quiz_count,quiz_data,coding_data) VALUES (?,?,?,?,?,?,?,?,?,?,?)",
+							lid, title, notes, mnemonic, status, ltype, id, progress, quizCount, quizData, codingData)
+					} else {
+						db.Exec("DELETE FROM flashcard_data WHERE lesson_id=?", lid)
+						db.Exec("INSERT INTO lessons (id,title,notes,mnemonic,status,type,course_id,progress,quiz_count,quiz_data,coding_data) VALUES (?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET title=excluded.title, notes=excluded.notes, mnemonic=excluded.mnemonic, status=excluded.status, type=excluded.type, course_id=excluded.course_id, quiz_data=excluded.quiz_data, coding_data=excluded.coding_data, quiz_count=excluded.quiz_count",
+							lid, title, notes, mnemonic, status, ltype, id, progress, quizCount, quizData, codingData)
+					}
 					lessonCount++
 
 					// Flashcards
@@ -744,8 +874,10 @@ func handleAdminImport(w http.ResponseWriter, r *http.Request) {
 									continue
 								}
 								db.Exec("INSERT INTO flashcard_data (lesson_id,front,back) VALUES (?,?,?)", lid, front, back)
-								db.Exec("INSERT INTO flashcard_reviews (lesson_id,front,back,ease,interval_days,repetitions,next_review) VALUES (?,?,?,2.5,1,0,?)",
-									lid, front, back, time.Now().Format(time.RFC3339))
+								if mode == "replace" {
+									db.Exec("INSERT INTO flashcard_reviews (lesson_id,front,back,ease,interval_days,repetitions,next_review) VALUES (?,?,?,2.5,1,0,?)",
+										lid, front, back, time.Now().Format(time.RFC3339))
+								}
 							}
 						}
 					}
@@ -754,7 +886,7 @@ func handleAdminImport(w http.ResponseWriter, r *http.Request) {
 		}
 
 		jsonResp(w, map[string]interface{}{
-			"status": "ok", "courses_imported": courseCount, "lessons_imported": lessonCount,
+			"status": "ok", "mode": mode, "courses_imported": courseCount, "lessons_imported": lessonCount,
 		})
 		return
 	}
@@ -813,12 +945,21 @@ func handleAdminImport(w http.ResponseWriter, r *http.Request) {
 			quizCount = len(qArr)
 		}
 
-		db.Exec("DELETE FROM lessons WHERE id=?", lid)
-		db.Exec("DELETE FROM flashcard_data WHERE lesson_id=?", lid)
-		db.Exec("DELETE FROM flashcard_reviews WHERE lesson_id=?", lid)
+		if mode == "replace" {
+			db.Exec("DELETE FROM lessons WHERE id=?", lid)
+			db.Exec("DELETE FROM flashcard_data WHERE lesson_id=?", lid)
+			db.Exec("DELETE FROM flashcard_reviews WHERE lesson_id=?", lid)
+		} else {
+			db.Exec("DELETE FROM flashcard_data WHERE lesson_id=?", lid)
+		}
 
-		db.Exec("INSERT INTO lessons (id,title,notes,mnemonic,status,type,course_id,progress,quiz_count,quiz_data,coding_data) VALUES (?,?,?,?,?,?,?,?,?,?,?)",
-			lid, title, notes, mnemonic, status, ltype, courseID, progress, quizCount, quizData, codingData)
+		if mode == "replace" {
+			db.Exec("INSERT INTO lessons (id,title,notes,mnemonic,status,type,course_id,progress,quiz_count,quiz_data,coding_data) VALUES (?,?,?,?,?,?,?,?,?,?,?)",
+				lid, title, notes, mnemonic, status, ltype, courseID, progress, quizCount, quizData, codingData)
+		} else {
+			db.Exec("INSERT INTO lessons (id,title,notes,mnemonic,status,type,course_id,progress,quiz_count,quiz_data,coding_data) VALUES (?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET title=excluded.title, notes=excluded.notes, mnemonic=excluded.mnemonic, status=excluded.status, type=excluded.type, course_id=excluded.course_id, quiz_data=excluded.quiz_data, coding_data=excluded.coding_data, quiz_count=excluded.quiz_count",
+				lid, title, notes, mnemonic, status, ltype, courseID, progress, quizCount, quizData, codingData)
+		}
 
 		if fcRaw, ok := lesson["flashcards"]; ok {
 			fcList, ok := fcRaw.([]interface{})
@@ -834,8 +975,10 @@ func handleAdminImport(w http.ResponseWriter, r *http.Request) {
 						continue
 					}
 					db.Exec("INSERT INTO flashcard_data (lesson_id,front,back) VALUES (?,?,?)", lid, front, back)
-					db.Exec("INSERT INTO flashcard_reviews (lesson_id,front,back,ease,interval_days,repetitions,next_review) VALUES (?,?,?,2.5,1,0,?)",
-						lid, front, back, time.Now().Format(time.RFC3339))
+					if mode == "replace" {
+						db.Exec("INSERT INTO flashcard_reviews (lesson_id,front,back,ease,interval_days,repetitions,next_review) VALUES (?,?,?,2.5,1,0,?)",
+							lid, front, back, time.Now().Format(time.RFC3339))
+					}
 				}
 			}
 		}
@@ -1256,4 +1399,110 @@ func handleRunCode(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	jsonResp(w, map[string]string{"output": "Code received (sandbox execution on frontend)", "error": ""})
+}
+
+func startOpencodeServe() {
+	path, err := exec.LookPath("opencode")
+	if err != nil {
+		log.Println("AI review disabled: opencode not found in PATH")
+		return
+	}
+	opencodeCmd = exec.Command(path, "serve", "--port", opencodePort, "--hostname", "127.0.0.1")
+	opencodeCmd.Stderr = os.Stderr
+	if err := opencodeCmd.Start(); err != nil {
+		log.Printf("AI review disabled: opencode serve failed: %v", err)
+		opencodeCmd = nil
+		return
+	}
+	time.Sleep(3 * time.Second)
+	log.Printf("opencode serve running on 127.0.0.1:%s", opencodePort)
+}
+
+func handleAIReview(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "POST" {
+		jsonError(w, "method not allowed", 405)
+		return
+	}
+	if opencodeCmd == nil {
+		jsonError(w, "AI review unavailable: opencode not running", 503)
+		return
+	}
+
+	body, _ := io.ReadAll(r.Body)
+	var req struct {
+		Code     string `json:"code"`
+		Prompt   string `json:"prompt"`
+		Solution string `json:"solution"`
+	}
+	if err := json.Unmarshal(body, &req); err != nil {
+		jsonError(w, "invalid request", 400)
+		return
+	}
+	if req.Code == "" || req.Prompt == "" {
+		jsonError(w, "code and prompt are required", 400)
+		return
+	}
+
+	prompt := fmt.Sprintf(`You are a coding tutor. Review the student's code for this exercise.
+
+Exercise: %s
+
+Student's code:
+%s
+
+Expected solution:
+%s
+
+Give structured feedback:
+1. Correctness: Is the code correct? (Yes / Partial / No)
+2. What's good about their approach.
+3. What could be improved or fixed.
+4. A hint if they're stuck (don't give away the full answer).
+
+Keep it concise and encouraging.`, req.Prompt, req.Code, req.Solution)
+
+	ctx, cancel := context.WithTimeout(r.Context(), 60*time.Second)
+	defer cancel()
+
+	cmd := exec.CommandContext(ctx, "opencode", "run",
+		"--attach", "http://127.0.0.1:"+opencodePort,
+		"--model", "opencode/north-mini-code-free",
+		"--format", "json",
+		prompt,
+	)
+
+	stdout, err := cmd.StdoutPipe()
+	if err != nil {
+		jsonError(w, "failed to create pipe", 500)
+		return
+	}
+	if err := cmd.Start(); err != nil {
+		jsonError(w, "failed to run opencode", 500)
+		return
+	}
+
+	var reviewText strings.Builder
+	scanner := bufio.NewScanner(stdout)
+	for scanner.Scan() {
+		var event struct {
+			Type string `json:"type"`
+			Part struct {
+				Text string `json:"text"`
+			} `json:"part"`
+		}
+		if err := json.Unmarshal([]byte(scanner.Text()), &event); err != nil {
+			continue
+		}
+		if event.Type == "text" {
+			reviewText.WriteString(event.Part.Text)
+		}
+	}
+	cmd.Wait()
+
+	if reviewText.Len() == 0 {
+		jsonError(w, "AI review returned no response", 502)
+		return
+	}
+
+	jsonResp(w, map[string]string{"review": reviewText.String()})
 }
