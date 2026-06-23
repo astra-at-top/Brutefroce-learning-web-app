@@ -1,0 +1,1125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BruteForce Learning — Admin Spreadsheet Variants [7]</title>
+<style>
+:root {
+  --bg: #0d0d0f; --surface: #111318; --surface-alt: #161820;
+  --border: #2a2d3a; --border-dim: #1e2130;
+  --text: #c8ccd8; --text-muted: #5a5f72; --text-dim: #3f4252;
+  --purple: #9d7dea; --cyan: #4ec9b0; --yellow: #e5c07b;
+  --red: #e06c75; --green: #98c379; --blue: #61afef;
+  --font-mono: "JetBrains Mono","Fira Code","Cascadia Code","Hack","Courier New",monospace;
+}
+*::-webkit-scrollbar { display: none; }
+* { scrollbar-width: none; -ms-overflow-style: none; }
+html { font-size: clamp(12px, 1.6vh, 28px); }
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--text);
+  font-family: var(--font-mono); font-size: 1rem; line-height: 1.5;
+  height: 100vh; overflow: hidden;
+  display: flex; flex-direction: column;
+}
+#app { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+
+.title-bar {
+  background: #1a1d26; border-bottom: 1px solid var(--border);
+  padding: 0.55em 1em; display: flex; align-items: center;
+  font-size: 0.95rem; color: var(--text-muted); user-select: none; flex-shrink: 0;
+}
+.title-bar .tb-brand { color: var(--purple); font-weight: bold; }
+.title-bar .tb-sub { color: var(--text-dim); font-size: 0.85rem; margin-left: 0.5em; }
+.title-bar .tb-variant {
+  margin-left: auto; display: flex; gap: 0.2em;
+}
+.title-bar .tb-var-btn {
+  background: transparent; color: var(--text-dim); border: 1px solid var(--border);
+  font-family: var(--font-mono); font-size: 0.65rem; padding: 0.2em 0.4em;
+  cursor: pointer; text-transform: uppercase; letter-spacing: 0.04em;
+}
+.title-bar .tb-var-btn.active { color: var(--purple); border-color: var(--purple); font-weight: bold; }
+.title-bar .tb-var-btn:hover { border-color: var(--text-muted); color: var(--text); }
+
+.main-area { flex: 1; padding: 0.5em 1em; display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
+
+/* ===== Shared form elements ===== */
+.fld { margin-bottom: 0.6em; }
+.fld-label {
+  font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase;
+  letter-spacing: 0.08em; margin-bottom: 0.15em; display: block;
+}
+.fld-input {
+  width: 100%; background: var(--surface); border: 1px solid var(--border-dim);
+  color: var(--text); font-family: var(--font-mono); font-size: 0.8rem;
+  padding: 0.35em 0.5em; outline: none;
+}
+.fld-input:focus { border-color: var(--purple); }
+.fld-textarea {
+  width: 100%; background: var(--surface); border: 1px solid var(--border-dim);
+  color: var(--text); font-family: var(--font-mono); font-size: 0.8rem;
+  padding: 0.35em 0.5em; outline: none; min-height: 3em; resize: vertical;
+}
+.fld-textarea:focus { border-color: var(--purple); }
+
+.btn {
+  background: var(--purple); color: #fff; border: none;
+  font-family: var(--font-mono); font-size: 0.75rem; text-transform: uppercase;
+  letter-spacing: 0.06em; padding: 0.3em 0.6em; cursor: pointer; font-weight: bold;
+}
+.btn:hover { opacity: 0.85; }
+.btn-alt { background: transparent; color: var(--purple); border: 1px solid var(--purple); }
+.btn-sm { font-size: 0.65rem; padding: 0.2em 0.4em; }
+.btn-red { background: var(--red); border-color: var(--red); }
+.btn-green { background: var(--green); border-color: var(--green); color: #000; }
+.btn-grp { display: flex; gap: 0.3em; align-items: center; }
+.btn-gap { margin-right: 0.3em; }
+.btn-icon { background: none; border: none; color: var(--text-dim); cursor: pointer; font-size: 0.9rem; padding: 0.1em; }
+.btn-icon:hover { color: var(--text); }
+
+.tag {
+  display: inline-flex; align-items: center; gap: 0.2em;
+  font-size: 0.65rem; padding: 0.05em 0.3em;
+  border: 1px solid var(--border-dim); color: var(--text-muted);
+}
+.tag-x { cursor: pointer; color: var(--text-dim); font-size: 0.7rem; }
+.tag-x:hover { color: var(--red); }
+
+.status-badge {
+  font-size: 0.6rem; padding: 0.05em 0.3em; text-transform: uppercase;
+  letter-spacing: 0.05em; border: 1px solid;
+  display: inline-block; line-height: 1.3;
+}
+.sb-locked { color: var(--text-dim); border-color: var(--border-dim); }
+.sb-avail { color: var(--text-muted); border-color: var(--border-dim); }
+.sb-prog { color: var(--yellow); border-color: var(--yellow); }
+.sb-done { color: var(--green); border-color: var(--green); }
+
+.empty-state {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 2em; color: var(--text-dim); text-align: center;
+}
+.empty-state .empty-icon { font-size: 1.5rem; margin-bottom: 0.3em; }
+
+@keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0; } }
+@keyframes fadeSlide { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+.mount-anim { animation: fadeSlide 0.25s ease; }
+
+.keybind-bar {
+  border-top: 1px solid var(--border); padding: 0.45em 1em;
+  font-size: 0.85rem; display: flex; gap: 0.7em; flex-shrink: 0;
+}
+.kb-key { color: var(--text); font-weight: bold; }
+.kb-action { color: var(--text-muted); }
+
+.status-bar {
+  border-top: 1px solid var(--border); padding: 0.3em 1em;
+  font-size: 0.85rem; color: var(--text-dim); display: flex; align-items: center; gap: 0.3em; flex-shrink: 0;
+}
+.status-bar .prefix { color: var(--text-muted); }
+
+/* ========================================================================
+   V1: Detail Panel (table + editor panel)
+   ======================================================================== */
+.v1-split { display: flex; gap: 0.6em; flex: 1; min-height: 0; }
+.v1-table-panel { flex: 1.5; display: flex; flex-direction: column; min-width: 0; }
+.v1-editor-panel { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+
+.v1-box {
+  border: 1px solid var(--border); display: flex; flex-direction: column;
+  overflow: hidden; height: 100%;
+}
+.v1-box .v1-header {
+  padding: 0.3em 0.5em; font-size: 0.7rem; text-transform: uppercase;
+  letter-spacing: 0.08em; color: var(--text-muted);
+  border-bottom: 1px solid var(--border-dim); display: flex; justify-content: space-between; align-items: center;
+  flex-shrink: 0;
+}
+.v1-box .v1-body { flex: 1; overflow-y: auto; padding: 0; }
+
+.v1-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+.v1-table th {
+  padding: 0.25em 0.4em; text-align: left; font-weight: normal;
+  color: var(--text-muted); font-size: 0.65rem; text-transform: uppercase;
+  letter-spacing: 0.05em; border-bottom: 1px solid var(--border);
+  background: var(--surface); position: sticky; top: 0;
+}
+.v1-table td { padding: 0.2em 0.4em; border-bottom: 1px solid var(--border-dim); color: var(--text); }
+.v1-table tr { cursor: pointer; }
+.v1-table tr:hover td { background: #1a1d2e; }
+.v1-table tr.sel td { background: #2a1f5a; }
+.v1-table .v1-depth1 { padding-left: 1em; font-weight: bold; }
+.v1-table .v1-depth2 { padding-left: 2em; }
+
+.v1-editor-scroll { padding: 0.5em; overflow-y: auto; flex: 1; }
+.v1-editor-scroll .v1-ename { color: var(--yellow); font-weight: bold; font-size: 0.9rem; margin-bottom: 0.4em; }
+.v1-split.v7-split .v1-table-panel { flex: 1; }
+.v1-split.v7-split .v1-editor-panel { flex: 2; }
+
+/* ========================================================================
+   V2: Tabbed Content Grid
+   ======================================================================== */
+.v2-flex { display: flex; flex-direction: column; gap: 0.4em; flex: 1; min-height: 0; }
+.v2-table-wrap { flex: 0 0 auto; max-height: 50%; border: 1px solid var(--border); overflow-y: auto; }
+.v2-bottom { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+
+.v2-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+.v2-table th {
+  padding: 0.25em 0.4em; text-align: left; font-weight: normal;
+  color: var(--text-muted); font-size: 0.65rem; text-transform: uppercase;
+  letter-spacing: 0.05em; border-bottom: 1px solid var(--border);
+  background: var(--surface); position: sticky; top: 0;
+}
+.v2-table td { padding: 0.2em 0.4em; border-bottom: 1px solid var(--border-dim); color: var(--text); }
+.v2-table tr { cursor: pointer; }
+.v2-table tr:hover td { background: #1a1d2e; }
+.v2-table tr.sel td { background: #2a1f5a; }
+.v2-table .v2-depth1 { padding-left: 1em; font-weight: bold; }
+.v2-table .v2-depth2 { padding-left: 2em; }
+
+.v2-tabs {
+  display: flex; gap: 0; border-bottom: 1px solid var(--border-dim); flex-shrink: 0;
+}
+.v2-tab {
+  padding: 0.3em 0.8em; font-size: 0.75rem; color: var(--text-muted);
+  cursor: pointer; text-transform: uppercase; letter-spacing: 0.06em;
+  border-bottom: 2px solid transparent; user-select: none;
+}
+.v2-tab.active { color: var(--purple); border-bottom-color: var(--purple); font-weight: bold; }
+.v2-tab:hover { color: var(--text); background: #1a1d2e; }
+
+.v2-content { flex: 1; border: 1px solid var(--border); border-top: none; padding: 0.5em; overflow-y: auto; }
+
+/* ========================================================================
+   V3: Outliner (expand-in-place)
+   ======================================================================== */
+.v3-box { border: 1px solid var(--border); flex: 1; overflow-y: auto; }
+.v3-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+.v3-table th {
+  padding: 0.25em 0.4em; text-align: left; font-weight: normal;
+  color: var(--text-muted); font-size: 0.65rem; text-transform: uppercase;
+  letter-spacing: 0.05em; border-bottom: 1px solid var(--border);
+  background: var(--surface); position: sticky; top: 0;
+}
+.v3-table td { padding: 0.2em 0.4em; border-bottom: 1px solid var(--border-dim); color: var(--text); }
+.v3-table tr.v3-parent { cursor: pointer; }
+.v3-table tr.v3-parent:hover td { background: #1a1d2e; }
+.v3-table .v3-depth1 { padding-left: 1em; }
+.v3-table .v3-depth2 { padding-left: 2em; }
+
+.v3-expanded-row td { padding: 0; }
+.v3-expanded-content { border-bottom: 1px solid var(--border); }
+.v3-expanded-content .v3-ec-inner { padding: 0.6em; background: var(--surface-alt); }
+
+/* ========================================================================
+   V4: Batch Editor
+   ======================================================================== */
+.v4-flex { display: flex; flex-direction: column; gap: 0.4em; flex: 1; min-height: 0; }
+
+.v4-batch-bar {
+  display: flex; align-items: center; gap: 0.4em; padding: 0.3em 0.4em;
+  border: 1px solid var(--border); flex-shrink: 0;
+  transition: all 0.2s;
+}
+.v4-batch-bar.idle { border-color: var(--border-dim); }
+.v4-batch-bar.active { border-color: var(--yellow); background: #2a2a1a; }
+.v4-batch-bar .v4-bb-count { color: var(--yellow); font-weight: bold; font-size: 0.8rem; min-width: 12ch; }
+.v4-batch-bar .v4-bb-label { color: var(--text-muted); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; }
+
+.v4-table-wrap { flex: 1; border: 1px solid var(--border); overflow-y: auto; }
+.v4-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+.v4-table th {
+  padding: 0.25em 0.4em; text-align: left; font-weight: normal;
+  color: var(--text-muted); font-size: 0.65rem; text-transform: uppercase;
+  letter-spacing: 0.05em; border-bottom: 1px solid var(--border);
+  background: var(--surface); position: sticky; top: 0;
+}
+.v4-table td { padding: 0.2em 0.4em; border-bottom: 1px solid var(--border-dim); color: var(--text); }
+.v4-table tr { cursor: pointer; }
+.v4-table tr:hover td { background: #1a1d2e; }
+.v4-table tr.sel td { background: #2a1f5a; }
+.v4-table tr.v4-checked td { background: #1a2a1a; }
+.v4-table .v4-depth1 { padding-left: 1em; font-weight: bold; }
+.v4-table .v4-depth2 { padding-left: 2em; }
+
+/* ========================================================================
+   V5: Kanban View
+   ======================================================================== */
+.v5-flex { display: flex; gap: 0.5em; flex: 1; min-height: 0; }
+.v5-col {
+  flex: 1; display: flex; flex-direction: column;
+  border: 1px solid var(--border); min-width: 0;
+}
+.v5-col-header {
+  padding: 0.35em 0.5em; font-size: 0.75rem; text-transform: uppercase;
+  letter-spacing: 0.07em; display: flex; align-items: center; gap: 0.3em;
+  border-bottom: 2px solid var(--border-dim); flex-shrink: 0;
+}
+.v5-col-header .v5-ch-count {
+  margin-left: auto; color: var(--text-dim); font-size: 0.7rem;
+}
+.v5-col.todo .v5-col-header { border-bottom-color: var(--text-dim); }
+.v5-col.prog .v5-col-header { border-bottom-color: var(--yellow); }
+.v5-col.done .v5-col-header { border-bottom-color: var(--green); }
+
+.v5-cards {
+  flex: 1; overflow-y: auto; padding: 0.3em;
+  display: flex; flex-direction: column; gap: 0.3em;
+}
+.v5-card {
+  border: 1px solid var(--border-dim); padding: 0.4em;
+  cursor: grab; font-size: 0.8rem; user-select: none;
+}
+.v5-card:hover { background: #1a1d2e; border-color: var(--border); }
+.v5-card .v5c-name { color: var(--text); font-weight: bold; }
+.v5-card .v5c-meta { display: flex; gap: 0.3em; margin-top: 0.2em; font-size: 0.65rem; color: var(--text-dim); }
+.v5-card.done-card .v5c-name { color: var(--green); }
+
+/* ========================================================================
+   V6: Wizard / Stepper
+   ======================================================================== */
+.v6-flex { display: flex; flex-direction: column; gap: 0.5em; flex: 1; min-height: 0; }
+
+.v6-steps {
+  display: flex; align-items: center; gap: 0; padding: 0.5em 0; flex-shrink: 0;
+}
+.v6-step {
+  display: flex; align-items: center; gap: 0.4em; flex: 1;
+}
+.v6-step .v6-s-num {
+  width: 1.6em; height: 1.6em; display: flex; align-items: center; justify-content: center;
+  border: 1px solid var(--border-dim); font-size: 0.75rem; color: var(--text-dim);
+  flex-shrink: 0;
+}
+.v6-step.active .v6-s-num { border-color: var(--purple); color: var(--purple); font-weight: bold; }
+.v6-step.done .v6-s-num { border-color: var(--green); color: var(--green); }
+.v6-step .v6-s-label { font-size: 0.7rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.05em; }
+.v6-step.active .v6-s-label { color: var(--text); font-weight: bold; }
+.v6-step.done .v6-s-label { color: var(--green); }
+.v6-step .v6-s-line { flex: 1; height: 1px; background: var(--border-dim); margin: 0 0.4em; }
+.v6-step.done .v6-s-line { background: var(--green); }
+
+.v6-body { flex: 1; border: 1px solid var(--border); padding: 0.6em; overflow-y: auto; }
+.v6-body .v6-title { font-size: 0.9rem; font-weight: bold; color: var(--yellow); margin-bottom: 0.5em; }
+
+.v6-footer {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 0.3em 0; border-top: 1px solid var(--border-dim); flex-shrink: 0;
+}
+.v6-footer .v6-fpos { font-size: 0.75rem; color: var(--text-dim); }
+
+/* ===== Proto Switcher ===== */
+.proto-switcher {
+  position: fixed; bottom: 3.5em; left: 50%; transform: translateX(-50%);
+  display: flex; align-items: center; gap: 0.8em;
+  background: #1a1d26; border: 1px solid var(--purple);
+  padding: 0.35em 0.8em; z-index: 999;
+  font-size: 0.85rem; user-select: none;
+}
+.proto-switcher .ps-arrow { cursor: pointer; color: var(--text-muted); font-size: 1.1rem; padding: 0.05em 0.2em; }
+.proto-switcher .ps-arrow:hover { color: var(--purple); }
+.proto-switcher .ps-label { color: var(--purple); font-weight: bold; letter-spacing: 0.05em; text-transform: uppercase; min-width: 20ch; text-align: center; }
+.proto-switcher .ps-note { color: var(--text-dim); font-size: 0.75rem; }
+.proto-switcher .ps-dots { display: flex; gap: 0.3em; }
+.proto-switcher .ps-dot { width: 0.45em; height: 0.45em; background: var(--text-dim); border: 1px solid var(--border); }
+.proto-switcher .ps-dot.active { background: var(--purple); border-color: var(--purple); }
+
+/* ===== Selection highlight ===== */
+.v4-checkbox { width: 1em; height: 1em; accent-color: var(--purple); cursor: pointer; }
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="title-bar">
+    <span class="tb-brand">BF Learning</span>
+    <span class="tb-sub">Admin — Spreadsheet Variants [6]</span>
+    <div class="tb-variant" id="varTabs"></div>
+  </div>
+
+  <div class="main-area" id="mainArea">
+    <div id="content" style="flex:1;display:flex;flex-direction:column;min-height:0"></div>
+  </div>
+
+  <div class="keybind-bar">
+    <span class="kb-key">←</span><span class="kb-action">/</span><span class="kb-key">→</span><span class="kb-action"> variant</span>
+  </div>
+  <div class="status-bar">
+    <span class="prefix">›</span> <span id="statusLabel">Detail Panel (table + editor)</span>
+  </div>
+</div>
+
+<div class="proto-switcher" id="protoSwitcher"></div>
+
+<script>
+// =====================================================================
+// DATA
+// =====================================================================
+let TREE = [
+  { id: 'react', name: 'React', type: 'course',
+    children: [
+      { id: 'js-basics', name: 'JS Basics', type: 'course',
+        children: [
+          { id: 'vars-types', name: 'Variables & Types', type: 'lesson', status: 'done', notes: 'Variables store data. JS has let, const, var.', mnemonic: 'SNOB NUN', quiz: 3, coding: 1, flashcards: 2 },
+          { id: 'functions-scope', name: 'Functions & Scope', type: 'lesson', status: 'done', notes: 'Functions are reusable blocks.', mnemonic: 'GLB', quiz: 2, coding: 1, flashcards: 1 },
+          { id: 'arrays-objects', name: 'Arrays & Objects', type: 'lesson', status: 'in_progress', notes: 'Arrays store ordered collections.', mnemonic: '', quiz: 1, coding: 1, flashcards: 0 },
+          { id: 'closures', name: 'Closures', type: 'lesson', status: 'available', notes: 'Function remembers outer variables.', mnemonic: 'Backpack', quiz: 1, coding: 1, flashcards: 1 },
+        ] },
+      { id: 'usestate', name: 'useState', type: 'course',
+        children: [
+          { id: 'what-is-state', name: 'What is state?', type: 'lesson', status: 'locked', notes: '', mnemonic: '', quiz: 0, coding: 0, flashcards: 1 },
+          { id: 'counter', name: 'Counter exercise', type: 'coding', status: 'locked', notes: '', mnemonic: '', quiz: 0, coding: 1, flashcards: 0 },
+        ] },
+    ] },
+  { id: 'js', name: 'JavaScript', type: 'course',
+    children: [
+      { id: 'js-vars', name: 'Variables & Types', type: 'lesson', status: 'done', notes: '', mnemonic: '', quiz: 1, coding: 0, flashcards: 1 },
+      { id: 'js-funcs', name: 'Functions & Scope', type: 'lesson', status: 'done', notes: '', mnemonic: '', quiz: 1, coding: 1, flashcards: 0 },
+      { id: 'js-closures', name: 'Closures', type: 'lesson', status: 'in_progress', notes: '', mnemonic: '', quiz: 1, coding: 1, flashcards: 1 },
+    ] },
+];
+let nextId = 100;
+function genId() { return 'node-' + (nextId++); }
+
+function getAllNodes(nodes) {
+  let list = [];
+  for (const n of nodes) { list.push(n); if (n.children) list = list.concat(getAllNodes(n.children)); }
+  return list;
+}
+function findNode(id, nodes) {
+  if (!nodes) nodes = TREE;
+  for (const n of nodes) { if (n.id === id) return n; if (n.children) { const f = findNode(id, n.children); if (f) return f; } }
+  return null;
+}
+function findParent(id, nodes, parent) {
+  if (!nodes) nodes = TREE;
+  for (const n of nodes) { if (n.id === id) return parent; if (n.children) { const f = findParent(id, n.children, n); if (f) return f; } }
+  return null;
+}
+function isLeaf(n) { return !n.children || !n.children.length; }
+function countLeaf(n) { if (!n.children) return 1; return n.children.reduce((s, c) => s + countLeaf(c), 0); }
+function statusColor(s) { return s === 'locked' ? 'var(--text-dim)' : s === 'available' ? 'var(--text-muted)' : s === 'in_progress' ? 'var(--yellow)' : s === 'done' ? 'var(--green)' : 'var(--text-dim)'; }
+function statusBadge(s) {
+  if (!s) return '';
+  const cls = s === 'locked' ? 'sb-locked' : s === 'available' ? 'sb-avail' : s === 'in_progress' ? 'sb-prog' : s === 'done' ? 'sb-done' : 'sb-locked';
+  return '<span class="status-badge ' + cls + '">' + s.replace('_',' ') + '</span>';
+}
+
+// =====================================================================
+// STATE
+// =====================================================================
+const VARIANTS = [
+  { id: 'v1', label: 'Detail Panel', desc: 'Detail Panel — table + editor side-by-side' },
+  { id: 'v2', label: 'Tabbed Grid', desc: 'Tabbed Content Grid — table top, content tabs below' },
+  { id: 'v3', label: 'Outliner', desc: 'Outliner — expand rows inline to edit' },
+  { id: 'v4', label: 'Batch Edit', desc: 'Batch Editor — multi-select rows, batch actions' },
+  { id: 'v5', label: 'Kanban', desc: 'Kanban View — drag cards between status columns' },
+  { id: 'v6', label: 'Wizard', desc: 'Wizard / Stepper — step-by-step lesson creation' },
+  { id: 'v7', label: 'Table + Wizard', desc: 'Table + Wizard — table left, step editor right' },
+];
+let activeVariant = 'v1';
+let selNodeId = 'vars-types';
+
+function getParam(k) { return new URLSearchParams(window.location.search).get(k); }
+function setParam(k,v) { const u=new URL(window.location); u.searchParams.set(k,v); window.history.replaceState({},'',u); }
+function getVariant() { return (getParam('v') || 'v1').toLowerCase(); }
+function setVariant(v) { setParam('v', v); activeVariant = v; render(); }
+
+// =====================================================================
+// V1: Detail Panel
+// =====================================================================
+function renderV1() {
+  const all = getAllNodes(TREE);
+  let html = '<div class="v1-split mount-anim">';
+
+  // Table
+  html += '<div class="v1-table-panel"><div class="v1-box">';
+  html += '<div class="v1-header"><span>All Items</span><div><button class="btn btn-sm" onclick="v1Add()">+ Add</button></div></div>';
+  html += '<div class="v1-body"><table class="v1-table">';
+  html += '<tr><th>Name</th><th>Type</th><th>Status</th></tr>';
+  for (const n of all) {
+    const depth = n.children ? 1 : 2;
+    const sel = n.id === selNodeId ? ' sel' : '';
+    html += '<tr class="' + sel + '" onclick="v1Select(\'' + n.id + '\')">';
+    const d = 'v1-depth' + Math.min(depth, 2);
+    html += '<td class="' + d + '">' + n.name + '</td>';
+    html += '<td>' + (n.type || '—') + '</td>';
+    html += '<td>' + statusBadge(n.status) + '</td>';
+    html += '</tr>';
+  }
+  html += '</table></div></div></div>';
+
+  // Editor
+  const node = findNode(selNodeId);
+  html += '<div class="v1-editor-panel"><div class="v1-box">';
+  html += '<div class="v1-header"><span>' + (node ? node.name : 'Select') + '</span><div class="btn-grp">';
+  html += '<button class="btn btn-sm" onclick="v1Save()">💾</button>';
+  if (node) html += '<button class="btn btn-sm btn-red" onclick="v1Delete(\'' + node.id + '\')">✕</button>';
+  html += '</div></div>';
+  html += '<div class="v1-editor-scroll">';
+  if (node) {
+    html += '<div class="v1-ename">' + node.name + '</div>';
+    html += '<div class="fld"><label class="fld-label">Name</label><input class="fld-input" id="v1eName" value="' + node.name + '"></div>';
+    html += '<div class="fld"><label class="fld-label">Type</label><select class="fld-input" id="v1eType"><option value="course"' + (node.type==='course'?' selected':'') + '>Course</option><option value="lesson"' + (node.type==='lesson'?' selected':'') + '>Lesson</option><option value="coding"' + (node.type==='coding'?' selected':'') + '>Coding</option></select></div>';
+    if (isLeaf(node)) {
+      html += '<div class="fld"><label class="fld-label">Status</label><select class="fld-input" id="v1eStatus"><option value="locked"' + (node.status==='locked'?' selected':'') + '>Locked</option><option value="available"' + (node.status==='available'?' selected':'') + '>Available</option><option value="in_progress"' + (node.status==='in_progress'?' selected':'') + '>In Progress</option><option value="done"' + (node.status==='done'?' selected':'') + '>Done</option></select></div>';
+      html += '<div class="fld"><label class="fld-label">Notes</label><textarea class="fld-textarea" id="v1eNotes" style="min-height:3em">' + (node.notes || '') + '</textarea></div>';
+      html += '<div class="fld"><label class="fld-label">Mnemonic</label><input class="fld-input" id="v1eMnemonic" value="' + (node.mnemonic || '') + '"></div>';
+      html += '<div style="display:flex;gap:0.3em">';
+      html += '<div class="fld" style="flex:1"><label class="fld-label">Quiz</label><input class="fld-input" id="v1eQuiz" type="number" value="' + (node.quiz || 0) + '"></div>';
+      html += '<div class="fld" style="flex:1"><label class="fld-label">Coding</label><input class="fld-input" id="v1eCoding" type="number" value="' + (node.coding || 0) + '"></div>';
+      html += '<div class="fld" style="flex:1"><label class="fld-label">Cards</label><input class="fld-input" id="v1eFlashcards" type="number" value="' + (node.flashcards || 0) + '"></div>';
+      html += '</div>';
+    } else {
+      const kids = node.children || [];
+      html += '<div style="font-size:0.75rem;color:var(--text-dim)">' + kids.length + ' children · <button class="btn btn-sm" onclick="v1AddChild(\'' + node.id + '\')">+ Add child</button></div>';
+    }
+  } else {
+    html += '<div class="empty-state"><div class="empty-icon">◈</div><div class="empty-text">Select an item from the table</div></div>';
+  }
+  html += '</div></div></div></div>';
+
+  return html;
+}
+function v1Select(id) { selNodeId = id; render(); }
+function v1Add() {
+  const id = genId();
+  TREE.push({ id, name: 'New Item', type: 'lesson', status: 'locked', notes: '', mnemonic: '', quiz: 0, coding: 0, flashcards: 0 });
+  selNodeId = id; render();
+}
+function v1AddChild(pid) {
+  const p = findNode(pid); if (!p) return;
+  if (!p.children) p.children = [];
+  const id = genId();
+  p.children.push({ id, name: 'New Child', type: 'lesson', status: 'locked', notes: '', mnemonic: '', quiz: 0, coding: 0, flashcards: 0 });
+  selNodeId = id; render();
+}
+function v1Delete(id) {
+  if (!confirm('Delete?')) return;
+  const p = findParent(id); if (p) p.children = p.children.filter(c => c.id !== id); else TREE = TREE.filter(c => c.id !== id);
+  selNodeId = TREE[0] ? TREE[0].id : null; render();
+}
+function v1Save() {
+  const n = findNode(selNodeId); if (!n) return;
+  const name = document.getElementById('v1eName'); if (name) n.name = name.value;
+  const type = document.getElementById('v1eType'); if (type) n.type = type.value;
+  const status = document.getElementById('v1eStatus'); if (status) n.status = status.value;
+  const notes = document.getElementById('v1eNotes'); if (notes) n.notes = notes.value;
+  const mnemonic = document.getElementById('v1eMnemonic'); if (mnemonic) n.mnemonic = mnemonic.value;
+  const quiz = document.getElementById('v1eQuiz'); if (quiz) n.quiz = parseInt(quiz.value) || 0;
+  const coding = document.getElementById('v1eCoding'); if (coding) n.coding = parseInt(coding.value) || 0;
+  const flashcards = document.getElementById('v1eFlashcards'); if (flashcards) n.flashcards = parseInt(flashcards.value) || 0;
+}
+
+// =====================================================================
+// V2: Tabbed Content Grid
+// =====================================================================
+let v2Tab = 'notes';
+function renderV2() {
+  const all = getAllNodes(TREE);
+  let html = '<div class="v2-flex mount-anim">';
+
+  // Table top
+  html += '<div class="v2-table-wrap"><table class="v2-table">';
+  html += '<tr><th>Name</th><th>Type</th><th>Status</th><th style="width:6em"></th></tr>';
+  for (const n of all) {
+    const depth = n.children ? 1 : 2;
+    const sel = n.id === selNodeId ? ' sel' : '';
+    html += '<tr class="' + sel + '" onclick="v2Select(\'' + n.id + '\')">';
+    const d = 'v2-depth' + Math.min(depth, 2);
+    html += '<td class="' + d + '">' + n.name + '</td>';
+    html += '<td>' + (n.type || '—') + '</td>';
+    html += '<td>' + statusBadge(n.status) + '</td>';
+    html += '<td><span class="btn btn-sm" onclick="event.stopPropagation();v2Edit(\'' + n.id + '\')">✎</span></td>';
+    html += '</tr>';
+  }
+  html += '</table></div>';
+
+  // Bottom tabs
+  html += '<div class="v2-bottom">';
+  html += '<div class="v2-tabs">';
+  const tabs = ['notes','quiz','coding','flashcards'];
+  for (const t of tabs) {
+    html += '<div class="v2-tab' + (v2Tab === t ? ' active' : '') + '" onclick="v2SetTab(\'' + t + '\')">' + t + '</div>';
+  }
+  html += '</div>';
+
+  const node = findNode(selNodeId);
+  html += '<div class="v2-content">';
+  if (node && isLeaf(node)) {
+    if (v2Tab === 'notes') {
+      html += '<div class="fld"><textarea class="fld-textarea" placeholder="Write lesson notes..." style="min-height:6em">' + (node.notes || '') + '</textarea></div>';
+      html += '<div class="fld"><label class="fld-label">Mnemonic</label><input class="fld-input" value="' + (node.mnemonic || '') + '"></div>';
+    } else if (v2Tab === 'quiz') {
+      for (let i = 0; i < (node.quiz || 2); i++) {
+        html += '<div class="v1-ename" style="font-size:0.8rem;margin-bottom:0.2em">Q' + (i+1) + '</div>';
+        html += '<div class="fld"><input class="fld-input" placeholder="Question" value="Sample question ' + (i+1) + '"></div>';
+        html += '<div style="display:flex;gap:0.3em">';
+        html += '<input class="fld-input" style="flex:1" placeholder="A"><input class="fld-input" style="flex:1" placeholder="B">';
+        html += '<input class="fld-input" style="flex:1" placeholder="C"><input class="fld-input" style="flex:1" placeholder="D">';
+        html += '</div>';
+        if (i < node.quiz - 1) html += '<hr style="border-color:var(--border-dim);margin:0.4em 0">';
+      }
+      html += '<button class="btn btn-sm btn-alt" style="margin-top:0.3em">+ Add Question</button>';
+    } else if (v2Tab === 'coding') {
+      html += '<div class="fld"><label class="fld-label">Prompt</label><textarea class="fld-textarea" style="min-height:3em"></textarea></div>';
+      html += '<div class="fld"><label class="fld-label">Starter</label><textarea class="fld-textarea" style="min-height:3em;font-family:var(--font-mono)"></textarea></div>';
+      html += '<div class="fld"><label class="fld-label">Solution</label><textarea class="fld-textarea" style="min-height:3em;font-family:var(--font-mono)"></textarea></div>';
+    } else if (v2Tab === 'flashcards') {
+      for (let i = 0; i < (node.flashcards || 2); i++) {
+        html += '<div class="v1-ename" style="font-size:0.8rem;margin-bottom:0.2em">Card ' + (i+1) + '</div>';
+        html += '<div class="fld"><input class="fld-input" placeholder="Front" value="Sample front ' + (i+1) + '"></div>';
+        html += '<div class="fld"><textarea class="fld-textarea" placeholder="Back" style="min-height:2em">Sample back ' + (i+1) + '</textarea></div>';
+        if (i < node.flashcards - 1) html += '<hr style="border-color:var(--border-dim);margin:0.4em 0">';
+      }
+      html += '<button class="btn btn-sm btn-alt" style="margin-top:0.3em">+ Add Card</button>';
+    }
+  } else if (node) {
+    html += '<div style="color:var(--text-dim);font-size:0.85rem">Course overview — click a lesson to edit its content</div>';
+  } else {
+    html += '<div class="empty-state"><div class="empty-text">Select a lesson from the table</div></div>';
+  }
+  html += '</div></div></div>';
+
+  return html;
+}
+function v2Select(id) { selNodeId = id; render(); }
+function v2SetTab(t) { v2Tab = t; render(); }
+function v2Edit(id) { selNodeId = id; render(); }
+
+// =====================================================================
+// V3: Outliner (expand-in-place)
+// =====================================================================
+let v3Expanded = {};
+function renderV3() {
+  let html = '<div class="v3-box mount-anim"><table class="v3-table">';
+  html += '<tr><th style="width:40%">Name</th><th style="width:12%">Type</th><th style="width:14%">Status</th><th style="width:8%">Quiz</th><th style="width:8%">Code</th><th style="width:8%">Cards</th><th style="width:10%"></th></tr>';
+  html += v3RenderRows(TREE, 0, false);
+  html += '</table></div>';
+  html += '<div style="flex-shrink:0;padding:0.3em 0;display:flex;gap:0.3em">';
+  html += '<button class="btn btn-sm" onclick="v3AddRoot()">+ Add</button>';
+  html += '</div>';
+  return html;
+}
+
+function v3RenderRows(nodes, depth, parentExpanded) {
+  let html = '';
+  for (const n of nodes) {
+    const hasKids = n.children && n.children.length > 0;
+    const expanded = v3Expanded[n.id];
+    html += '<tr class="v3-parent" onclick="v3Toggle(\'' + n.id + '\')">';
+    const d = 'v3-depth' + Math.min(depth, 2);
+    html += '<td class="' + d + '">' + (hasKids ? (expanded ? '▼ ' : '▶ ') : '') + n.name + '</td>';
+    html += '<td>' + (n.type || '—') + '</td>';
+    html += '<td>' + statusBadge(n.status) + '</td>';
+    html += '<td>' + (isLeaf(n) ? (n.quiz || 0) : '—') + '</td>';
+    html += '<td>' + (isLeaf(n) ? (n.coding || 0) : '—') + '</td>';
+    html += '<td>' + (isLeaf(n) ? (n.flashcards || 0) : '—') + '</td>';
+    html += '<td><div class="btn-grp"><span class="btn-icon" onclick="event.stopPropagation();v3AddChild(\'' + n.id + '\')" title="Add child">+</span><span class="btn-icon" onclick="event.stopPropagation();v3Del(\'' + n.id + '\')" title="Delete">✕</span></div></td>';
+    html += '</tr>';
+
+    if (expanded) {
+      html += '<tr class="v3-expanded-row"><td colspan="7"><div class="v3-expanded-content"><div class="v3-ec-inner">';
+      html += '<div style="display:flex;gap:0.4em;flex-wrap:wrap;align-items:end">';
+      html += '<div class="fld" style="flex:2;margin:0"><label class="fld-label">Name</label><input class="fld-input" id="v3eName_' + n.id + '" value="' + n.name + '"></div>';
+      html += '<div class="fld" style="flex:1;margin:0"><label class="fld-label">Type</label><select class="fld-input" id="v3eType_' + n.id + '"><option value="course"' + (n.type==='course'?' selected':'') + '>Course</option><option value="lesson"' + (n.type==='lesson'?' selected':'') + '>Lesson</option><option value="coding"' + (n.type==='coding'?' selected':'') + '>Coding</option></select></div>';
+      html += '<div class="fld" style="flex:1;margin:0"><label class="fld-label">Status</label><select class="fld-input" id="v3eStatus_' + n.id + '"><option value="locked"' + (n.status==='locked'?' selected':'') + '>Locked</option><option value="available"' + (n.status==='available'?' selected':'') + '>Available</option><option value="in_progress"' + (n.status==='in_progress'?' selected':'') + '>In Progress</option><option value="done"' + (n.status==='done'?' selected':'') + '>Done</option></select></div>';
+      html += '<div class="btn-grp"><button class="btn btn-sm btn-green" onclick="v3Save(\'' + n.id + '\')">Save</button></div>';
+      html += '</div>';
+      if (isLeaf(n)) {
+        html += '<div style="display:flex;gap:0.4em;margin-top:0.3em">';
+        html += '<div class="fld" style="flex:2;margin:0"><label class="fld-label">Notes</label><textarea class="fld-textarea" id="v3eNotes_' + n.id + '" style="min-height:2em">' + (n.notes || '') + '</textarea></div>';
+        html += '<div class="fld" style="flex:1;margin:0"><label class="fld-label">Mnemonic</label><input class="fld-input" id="v3eMnemonic_' + n.id + '" value="' + (n.mnemonic || '') + '"></div>';
+        html += '</div>';
+      }
+      html += '</div></div></td></tr>';
+
+      if (hasKids && expanded) {
+        html += v3RenderRows(n.children, depth + 1, true);
+      }
+    }
+  }
+  return html;
+}
+
+function v3Toggle(id) { v3Expanded[id] = !v3Expanded[id]; render(); }
+function v3AddRoot() {
+  const id = genId();
+  TREE.push({ id, name: 'New', type: 'lesson', status: 'locked', notes: '', mnemonic: '', quiz: 0, coding: 0, flashcards: 0 });
+  v3Expanded[id] = true; render();
+}
+function v3AddChild(pid) {
+  const p = findNode(pid); if (!p) return;
+  if (!p.children) p.children = [];
+  const id = genId();
+  p.children.push({ id, name: 'New', type: 'lesson', status: 'locked', notes: '', mnemonic: '', quiz: 0, coding: 0, flashcards: 0 });
+  v3Expanded[id] = true; v3Expanded[pid] = true; render();
+}
+function v3Del(id) {
+  if (!confirm('Delete?')) return;
+  const p = findParent(id); if (p) p.children = p.children.filter(c => c.id !== id); else TREE = TREE.filter(c => c.id !== id);
+  render();
+}
+function v3Save(id) {
+  const n = findNode(id); if (!n) return;
+  const name = document.getElementById('v3eName_' + id); if (name) n.name = name.value;
+  const type = document.getElementById('v3eType_' + id); if (type) n.type = type.value;
+  const status = document.getElementById('v3eStatus_' + id); if (status) n.status = status.value;
+  const notes = document.getElementById('v3eNotes_' + id); if (notes) n.notes = notes.value;
+  const mnemonic = document.getElementById('v3eMnemonic_' + id); if (mnemonic) n.mnemonic = mnemonic.value;
+}
+
+// =====================================================================
+// V4: Batch Editor
+// =====================================================================
+let v4Checked = {};
+let v4LastSel = null;
+
+function renderV4() {
+  const all = getAllNodes(TREE);
+  const checkedCount = Object.keys(v4Checked).filter(k => v4Checked[k]).length;
+
+  let html = '<div class="v4-flex mount-anim">';
+
+  // Batch action bar
+  const barCls = checkedCount > 0 ? 'active' : 'idle';
+  html += '<div class="v4-batch-bar ' + barCls + '">';
+  html += '<span class="v4-bb-count">' + (checkedCount > 0 ? checkedCount + ' selected' : 'No selection') + '</span>';
+  if (checkedCount > 0) {
+    html += '<span class="v4-bb-label">Set status:</span>';
+    html += '<button class="btn btn-sm" onclick="v4BatchStatus(\'locked\')">Locked</button>';
+    html += '<button class="btn btn-sm" onclick="v4BatchStatus(\'available\')">Available</button>';
+    html += '<button class="btn btn-sm" onclick="v4BatchStatus(\'in_progress\')">In Progress</button>';
+    html += '<button class="btn btn-sm btn-green" onclick="v4BatchStatus(\'done\')">Done</button>';
+    html += '<span class="v4-bb-label" style="margin-left:0.4em">Type:</span>';
+    html += '<button class="btn btn-sm" onclick="v4BatchType(\'lesson\')">Lesson</button>';
+    html += '<button class="btn btn-sm" onclick="v4BatchType(\'coding\')">Coding</button>';
+    html += '<span style="flex:1"></span>';
+    html += '<button class="btn btn-sm btn-red" onclick="v4BatchDelete()">Delete</button>';
+    html += '<button class="btn btn-sm btn-alt" onclick="v4Clear()">Clear</button>';
+  }
+  html += '</div>';
+
+  // Table
+  html += '<div class="v4-table-wrap"><table class="v4-table">';
+  html += '<tr><th style="width:2em"><input type="checkbox" class="v4-checkbox" onchange="v4ToggleAll(this.checked)"></th><th>Name</th><th>Type</th><th>Status</th><th>Quiz</th><th>Code</th><th>Cards</th></tr>';
+  for (const n of all) {
+    const depth = n.children ? 1 : 2;
+    const checked = v4Checked[n.id] ? ' v4-checked' : '';
+    html += '<tr class="' + checked + '" onclick="v4RowClick(event, \'' + n.id + '\')">';
+    html += '<td><input type="checkbox" class="v4-checkbox" ' + (v4Checked[n.id] ? 'checked' : '') + ' onchange="event.stopPropagation();v4Toggle(\'' + n.id + '\', this.checked)"></td>';
+    const d = 'v4-depth' + Math.min(depth, 2);
+    html += '<td class="' + d + '">' + n.name + '</td>';
+    html += '<td>' + (n.type || '—') + '</td>';
+    html += '<td>' + statusBadge(n.status) + '</td>';
+    html += '<td>' + (isLeaf(n) ? (n.quiz || 0) : '—') + '</td>';
+    html += '<td>' + (isLeaf(n) ? (n.coding || 0) : '—') + '</td>';
+    html += '<td>' + (isLeaf(n) ? (n.flashcards || 0) : '—') + '</td>';
+    html += '</tr>';
+  }
+  html += '</table></div>';
+
+  // Add button
+  html += '<div style="flex-shrink:0"><button class="btn btn-sm" onclick="v4Add()">+ Add Lesson</button></div>';
+
+  html += '</div>';
+  return html;
+}
+
+function v4Toggle(id, checked) { v4Checked[id] = checked; render(); }
+function v4ToggleAll(checked) {
+  const all = getAllNodes(TREE);
+  for (const n of all) v4Checked[n.id] = checked;
+  render();
+}
+function v4Clear() { v4Checked = {}; render(); }
+function v4RowClick(ev, id) {
+  // Click on row toggles checkbox
+  if (ev.target.tagName === 'INPUT') return;
+  v4Checked[id] = !v4Checked[id];
+  render();
+}
+function v4Add() {
+  const id = genId();
+  TREE.push({ id, name: 'New Lesson', type: 'lesson', status: 'locked', notes: '', mnemonic: '', quiz: 0, coding: 0, flashcards: 0 });
+  v4Checked[id] = true;
+  render();
+}
+function v4BatchStatus(status) {
+  for (const id of Object.keys(v4Checked)) {
+    if (v4Checked[id]) { const n = findNode(id); if (n) n.status = status; }
+  }
+  render();
+}
+function v4BatchType(type) {
+  for (const id of Object.keys(v4Checked)) {
+    if (v4Checked[id]) { const n = findNode(id); if (n && isLeaf(n)) n.type = type; }
+  }
+  render();
+}
+function v4BatchDelete() {
+  if (!confirm('Delete ' + Object.keys(v4Checked).filter(k=>v4Checked[k]).length + ' items?')) return;
+  const ids = Object.keys(v4Checked).filter(k => v4Checked[k]);
+  for (const id of ids) {
+    const p = findParent(id);
+    if (p) p.children = p.children.filter(c => c.id !== id);
+    else TREE = TREE.filter(c => c.id !== id);
+  }
+  v4Checked = {};
+  render();
+}
+
+// =====================================================================
+// V5: Kanban View
+// =====================================================================
+function renderV5() {
+  const cols = { locked: [], available: [], in_progress: [], done: [] };
+  function walk(n) {
+    if (isLeaf(n)) {
+      if (cols[n.status]) cols[n.status].push(n);
+      else cols.locked.push(n);
+    }
+    if (n.children) n.children.forEach(c => walk(c));
+  }
+  TREE.forEach(c => walk(c));
+
+  const colMeta = {
+    locked: { label: 'To Do', cls: 'todo' },
+    available: { label: 'Ready', cls: 'todo' },
+    in_progress: { label: 'In Progress', cls: 'prog' },
+    done: { label: 'Done', cls: 'done' },
+  };
+
+  let html = '<div class="v5-flex mount-anim">';
+  for (const [key, meta] of Object.entries(colMeta)) {
+    const items = cols[key] || [];
+    html += '<div class="v5-col ' + meta.cls + '">';
+    html += '<div class="v5-col-header"><span>' + meta.label + '</span><span class="v5-ch-count">' + items.length + '</span></div>';
+    html += '<div class="v5-cards">';
+    for (const item of items) {
+      const doneCls = key === 'done' ? ' done-card' : '';
+      html += '<div class="v5-card' + doneCls + '" draggable="true" data-id="' + item.id + '">';
+      html += '<div class="v5c-name">' + item.name + '</div>';
+      html += '<div class="v5c-meta"><span>' + (item.type || '') + '</span>';
+      html += '<span>' + (item.quiz || 0) + 'Q</span>';
+      html += '<span>' + (item.coding || 0) + 'C</span>';
+      html += '<span>' + (item.flashcards || 0) + 'F</span>';
+      html += '</div></div>';
+    }
+    html += '</div></div>';
+  }
+  html += '</div>';
+  return html;
+}
+
+// =====================================================================
+// V6: Wizard / Stepper
+// =====================================================================
+let v6Step = 1;
+let v6Wizard = { name: '', type: 'lesson', status: 'locked', notes: '', mnemonic: '', quiz: [], coding: { prompt: '', starter: '', solution: '' }, flashcards: [] };
+
+function renderV6() {
+  let html = '<div class="v6-flex mount-anim">';
+
+  // Steps
+  const steps = ['Info', 'Notes', 'Quiz', 'Coding', 'Flashcards'];
+  html += '<div class="v6-steps">';
+  for (let i = 0; i < steps.length; i++) {
+    const num = i + 1;
+    const cls = num === v6Step ? 'active' : num < v6Step ? 'done' : '';
+    html += '<div class="v6-step ' + cls + '">';
+    html += '<span class="v6-s-num">' + (num < v6Step ? '✓' : num) + '</span>';
+    html += '<span class="v6-s-label">' + steps[i] + '</span>';
+    if (i < steps.length - 1) html += '<span class="v6-s-line"></span>';
+    html += '</div>';
+  }
+  html += '</div>';
+
+  // Body
+  html += '<div class="v6-body">';
+  if (v6Step === 1) {
+    html += '<div class="v6-title">Step 1: Basic Info</div>';
+    html += '<div class="fld"><label class="fld-label">Lesson Name</label><input class="fld-input" id="v6Name" value="' + v6Wizard.name + '" placeholder="e.g. Variables & Types"></div>';
+    html += '<div style="display:flex;gap:0.5em">';
+    html += '<div class="fld" style="flex:1"><label class="fld-label">Type</label><select class="fld-input" id="v6Type"><option value="lesson"' + (v6Wizard.type==='lesson'?' selected':'') + '>Lesson</option><option value="coding"' + (v6Wizard.type==='coding'?' selected':'') + '>Coding Exercise</option></select></div>';
+    html += '<div class="fld" style="flex:1"><label class="fld-label">Status</label><select class="fld-input" id="v6Status"><option value="locked"' + (v6Wizard.status==='locked'?' selected':'') + '>Locked</option><option value="available"' + (v6Wizard.status==='available'?' selected':'') + '>Available</option><option value="in_progress"' + (v6Wizard.status==='in_progress'?' selected':'') + '>In Progress</option><option value="done"' + (v6Wizard.status==='done'?' selected':'') + '>Done</option></select></div>';
+    html += '</div>';
+  } else if (v6Step === 2) {
+    html += '<div class="v6-title">Step 2: Notes & Mnemonic</div>';
+    html += '<div class="fld"><label class="fld-label">Lesson Notes</label><textarea class="fld-textarea" id="v6Notes" placeholder="Write in simple language..." style="min-height:6em">' + v6Wizard.notes + '</textarea></div>';
+    html += '<div class="fld"><label class="fld-label">Memory Hook / Mnemonic</label><input class="fld-input" id="v6Mnemonic" placeholder="e.g. SNOB NUN" value="' + v6Wizard.mnemonic + '"></div>';
+    html += '<div style="color:var(--text-dim);font-size:0.75rem;padding:0.3em 0">💡 Good mnemonics are short, weird, and visual.</div>';
+  } else if (v6Step === 3) {
+    html += '<div class="v6-title">Step 3: Quiz Questions</div>';
+    html += '<div style="font-size:0.75rem;color:var(--text-dim);margin-bottom:0.5em">' + v6Wizard.quiz.length + ' questions added so far.</div>';
+    for (let i = 0; i < v6Wizard.quiz.length; i++) {
+      const q = v6Wizard.quiz[i];
+      html += '<div class="a2-card" style="border:1px solid var(--border-dim);padding:0.4em;margin-bottom:0.3em">';
+      html += '<div class="fld" style="margin:0"><input class="fld-input" placeholder="Question" value="' + (q.q || '') + '"></div>';
+      html += '<div style="display:flex;gap:0.2em;margin-top:0.2em">';
+      for (let j = 0; j < 4; j++) {
+        html += '<input class="fld-input" style="flex:1;font-size:0.75rem" placeholder="Option ' + (j+1) + '" value="' + (q.opts ? q.opts[j] || '' : '') + '">';
+      }
+      html += '</div></div>';
+    }
+    html += '<button class="btn btn-sm btn-alt" onclick="v6AddQuiz()">+ Add Question</button>';
+  } else if (v6Step === 4) {
+    html += '<div class="v6-title">Step 4: Coding Exercise</div>';
+    html += '<div class="fld"><label class="fld-label">Prompt</label><textarea class="fld-textarea" id="v6CodingPrompt" placeholder="Describe the challenge..." style="min-height:3em">' + v6Wizard.coding.prompt + '</textarea></div>';
+    html += '<div class="fld"><label class="fld-label">Starter Code</label><textarea class="fld-textarea" id="v6CodingStarter" placeholder="// starter code" style="min-height:4em;font-family:var(--font-mono)">' + v6Wizard.coding.starter + '</textarea></div>';
+    html += '<div class="fld"><label class="fld-label">Solution</label><textarea class="fld-textarea" id="v6CodingSolution" placeholder="// solution" style="min-height:4em;font-family:var(--font-mono)">' + v6Wizard.coding.solution + '</textarea></div>';
+  } else if (v6Step === 5) {
+    html += '<div class="v6-title">Step 5: Flashcards</div>';
+    html += '<div style="font-size:0.75rem;color:var(--text-dim);margin-bottom:0.5em">' + v6Wizard.flashcards.length + ' cards added.</div>';
+    for (let i = 0; i < v6Wizard.flashcards.length; i++) {
+      const c = v6Wizard.flashcards[i];
+      html += '<div class="a2-card" style="border:1px solid var(--border-dim);padding:0.4em;margin-bottom:0.3em">';
+      html += '<div class="fld" style="margin:0"><input class="fld-input" placeholder="Front (question)" value="' + (c.front || '') + '"></div>';
+      html += '<div class="fld" style="margin:0;margin-top:0.2em"><textarea class="fld-textarea" placeholder="Back (answer)" style="min-height:2em">' + (c.back || '') + '</textarea></div>';
+      html += '</div>';
+    }
+    html += '<button class="btn btn-sm btn-alt" onclick="v6AddFlashcard()">+ Add Card</button>';
+  }
+  html += '</div>';
+
+  // Footer
+  html += '<div class="v6-footer">';
+  html += '<div><button class="btn btn-sm" onclick="v6Prev()" ' + (v6Step <= 1 ? 'disabled style="opacity:0.3"' : '') + '>◀ Back</button></div>';
+  html += '<span class="v6-fpos">Step ' + v6Step + ' of 5</span>';
+  html += '<div><button class="btn btn-sm" onclick="v6Next()" ' + (v6Step >= 5 ? 'disabled style="opacity:0.3"' : '') + '>Next ▶</button>';
+  html += '</div></div></div>';
+
+  return html;
+}
+
+function v6AddQuiz() { v6Wizard.quiz.push({ q: '', opts: ['','','',''], correct: 0 }); render(); }
+function v6AddFlashcard() { v6Wizard.flashcards.push({ front: '', back: '' }); render(); }
+function v6Next() { if (v6Step < 5) { v6SaveStep(); v6Step++; render(); } }
+function v6Prev() { if (v6Step > 1) { v6SaveStep(); v6Step--; render(); } }
+function v6SaveStep() {
+  const nameEl = document.getElementById('v6Name'); if (nameEl) v6Wizard.name = nameEl.value;
+  const typeEl = document.getElementById('v6Type'); if (typeEl) v6Wizard.type = typeEl.value;
+  const statusEl = document.getElementById('v6Status'); if (statusEl) v6Wizard.status = statusEl.value;
+  const notesEl = document.getElementById('v6Notes'); if (notesEl) v6Wizard.notes = notesEl.value;
+  const mnemonicEl = document.getElementById('v6Mnemonic'); if (mnemonicEl) v6Wizard.mnemonic = mnemonicEl.value;
+  const promptEl = document.getElementById('v6CodingPrompt'); if (promptEl) v6Wizard.coding.prompt = promptEl.value;
+  const starterEl = document.getElementById('v6CodingStarter'); if (starterEl) v6Wizard.coding.starter = starterEl.value;
+  const solutionEl = document.getElementById('v6CodingSolution'); if (solutionEl) v6Wizard.coding.solution = solutionEl.value;
+}
+
+// =====================================================================
+// V7: Table + Wizard (combination of V1 layout + V6 stepper)
+// =====================================================================
+let v7Step = 1;
+
+function renderV7() {
+  const all = getAllNodes(TREE);
+  let html = '<div class="v1-split v7-split mount-anim">';
+
+  // Left: table (same as V1)
+  html += '<div class="v1-table-panel"><div class="v1-box">';
+  html += '<div class="v1-header"><span>All Items</span><div><button class="btn btn-sm" onclick="v7Add()">+ Add</button></div></div>';
+  html += '<div class="v1-body"><table class="v1-table">';
+  html += '<tr><th>Name</th><th>Type</th><th>Status</th></tr>';
+  for (const n of all) {
+    const depth = n.children ? 1 : 2;
+    const sel = n.id === selNodeId ? ' sel' : '';
+    html += '<tr class="' + sel + '" onclick="v7Select(\'' + n.id + '\')">';
+    const d = 'v1-depth' + Math.min(depth, 2);
+    html += '<td class="' + d + '">' + n.name + '</td>';
+    html += '<td>' + (n.type || '—') + '</td>';
+    html += '<td>' + statusBadge(n.status) + '</td>';
+    html += '</tr>';
+  }
+  html += '</table></div></div></div>';
+
+  // Right: wizard editor
+  html += '<div class="v1-editor-panel"><div class="v1-box">';
+  const node = findNode(selNodeId);
+  if (node) {
+    html += '<div class="v1-header"><span class="v1-ename" style="margin:0;font-size:0.8rem">' + node.name + '</span><div class="btn-grp">';
+    html += '<button class="btn btn-sm btn-green" onclick="v7Save()">💾 Save</button>';
+    html += '<button class="btn btn-sm btn-red" onclick="v7Delete(\'' + node.id + '\')">✕</button>';
+    html += '</div></div>';
+
+    if (isLeaf(node)) {
+      // Steps bar
+      const steps = ['Info', 'Notes', 'Quiz', 'Coding', 'Flashcards'];
+      html += '<div style="padding:0.4em 0.5em;border-bottom:1px solid var(--border-dim);flex-shrink:0">';
+      html += '<div class="v6-steps" style="padding:0">';
+      for (let i = 0; i < steps.length; i++) {
+        const num = i + 1;
+        const cls = num === v7Step ? 'active' : num < v7Step ? 'done' : '';
+        html += '<div class="v6-step ' + cls + '">';
+        html += '<span class="v6-s-num">' + (num < v7Step ? '✓' : num) + '</span>';
+        html += '<span class="v6-s-label">' + steps[i] + '</span>';
+        if (i < steps.length - 1) html += '<span class="v6-s-line"></span>';
+        html += '</div>';
+      }
+      html += '</div></div>';
+
+      // Step content
+      html += '<div class="v1-editor-scroll">';
+
+      if (v7Step === 1) {
+        html += '<div class="v1-ename" style="font-size:0.85rem">Step 1: Basic Info</div>';
+        html += '<div class="fld"><label class="fld-label">Lesson Name</label><input class="fld-input" id="v7Name" value="' + node.name + '"></div>';
+        html += '<div style="display:flex;gap:0.5em">';
+        html += '<div class="fld" style="flex:1"><label class="fld-label">Type</label><select class="fld-input" id="v7Type"><option value="lesson"' + (node.type==='lesson'?' selected':'') + '>Lesson</option><option value="coding"' + (node.type==='coding'?' selected':'') + '>Coding</option></select></div>';
+        html += '<div class="fld" style="flex:1"><label class="fld-label">Status</label><select class="fld-input" id="v7Status"><option value="locked"' + (node.status==='locked'?' selected':'') + '>Locked</option><option value="available"' + (node.status==='available'?' selected':'') + '>Available</option><option value="in_progress"' + (node.status==='in_progress'?' selected':'') + '>In Progress</option><option value="done"' + (node.status==='done'?' selected':'') + '>Done</option></select></div>';
+        html += '</div>';
+        html += '<div class="fld"><label class="fld-label">Course</label><input class="fld-input" placeholder="Parent course" value="' + (findParent(node.id) || {name:''}).name + '" disabled style="opacity:0.5"></div>';
+      } else if (v7Step === 2) {
+        html += '<div class="v1-ename" style="font-size:0.85rem">Step 2: Notes & Mnemonic</div>';
+        html += '<div class="fld"><label class="fld-label">Lesson Notes</label><textarea class="fld-textarea" id="v7Notes" style="min-height:8em">' + (node.notes || '') + '</textarea></div>';
+        html += '<div class="fld"><label class="fld-label">Memory Hook / Mnemonic</label><input class="fld-input" id="v7Mnemonic" placeholder="e.g. SNOB NUN" value="' + (node.mnemonic || '') + '"></div>';
+        html += '<div style="color:var(--text-dim);font-size:0.7rem;padding:0.2em 0">💡 Short, weird, visual — that\u2019s how mnemonics stick.</div>';
+      } else if (v7Step === 3) {
+        html += '<div class="v1-ename" style="font-size:0.85rem">Step 3: Quiz Questions <span style="color:var(--text-dim);font-weight:normal;font-size:0.75rem">(' + (node.quiz || 0) + ' questions)</span></div>';
+        for (let i = 0; i < (node.quiz || 2); i++) {
+          html += '<div class="a2-card" style="border:1px solid var(--border-dim);padding:0.4em;margin-bottom:0.3em">';
+          html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.2em">';
+          html += '<span style="font-size:0.75rem;color:var(--text-muted)">Q' + (i+1) + '</span>';
+          html += '<span class="btn-icon" onclick="v7RemoveQuiz(' + i + ')" style="font-size:0.7rem;color:var(--red)">✕</span>';
+          html += '</div>';
+          html += '<div class="fld" style="margin:0"><input class="fld-input" placeholder="Question" value="Sample question ' + (i+1) + '" id="v7q_q_' + i + '"></div>';
+          html += '<div style="display:flex;gap:0.2em;margin-top:0.2em">';
+          for (let j = 0; j < 4; j++) {
+            html += '<input class="fld-input" style="flex:1;font-size:0.7rem" placeholder="Opt ' + String.fromCharCode(65+j) + '" id="v7q_o' + j + '_' + i + '">';
+          }
+          html += '</div></div>';
+        }
+        html += '<button class="btn btn-sm btn-alt" onclick="v7AddQuiz()">+ Add Question</button>';
+      } else if (v7Step === 4) {
+        html += '<div class="v1-ename" style="font-size:0.85rem">Step 4: Coding Exercise</div>';
+        html += '<div class="fld"><label class="fld-label">Prompt / Description</label><textarea class="fld-textarea" id="v7CodingPrompt" style="min-height:3em"></textarea></div>';
+        html += '<div class="fld"><label class="fld-label">Starter Code</label><textarea class="fld-textarea" id="v7CodingStarter" style="min-height:4em;font-family:var(--font-mono)"></textarea></div>';
+        html += '<div class="fld"><label class="fld-label">Solution</label><textarea class="fld-textarea" id="v7CodingSolution" style="min-height:4em;font-family:var(--font-mono)"></textarea></div>';
+      } else if (v7Step === 5) {
+        html += '<div class="v1-ename" style="font-size:0.85rem">Step 5: Flashcards <span style="color:var(--text-dim);font-weight:normal;font-size:0.75rem">(' + (node.flashcards || 0) + ' cards)</span></div>';
+        for (let i = 0; i < (node.flashcards || 2); i++) {
+          html += '<div class="a2-card" style="border:1px solid var(--border-dim);padding:0.4em;margin-bottom:0.3em">';
+          html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.2em">';
+          html += '<span style="font-size:0.75rem;color:var(--text-muted)">Card ' + (i+1) + '</span>';
+          html += '<span class="btn-icon" onclick="v7RemoveFlashcard(' + i + ')" style="font-size:0.7rem;color:var(--red)">✕</span>';
+          html += '</div>';
+          html += '<div class="fld" style="margin:0"><input class="fld-input" placeholder="Front (question)" id="v7f_f_' + i + '"></div>';
+          html += '<div class="fld" style="margin:0;margin-top:0.15em"><textarea class="fld-textarea" placeholder="Back (answer)" id="v7f_b_' + i + '" style="min-height:2em"></textarea></div>';
+          html += '</div>';
+        }
+        html += '<button class="btn btn-sm btn-alt" onclick="v7AddFlashcard()">+ Add Card</button>';
+      }
+
+      html += '</div>'; // scroll
+
+      // Footer nav
+      html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:0.3em 0.5em;border-top:1px solid var(--border-dim);flex-shrink:0;background:var(--surface)">';
+      html += '<button class="btn btn-sm" onclick="v7Prev()" ' + (v7Step <= 1 ? 'disabled style="opacity:0.3"' : '') + '>◀ Back</button>';
+      html += '<span style="font-size:0.75rem;color:var(--text-dim)">Step ' + v7Step + ' / 5</span>';
+      html += '<button class="btn btn-sm" onclick="v7Next()" ' + (v7Step >= 5 ? 'disabled style="opacity:0.3"' : '') + '>Next ▶</button>';
+      html += '</div>';
+
+    } else {
+      // Course node — not a leaf
+      html += '<div class="v1-header"><span class="v1-ename" style="margin:0;font-size:0.8rem">' + node.name + '</span></div>';
+      html += '<div class="v1-editor-scroll">';
+      html += '<div style="color:var(--text-dim);font-size:0.85rem;padding:0.5em">Course node — select a leaf lesson from the table to edit its content with the wizard.</div>';
+      html += '<div style="color:var(--text-muted);font-size:0.8rem">Children: ' + (node.children ? node.children.length : 0) + '</div>';
+      html += '</div>';
+    }
+  } else {
+    html += '<div class="v1-header"><span>Select an item</span></div>';
+    html += '<div class="v1-editor-scroll"><div class="empty-state"><div class="empty-icon">◈</div><div class="empty-text">Select a lesson from the table to edit</div></div></div>';
+  }
+  html += '</div></div></div>';
+
+  return html;
+}
+
+function v7Select(id) { selNodeId = id; v7Step = 1; render(); }
+function v7Prev() { if (v7Step > 1) { v7Step--; render(); } }
+function v7Next() { if (v7Step < 5) { v7Step++; render(); } }
+function v7Add() {
+  const id = genId();
+  TREE.push({ id, name: 'New Lesson', type: 'lesson', status: 'locked', notes: '', mnemonic: '', quiz: 0, coding: 0, flashcards: 0 });
+  selNodeId = id; v7Step = 1; render();
+}
+function v7Delete(id) {
+  if (!confirm('Delete?')) return;
+  const p = findParent(id); if (p) p.children = p.children.filter(c => c.id !== id); else TREE = TREE.filter(c => c.id !== id);
+  selNodeId = TREE[0] ? TREE[0].id : null; render();
+}
+function v7Save() {
+  const n = findNode(selNodeId); if (!n) return;
+  const name = document.getElementById('v7Name'); if (name) n.name = name.value;
+  const type = document.getElementById('v7Type'); if (type) n.type = type.value;
+  const status = document.getElementById('v7Status'); if (status) n.status = status.value;
+  const notes = document.getElementById('v7Notes'); if (notes) n.notes = notes.value;
+  const mnemonic = document.getElementById('v7Mnemonic'); if (mnemonic) n.mnemonic = mnemonic.value;
+}
+function v7AddQuiz() { const n = findNode(selNodeId); if (n) n.quiz = (n.quiz || 0) + 1; render(); }
+function v7RemoveQuiz(idx) { const n = findNode(selNodeId); if (n && n.quiz > 0) n.quiz--; render(); }
+function v7AddFlashcard() { const n = findNode(selNodeId); if (n) n.flashcards = (n.flashcards || 0) + 1; render(); }
+function v7RemoveFlashcard(idx) { const n = findNode(selNodeId); if (n && n.flashcards > 0) n.flashcards--; render(); }
+
+// =====================================================================
+// MAIN RENDER
+// =====================================================================
+function render() {
+  const content = document.getElementById('content');
+  switch (activeVariant) {
+    case 'v1': content.innerHTML = renderV1(); break;
+    case 'v2': content.innerHTML = renderV2(); break;
+    case 'v3': content.innerHTML = renderV3(); break;
+    case 'v4': content.innerHTML = renderV4(); break;
+    case 'v5': content.innerHTML = renderV5(); break;
+    case 'v6': content.innerHTML = renderV6(); break;
+    case 'v7': content.innerHTML = renderV7(); break;
+    default: content.innerHTML = renderV1();
+  }
+  renderSwitcher();
+  document.getElementById('statusLabel').textContent = VARIANTS.find(v => v.id === activeVariant).desc;
+}
+
+function renderSwitcher() {
+  const bar = document.getElementById('protoSwitcher');
+  bar.innerHTML = `
+    <span class="ps-arrow" onclick="cycleVar(-1)">◀</span>
+    <span class="ps-dots">${VARIANTS.map(k => `<span class="ps-dot${k.id === activeVariant ? ' active' : ''}"></span>`).join('')}</span>
+    <span class="ps-label">${VARIANTS.find(v => v.id === activeVariant).label}</span>
+    <span class="ps-arrow" onclick="cycleVar(1)">▶</span>
+    <span class="ps-note">←/→</span>`;
+}
+
+window.cycleVar = function(dir) {
+  const idx = VARIANTS.findIndex(v => v.id === activeVariant);
+  const next = VARIANTS[(idx + dir + VARIANTS.length) % VARIANTS.length].id;
+  setVariant(next);
+};
+
+// Keyboard
+document.addEventListener('keydown', (e) => {
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable) return;
+  if (e.key === 'ArrowLeft') cycleVar(-1);
+  if (e.key === 'ArrowRight') cycleVar(1);
+});
+
+// Expose functions to global
+window.v1Select = v1Select; window.v1Add = v1Add; window.v1AddChild = v1AddChild; window.v1Delete = v1Delete; window.v1Save = v1Save;
+window.v2Select = v2Select; window.v2SetTab = v2SetTab; window.v2Edit = v2Edit;
+window.v3Toggle = v3Toggle; window.v3AddRoot = v3AddRoot; window.v3AddChild = v3AddChild; window.v3Del = v3Del; window.v3Save = v3Save;
+window.v4Toggle = v4Toggle; window.v4ToggleAll = v4ToggleAll; window.v4Clear = v4Clear; window.v4RowClick = v4RowClick;
+window.v4Add = v4Add; window.v4BatchStatus = v4BatchStatus; window.v4BatchType = v4BatchType; window.v4BatchDelete = v4BatchDelete;
+window.v6AddQuiz = v6AddQuiz; window.v6AddFlashcard = v6AddFlashcard; window.v6Next = v6Next; window.v6Prev = v6Prev;
+window.v7Select = v7Select; window.v7Prev = v7Prev; window.v7Next = v7Next;
+window.v7Add = v7Add; window.v7Delete = v7Delete; window.v7Save = v7Save;
+window.v7AddQuiz = v7AddQuiz; window.v7RemoveQuiz = v7RemoveQuiz;
+window.v7AddFlashcard = v7AddFlashcard; window.v7RemoveFlashcard = v7RemoveFlashcard;
+
+// Init
+activeVariant = getVariant();
+render();
+</script>
+</body>
+</html>

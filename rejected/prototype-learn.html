@@ -1,0 +1,1056 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BruteForce Learning — Learn Screen Prototype</title>
+<style>
+:root {
+  --bg: #0d0d0f; --surface: #111318; --surface-alt: #161820;
+  --border: #2a2d3a; --border-dim: #1e2130;
+  --text: #c8ccd8; --text-muted: #5a5f72; --text-dim: #3f4252;
+  --purple: #9d7dea; --cyan: #4ec9b0; --yellow: #e5c07b;
+  --red: #e06c75; --green: #98c379; --blue: #61afef;
+  --font-mono: "JetBrains Mono","Fira Code","Cascadia Code","Hack","Courier New",monospace;
+  --font-display: "Share Tech Mono","Courier New",monospace;
+}
+*::-webkit-scrollbar { display: none; }
+* { scrollbar-width: none; -ms-overflow-style: none; }
+html { font-size: clamp(12px, 1.6vh, 28px); }
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--text);
+  font-family: var(--font-mono); font-size: 1rem; line-height: 1.5;
+  height: 100vh; margin: 0; padding: 0; overflow: hidden;
+  display: flex; flex-direction: column;
+}
+#app {
+  flex: 1; display: flex; flex-direction: column; min-height: 0;
+  width: 100%; margin: 0 auto;
+}
+#app.layout-wide { max-width: none; }
+#app.layout-narrow { max-width: min(86rem, 1100px); }
+
+.title-bar {
+  background: #1a1d26; border-bottom: 1px solid var(--border);
+  padding: 0.55em 1em; display: flex; align-items: center; justify-content: center;
+  font-size: 0.95rem; color: var(--text-muted); user-select: none; flex-shrink: 0;
+  position: relative;
+}
+.title-bar .tb-center { margin: 0 auto; }
+.title-bar .tb-toggle {
+  position: absolute; right: 1em; top: 50%; transform: translateY(-50%);
+  cursor: pointer; font-size: 0.8rem; letter-spacing: 0.08em;
+  background: var(--purple); color: #fff; border: none; padding: 0.35em 0.7em;
+  font-family: var(--font-mono); text-transform: uppercase; font-weight: bold;
+  line-height: 1;
+}
+
+.header-bar {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 0.5em 1.2em; border: 1px solid var(--purple);
+  margin: 0.7em 1em 0; flex-shrink: 0;
+}
+.h-l { color: var(--text-muted); font-size: 0.95rem; }
+.h-y { color: var(--yellow); font-weight: bold; }
+.h-g { color: var(--green); }
+.h-p { color: var(--purple); font-weight: bold; }
+.h-s { color: var(--text-dim); }
+.h-stat { display: flex; align-items: baseline; gap: 0.3em; font-size: 0.95rem; }
+
+.main-area {
+  flex: 1; display: flex; flex-direction: column;
+  padding: 0.5em 1em; gap: 0.8em; overflow-y: auto; min-height: 0;
+}
+.screen-tabs {
+  display: flex; gap: 0; border-bottom: 1px solid var(--border-dim);
+  flex-shrink: 0;
+}
+.screen-tab {
+  padding: 0.35em 1em; font-size: 0.95rem; color: var(--text-muted);
+  cursor: pointer; user-select: none; text-transform: uppercase;
+  letter-spacing: 0.06em; border-bottom: 2px solid transparent;
+}
+.screen-tab.active { color: var(--purple); border-bottom-color: var(--purple); font-weight: bold; }
+.screen-tab:hover { color: var(--text); background: #1a1d2e; }
+.screen-content {
+  flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 1em;
+}
+
+.panel {
+  border: 1px solid var(--border); position: relative;
+  padding: 0.8em; margin-bottom: 0;
+}
+.panel-title {
+  position: absolute; top: -0.9em; left: 0.8em; background: var(--bg);
+  padding: 0 0.6em; color: var(--purple); font-weight: bold;
+  font-size: 0.9rem; letter-spacing: 0.08em; text-transform: uppercase;
+  line-height: 1.3;
+}
+.panel-body { padding: 0; }
+
+.keybind-bar {
+  border-top: 1px solid var(--border); padding: 0.45em 1em;
+  font-size: 0.85rem; display: flex; gap: 0.7em; flex-wrap: wrap; flex-shrink: 0;
+}
+.kb-key { color: var(--text); font-weight: bold; }
+.kb-action { color: var(--text-muted); }
+.kb-pos { color: var(--text-muted); margin-right: auto; }
+
+.status-bar {
+  border-top: 1px solid var(--border); padding: 0.3em 1em;
+  font-size: 0.85rem; color: var(--text-dim); display: flex; align-items: center; gap: 0.3em;
+  flex-shrink: 0;
+}
+.status-bar .prefix { color: var(--text-muted); }
+
+@keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0; } }
+
+/* ===== Status icons ===== */
+.si-locked { color: var(--text-dim); }
+.si-available { color: var(--text-muted); }
+.si-progress { color: var(--yellow); }
+.si-done { color: var(--green); }
+
+/* ===== Prototype Switcher ===== */
+.prototype-switcher {
+  position: fixed; bottom: 3.5em; left: 50%; transform: translateX(-50%);
+  display: flex; align-items: center; gap: 1em;
+  background: #1a1d26; border: 1px solid var(--purple);
+  padding: 0.4em 1em; z-index: 999;
+  font-size: 0.9rem; user-select: none;
+}
+.prototype-switcher .ps-arrow {
+  cursor: pointer; color: var(--text-muted); font-size: 1.2rem; line-height: 1;
+  padding: 0.1em 0.3em;
+}
+.prototype-switcher .ps-arrow:hover { color: var(--purple); }
+.prototype-switcher .ps-label {
+  color: var(--purple); font-weight: bold; letter-spacing: 0.06em; text-transform: uppercase;
+  min-width: 20ch; text-align: center;
+}
+.prototype-switcher .ps-note { color: var(--text-dim); font-size: 0.8rem; }
+.prototype-switcher .ps-dots { display: flex; gap: 0.4em; }
+.prototype-switcher .ps-dot {
+  width: 0.5em; height: 0.5em; border-radius: 0;
+  background: var(--text-dim); border: 1px solid var(--border);
+}
+.prototype-switcher .ps-dot.active { background: var(--purple); border-color: var(--purple); }
+
+/* ===== Shared Learn Components ===== */
+.lesson-status { font-size: 0.85rem; }
+.ls-locked { color: var(--text-dim); }
+.ls-available { color: var(--text-muted); }
+.ls-progress { color: var(--yellow); }
+.ls-done { color: var(--green); }
+
+.progress-micro {
+  display: inline-flex; align-items: center; gap: 0.3em;
+  font-size: 0.8rem; letter-spacing: 0.1em;
+}
+.progress-micro .pm-bar {
+  width: 4em; height: 0.5em; background: var(--surface-alt);
+  border: 1px solid var(--border-dim); display: inline-block;
+}
+.progress-micro .pm-fill { height: 100%; display: block; }
+
+/* ===== Variant A: Skill Tree Explorer ===== */
+.tree-split { display: flex; gap: 0.8em; flex: 1; min-height: 0; }
+.tree-panel { flex: 1; display: flex; flex-direction: column; min-width: 0; overflow-y: auto; }
+.content-panel { flex: 1.5; display: flex; flex-direction: column; min-width: 0; }
+
+.tree-list { list-style: none; padding: 0.2em 0; }
+.tree-item { user-select: none; }
+.tree-item-content {
+  display: flex; align-items: center; gap: 0.4em;
+  padding: 0.2em 0.3em; cursor: pointer; font-size: 0.9rem;
+  border-left: 2px solid transparent;
+}
+.tree-item-content:hover { background: #1a1d2e; }
+.tree-item-content.selected { background: #2a1f5a; border-left-color: var(--purple); }
+.tree-item-content .ti-icon { width: 1.2em; text-align: center; flex-shrink: 0; }
+.tree-item-content .ti-name { color: var(--text); }
+.tree-item-content .ti-expand { color: var(--text-dim); width: 1em; cursor: pointer; flex-shrink: 0; }
+.tree-children { padding-left: 1.2em; }
+.tree-leaf .ti-icon { font-size: 0.85rem; }
+
+.content-section { padding: 0.3em 0; }
+.content-section + .content-section { border-top: 1px solid var(--border-dim); padding-top: 0.5em; margin-top: 0.2em; }
+.cs-title {
+  font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase;
+  letter-spacing: 0.08em; margin-bottom: 0.3em;
+}
+.cs-body { font-size: 0.9rem; color: var(--text); line-height: 1.6; }
+.quiz-option {
+  display: flex; align-items: center; gap: 0.4em; padding: 0.3em 0.4em;
+  cursor: pointer; font-size: 0.9rem;
+}
+.quiz-option:hover { background: #1a1d2e; }
+.quiz-option .qo-letter { color: var(--text-muted); font-weight: bold; }
+.quiz-option .qo-text { color: var(--text); }
+
+/* ===== Variant B: Roadmap ===== */
+.roadmap { display: flex; flex-direction: column; gap: 0.5em; flex: 1; }
+.rm-header { text-align: center; padding: 0.3em 0; }
+.rm-header .rm-course { color: var(--purple); font-weight: bold; font-size: 1.1rem; }
+.rm-header .rm-progress { color: var(--text-muted); font-size: 0.85rem; margin-top: 0.2em; }
+.rm-progress-bar {
+  width: 100%; height: 0.7em; background: var(--surface-alt);
+  border: 1px solid var(--border-dim); margin: 0.3em 0;
+}
+.rm-progress-bar .rm-pb-fill { height: 100%; background: var(--purple); transition: width 0.3s; }
+.rm-current {
+  border: 1px solid var(--purple); padding: 0.8em;
+  position: relative; margin: 0.3em 0;
+}
+.rm-current .rm-curr-label {
+  position: absolute; top: -0.8em; left: 0.8em; background: var(--bg);
+  padding: 0 0.4em; color: var(--yellow); font-weight: bold;
+  font-size: 0.8rem; letter-spacing: 0.06em; text-transform: uppercase;
+}
+.rm-curr-name { color: var(--text); font-weight: bold; font-size: 1rem; }
+.rm-curr-desc { color: var(--text-muted); font-size: 0.85rem; margin: 0.2em 0 0.4em; }
+.rm-curr-actions { display: flex; gap: 0.5em; }
+.rm-btn {
+  background: var(--purple); color: #fff; border: none;
+  font-family: var(--font-mono); font-size: 0.8rem; text-transform: uppercase;
+  letter-spacing: 0.06em; padding: 0.3em 0.7em; cursor: pointer; font-weight: bold;
+}
+.rm-btn-outline {
+  background: transparent; color: var(--purple); border: 1px solid var(--purple);
+}
+.rm-btn:hover { opacity: 0.85; }
+.rm-upcoming { display: flex; flex-direction: column; gap: 0.2em; }
+.rm-upcoming-item {
+  display: flex; align-items: center; gap: 0.5em; padding: 0.25em 0.4em;
+  font-size: 0.85rem; cursor: pointer;
+}
+.rm-upcoming-item:hover { background: #1a1d2e; }
+.rm-upcoming-item .ui-name { color: var(--text); }
+.rm-upcoming-item .ui-type {
+  font-size: 0.75rem; color: var(--text-dim); text-transform: uppercase;
+  letter-spacing: 0.05em; margin-left: auto;
+}
+
+/* ===== Variant C: Kanban Board ===== */
+.kanban { display: flex; gap: 0.8em; flex: 1; min-height: 0; }
+.kanban-col { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+.kanban-col-header {
+  border-bottom: 2px solid var(--border); padding: 0.3em 0.4em;
+  font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.08em;
+  display: flex; align-items: center; gap: 0.4em; flex-shrink: 0;
+}
+.kanban-col-header .kch-count {
+  color: var(--text-muted); font-size: 0.8rem; margin-left: auto;
+}
+.kanban-cards {
+  flex: 1; display: flex; flex-direction: column; gap: 0.4em;
+  padding: 0.4em 0; overflow-y: auto;
+}
+.kanban-col.to-learn .kanban-col-header { border-bottom-color: var(--text-dim); }
+.kanban-col.in-progress .kanban-col-header { border-bottom-color: var(--yellow); }
+.kanban-col.mastered .kanban-col-header { border-bottom-color: var(--green); }
+.kanban-card {
+  border: 1px solid var(--border-dim); padding: 0.5em;
+  cursor: pointer; font-size: 0.85rem;
+}
+.kanban-card:hover { background: #1a1d2e; border-color: var(--border); }
+.kanban-card .kc-name { color: var(--text); font-weight: bold; }
+.kanban-card .kc-meta {
+  display: flex; align-items: center; gap: 0.4em; margin-top: 0.3em;
+  font-size: 0.75rem;
+}
+.kanban-card .kc-type {
+  color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.05em;
+}
+.kanban-card .kc-progress {
+  margin-left: auto; color: var(--text-muted);
+}
+.kanban-card.locked .kc-name { color: var(--text-dim); }
+
+/* ===== Variant D: Tree + Roadmap ===== */
+.tree-panel-narrow { flex: 0 0 28%; min-width: 16em; }
+.tree-item-content.sel-course { border-left-color: var(--yellow); }
+.tree-item-content.sel-course .ti-name { color: var(--yellow); font-weight: bold; }
+
+/* ===== Variant E: Streak Calendar (calendar style) ===== */
+.streak-calendar { display: flex; flex-direction: column; gap: 0.2em; padding: 0.2em 0; }
+.sc-header { display: flex; align-items: center; justify-content: space-between; font-size: 0.8rem; padding: 0 0.2em; }
+.sc-header .sc-month { color: var(--text); font-weight: bold; font-size: 0.95rem; }
+.sc-header .sc-year { color: var(--text-muted); }
+.sc-header .sc-streak { color: var(--yellow); font-weight: bold; }
+.sc-table { width: 100%; border-collapse: collapse; }
+.sc-table { border-spacing: 3px; border-collapse: separate; }
+.sc-table th {
+  font-size: 0.7rem; color: var(--text-dim); text-transform: uppercase;
+  letter-spacing: 0.05em; padding: 0.1em 0; text-align: center;
+  font-weight: normal; border: none;
+}
+.sc-table td {
+  text-align: center; padding: 0.35em 0; font-size: 0.9rem;
+  width: 14.28%; border-radius: 2px;
+  border: 1px solid var(--border-dim);
+}
+.sc-table td.sc-day-num { color: var(--text-muted); }
+.sc-table td.sc-filled { background: var(--purple); border-color: var(--purple); color: #fff; font-weight: bold; }
+.sc-table td.sc-today { border-color: var(--yellow); box-shadow: inset 0 0 0 1px var(--yellow); color: var(--yellow); font-weight: bold; }
+.sc-table td.sc-future { color: var(--text-dim); border-color: transparent; }
+.sc-table td.sc-weekend.sc-day-num { opacity: 0.5; }
+.sc-legend { display: flex; align-items: center; gap: 0.3em; font-size: 0.65rem; color: var(--text-dim); justify-content: center; margin-top: 0.15em; }
+.sc-legend .sc-l-box { width: 0.6em; height: 0.6em; border: 1px solid var(--border-dim); }
+.sc-legend .sc-l-box.light { background: var(--purple); opacity: 0.4; border-color: var(--purple); }
+.sc-legend .sc-l-box.full { background: var(--purple); border-color: var(--purple); }
+
+.help-content { display: flex; flex-direction: column; gap: 0.35em; padding: 0.3em 0; }
+.help-badges { display: flex; gap: 0.3em; flex-wrap: wrap; }
+.help-badge {
+  font-size: 0.75rem; padding: 0.1em 0.45em; border: 1px solid var(--border);
+  color: var(--text); display: inline-flex; align-items: center; gap: 0.3em;
+  line-height: 1.4;
+}
+.help-badge .hb-num { font-weight: bold; }
+.help-row { display: flex; align-items: center; gap: 0.5em; font-size: 0.85rem; }
+.help-row .hr-label { color: var(--text-muted); min-width: 14ch; }
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="title-bar">
+    <span class="tb-center">BruteForce Learning — Learn <span style="color:var(--purple);font-weight:bold">[5 variants]</span></span>
+    <button class="tb-toggle" id="widthToggle">[––]</button>
+  </div>
+
+  <div class="header-bar">
+    <div class="h-stat"><span class="h-l">course</span> <span class="h-y">React</span></div>
+    <div class="h-stat"><span class="h-l">lessons</span> <span class="h-g">6</span><span class="h-s">/</span><span class="h-l">12</span></div>
+    <div class="h-stat"><span class="h-l">xp today</span> <span class="h-p">120</span><span class="h-s">/</span><span class="h-l">200</span></div>
+    <div class="h-stat"><span class="h-l">streak</span> <span class="h-y">10d</span></div>
+  </div>
+
+  <div class="main-area" id="mainArea">
+    <div class="screen-tabs">
+      <div class="screen-tab active">Learn</div>
+      <div class="screen-tab">Quiz</div>
+      <div class="screen-tab">Code</div>
+      <div class="screen-tab">Progress</div>
+      <div class="screen-tab">Stats</div>
+    </div>
+    <div class="screen-content" id="screenContent"></div>
+  </div>
+
+  <div class="keybind-bar" id="keybindBar">
+    <span class="kb-pos">1/6</span>
+    <span class="kb-key">←</span><span class="kb-action">/</span><span class="kb-key">→</span><span class="kb-action"> variant</span>
+    <span class="kb-key">j</span><span class="kb-action">/</span><span class="kb-key">k</span><span class="kb-action"> navigate</span>
+    <span class="kb-key">o</span><span class="kb-action"> open</span>
+  </div>
+  <div class="status-bar" id="statusBar">
+    <span class="prefix">›</span> Learn screen prototype
+    <span style="margin-left:auto;color:var(--text-muted)">PROTOTYPE — throwaway</span>
+  </div>
+</div>
+
+<script>
+const VARIANT_NAMES = { A: 'Skill Tree', B: 'Roadmap', C: 'Kanban', D: 'Tree + Roadmap', E: 'Tree + Streak' };
+function getParam(k) { return new URLSearchParams(window.location.search).get(k); }
+function setParam(k,v) { const u=new URL(window.location); u.searchParams.set(k,v); window.history.replaceState({},'',u); }
+function getVariant() { return (getParam('variant') || 'A').toUpperCase(); }
+function setVariant(v) { setParam('variant', v); render(); }
+
+const STAT_ICONS = { locked: '◌', available: '○', in_progress: '▶', done: '●' };
+const STAT_CLS = { locked: 'si-locked', available: 'si-available', in_progress: 'si-progress', done: 'si-done' };
+
+const TREE = [
+  { id: 'react', name: 'React', expanded: true,
+    children: [
+      { id: 'js-basics', name: 'JS Basics', status: 'in_progress', progress: 65, expanded: true, note: 'JavaScript fundamentals — variables, functions, scope, closures',
+        children: [
+          { id: 'vars-types', name: 'Variables & Types', type: 'lesson', status: 'done', progress: 100 },
+          { id: 'functions-scope', name: 'Functions & Scope', type: 'lesson', status: 'done', progress: 100 },
+          { id: 'arrays-objects', name: 'Arrays & Objects', type: 'lesson', status: 'in_progress', progress: 60 },
+        ] },
+      { id: 'usestate', name: 'useState', status: 'locked', progress: 0, note: 'React state — locked until JS Basics 80%',
+        children: [
+          { id: 'what-is-state', name: 'What is state?', type: 'lesson', status: 'locked', progress: 0 },
+          { id: 'counter', name: 'Counter exercise', type: 'coding', status: 'locked', progress: 0 },
+        ] },
+      { id: 'useeffect', name: 'useEffect', status: 'locked', progress: 0, note: 'Side effects — locked until useState',
+        children: [
+          { id: 'what-are-effects', name: 'What are effects?', type: 'lesson', status: 'locked', progress: 0 },
+          { id: 'data-fetching', name: 'Data fetching', type: 'coding', status: 'locked', progress: 0 },
+        ] },
+    ] },
+  { id: 'js', name: 'JavaScript', status: 'available', progress: 40, expanded: false, note: 'Core JS concepts',
+    children: [
+      { id: 'js-vars', name: 'Variables & Types', type: 'lesson', status: 'done', progress: 100 },
+      { id: 'js-funcs', name: 'Functions & Scope', type: 'lesson', status: 'done', progress: 100 },
+      { id: 'js-arrays', name: 'Arrays & Objects', type: 'lesson', status: 'done', progress: 100 },
+      { id: 'closures', name: 'Closures', type: 'lesson', status: 'in_progress', progress: 30 },
+      { id: 'promises', name: 'Promises & Async', type: 'lesson', status: 'locked', progress: 0 },
+    ] },
+  { id: 'git', name: 'Git', status: 'locked', progress: 0, note: 'Version control — locked until JS complete',
+    children: [
+      { id: 'git-basics', name: 'Git Basics', type: 'lesson', status: 'locked', progress: 0 },
+      { id: 'branching', name: 'Branching & Merging', type: 'lesson', status: 'locked', progress: 0 },
+    ] },
+  { id: 'node', name: 'Node.js', status: 'locked', progress: 0, note: 'Server-side JS — locked until Git complete',
+    children: [
+      { id: 'node-intro', name: 'Node.js Intro', type: 'lesson', status: 'locked', progress: 0 },
+    ] },
+];
+
+function calcNodeStatus(node) {
+  if (node.children) {
+    const all = node.children.map(c => calcNodeStatus(c));
+    const statuses = all.map(a => a.status);
+    if (statuses.every(s => s === 'done')) return { ...node, status: 'done', progress: 100 };
+    if (statuses.some(s => s === 'in_progress' || s === 'done')) return { ...node, status: 'in_progress', progress: Math.round(all.reduce((s, n) => s + n.progress, 0) / all.length) };
+    return { ...node, status: 'locked', progress: 0 };
+  }
+  return node;
+}
+
+const DATA = TREE.map(n => calcNodeStatus(n));
+
+function getAllLeafIds(nodes) {
+  let ids = [];
+  for (const n of nodes) {
+    if (n.children) ids = ids.concat(getAllLeafIds(n.children));
+    else ids.push(n.id);
+  }
+  return ids;
+}
+
+const ALL_LEAF_IDS = getAllLeafIds(DATA);
+let selectedLeaf = ALL_LEAF_IDS[0];
+let selectedNodeId = 'js-basics'; // for Variant D — can be course or leaf
+
+function findLeaf(id, nodes) {
+  for (const n of nodes) {
+    if (n.id === id) return n;
+    if (n.children) { const f = findLeaf(id, n.children); if (f) return f; }
+  }
+  return null;
+}
+
+function findNode(id, nodes) {
+  for (const n of nodes) {
+    if (n.id === id) return n;
+    if (n.children) { const f = findNode(id, n.children); if (f) return f; }
+  }
+  return null;
+}
+
+function icon(n) {
+  if (n.children) {
+    if (n.status === 'done') return '<span class="si-done">●</span>';
+    if (n.status === 'in_progress') return '<span class="si-progress">▶</span>';
+    return '<span class="si-locked">◌</span>';
+  }
+  return `<span class="${STAT_CLS[n.status]}">${STAT_ICONS[n.status]}</span>`;
+}
+
+function renderTree(nodes, depth) {
+  let html = '<ul class="tree-list">';
+  for (const n of nodes) {
+    const isSelected = !n.children && n.id === selectedLeaf;
+    const hasChildren = n.children && n.children.length > 0;
+    html += '<li class="tree-item' + (!hasChildren ? ' tree-leaf' : '') + '">';
+    html += '<div class="tree-item-content' + (isSelected ? ' selected' : '') + '" data-id="' + n.id + '">';
+    if (hasChildren) {
+      html += '<span class="ti-expand" data-toggle="' + n.id + '">' + (n.expanded ? '▼' : '▶') + '</span>';
+    } else {
+      html += '<span class="ti-expand" style="visibility:hidden">▶</span>';
+    }
+    html += '<span class="ti-icon">' + icon(n) + '</span>';
+    html += '<span class="ti-name">' + n.name + '</span>';
+    if (!hasChildren && n.type) {
+      html += '<span style="margin-left:auto;font-size:0.75rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.05em">' + n.type + '</span>';
+    }
+    html += '</div>';
+    if (hasChildren && n.expanded) {
+      html += '<div class="tree-children">' + renderTree(n.children, depth + 1) + '</div>';
+    }
+    html += '</li>';
+  }
+  html += '</ul>';
+  return html;
+}
+
+function renderLeafContent(leaf) {
+  let html = '';
+
+  if (leaf.type === 'lesson') {
+    html += '<div class="content-section">';
+    html += '<div class="cs-title">Notes</div>';
+    html += '<div class="cs-body">';
+    if (leaf.id === 'vars-types') {
+      html += 'Variables store data. JavaScript has <span style="color:var(--cyan)">let</span>, <span style="color:var(--cyan)">const</span>, and <span style="color:var(--text-dim)">var</span>.<br>';
+      html += 'Types: <span style="color:var(--yellow)">string</span>, <span style="color:var(--yellow)">number</span>, <span style="color:var(--yellow)">boolean</span>, <span style="color:var(--yellow)">null</span>, <span style="color:var(--yellow)">undefined</span>, <span style="color:var(--yellow)">object</span>.<br><br>';
+      html += '🧠 <span style="color:var(--text-muted)">Mnemonic: <span style="color:var(--text)">"SNOB NUN"</span> — String, Number, Object, Boolean, Null, Undefined, aNd more.</span>';
+    } else if (leaf.id === 'functions-scope') {
+      html += 'Functions are reusable blocks of code. Declare with <span style="color:var(--cyan)">function</span> keyword or arrow syntax.<br>';
+      html += 'Scope determines where variables are accessible — global vs local vs block scope.<br><br>';
+      html += '🧠 <span style="color:var(--text-muted)">Mnemonic: <span style="color:var(--text)">"G L B"</span> — Global, Local, Block. Think "Go Learn Basics".</span>';
+    } else if (leaf.id === 'closures') {
+      html += 'A closure is a function that remembers its outer variables even after the outer function returns.<br><br>';
+      html += '🧠 <span style="color:var(--text-muted)">Mnemonic: <span style="color:var(--text)">"Backpack"</span> — inner function carries a backpack of outer scope.</span>';
+    } else if (leaf.id === 'what-is-state') {
+      html += 'State is data that changes over time. In React, <span style="color:var(--cyan)">useState</span> lets you add state to function components.<br><br>';
+      html += '🧠 <span style="color:var(--text-muted)">Think of state as a <span style="color:var(--text)">sticky note</span> React watches for changes.</span>';
+    } else {
+      html += 'Lesson content goes here. This is a prototype placeholder.<br>';
+      html += 'Real content will include notes, examples, and memory hooks.';
+    }
+    html += '</div></div>';
+
+    html += '<div class="content-section">';
+    html += '<div class="cs-title">Quick Quiz</div>';
+    if (leaf.id === 'vars-types') {
+      html += '<div class="quiz-option"><span class="qo-letter">A</span><span class="qo-text"><span style="color:var(--cyan)">let</span> is block-scoped</span></div>';
+      html += '<div class="quiz-option"><span class="qo-letter">B</span><span class="qo-text"><span style="color:var(--cyan)">var</span> is block-scoped</span></div>';
+      html += '<div class="quiz-option"><span class="qo-letter">C</span><span class="qo-text"><span style="color:var(--cyan)">const</span> cannot be reassigned</span></div>';
+    } else if (leaf.id === 'functions-scope') {
+      html += '<div class="quiz-option"><span class="qo-letter">A</span><span class="qo-text">Arrow functions have their own <span style="color:var(--cyan)">this</span></span></div>';
+      html += '<div class="quiz-option"><span class="qo-letter">B</span><span class="qo-text">Arrow functions inherit <span style="color:var(--cyan)">this</span> from parent scope</span></div>';
+    } else {
+      html += '<div class="quiz-option"><span class="qo-letter">A</span><span class="qo-text">Sample question option one</span></div>';
+      html += '<div class="quiz-option"><span class="qo-letter">B</span><span class="qo-text">Sample question option two</span></div>';
+    }
+    html += '</div>';
+
+    html += '<div class="content-section">';
+    html += '<div class="cs-title">Coding Exercise</div>';
+    html += '<div class="cs-body" style="color:var(--text-dim);font-style:italic">Write a function that...</div>';
+    html += '<div style="margin-top:0.3em;padding:0.5em;background:var(--surface);border:1px solid var(--border-dim);font-size:0.85rem;color:var(--text-dim)">';
+    html += '  <span style="color:var(--text-muted)">// your code here</span><br>';
+    html += '  <span class="cursor-blink" style="animation:blink 1s step-end infinite">_</span>';
+    html += '</div>';
+    html += '</div>';
+
+    html += '<div class="content-section">';
+    html += '<div class="cs-title">Review</div>';
+    html += '<div class="cs-body" style="color:var(--text-muted);font-size:0.85rem">';
+    html += 'Next review: <span style="color:var(--yellow)">in 3 days</span> · SM-2 ease: <span style="color:var(--cyan)">2.5</span>';
+    html += '</div></div>';
+  } else if (leaf.type === 'coding') {
+    html += '<div class="content-section">';
+    html += '<div class="cs-title">Challenge</div>';
+    html += '<div class="cs-body">Build a counter that increments and decrements.</div>';
+    html += '</div>';
+    html += '<div class="content-section">';
+    html += '<div class="cs-title">Starter Code</div>';
+    html += '<div style="padding:0.5em;background:var(--surface);border:1px solid var(--border-dim);font-size:0.85rem;color:var(--text-dim)">';
+    html += '  <span style="color:var(--text-muted)">// write your solution</span><br>';
+    html += '  <span class="cursor-blink" style="animation:blink 1s step-end infinite">_</span>';
+    html += '</div>';
+    html += '</div>';
+  }
+  return html;
+}
+
+function renderVariantA() {
+  let html = '<div class="tree-split">';
+  html += '<div class="panel tree-panel"><div class="panel-title">Skill Tree</div><div class="panel-body" id="treeBody" style="overflow-y:auto;flex:1;min-height:0">';
+  html += renderTree(DATA, 0);
+  html += '</div></div>';
+
+  const leaf = findLeaf(selectedLeaf, DATA);
+  html += '<div class="panel content-panel">';
+  html += '<div class="panel-title">' + (leaf ? leaf.name : 'Select a lesson') + ' <span class="p-title-sub" style="color:var(--text-muted);font-style:italic;font-weight:normal;text-transform:none;letter-spacing:0">— ' + (leaf ? leaf.type : '') + '</span></div>';
+  html += '<div class="panel-body" style="overflow-y:auto;flex:1;min-height:0;padding:0.2em 0.4em">';
+  html += leaf ? renderLeafContent(leaf) : '<div style="color:var(--text-muted);padding:1em">Select a lesson from the tree</div>';
+  html += '</div></div>';
+  html += '</div>';
+  return html;
+}
+
+function getCourseProgress() {
+  const totals = { done: 0, total: 0 };
+  function count(n) {
+    if (n.children) n.children.forEach(c => count(c));
+    else { totals.total++; if (n.status === 'done') totals.done++; }
+  }
+  DATA.forEach(c => count(c));
+  return { done: totals.done, total: totals.total, pct: Math.round(totals.done / totals.total * 100) };
+}
+
+function getNextN(nodes, count) {
+  let items = [];
+  function walk(n) {
+    if (items.length >= count) return;
+    if (n.children) { n.children.forEach(c => walk(c)); }
+    else if (n.status !== 'done') { items.push(n); }
+  }
+  nodes.forEach(c => walk(c));
+  return items.slice(0, count);
+}
+
+function renderVariantB() {
+  const cp = getCourseProgress();
+  const next = getNextN(DATA, 5);
+  const current = next[0];
+  const upcoming = next.slice(1);
+  let html = '<div class="roadmap">';
+
+  html += '<div class="rm-header">';
+  html += '<div class="rm-course">Full-Stack JavaScript</div>';
+  html += '<div class="rm-progress">' + cp.done + '/' + cp.total + ' lessons completed · ' + cp.pct + '%</div>';
+  html += '<div class="rm-progress-bar"><div class="rm-pb-fill" style="width:' + cp.pct + '%"></div></div>';
+  html += '</div>';
+
+  if (current) {
+    html += '<div class="rm-current">';
+    html += '<div class="rm-curr-label">Continue</div>';
+    html += '<div class="rm-curr-name">' + current.name + '</div>';
+    html += '<div class="rm-curr-desc">' + (current.type === 'lesson' ? 'Read notes and complete the quiz' : 'Write code to solve the challenge') + '</div>';
+    html += '<div class="rm-curr-actions">';
+    html += '<button class="rm-btn">Start</button>';
+    html += '<button class="rm-btn rm-btn-outline">Review Notes</button>';
+    html += '</div></div>';
+  }
+
+  html += '<div class="panel" style="flex:1;display:flex;flex-direction:column;min-height:0">';
+  html += '<div class="panel-title">Up Next</div>';
+  html += '<div class="panel-body rm-upcoming" style="overflow-y:auto;flex:1;min-height:0;padding:0.15em 0">';
+  for (const u of upcoming) {
+    html += '<div class="rm-upcoming-item">';
+    html += '<span class="' + STAT_CLS[u.status] + '">' + STAT_ICONS[u.status] + '</span>';
+    html += '<span class="ui-name">' + u.name + '</span>';
+    html += '<span class="ui-type">' + u.type + '</span>';
+    html += '</div>';
+  }
+  if (upcoming.length === 0) {
+    html += '<div style="color:var(--text-muted);font-size:0.85rem;padding:0.5em">All lessons complete!</div>';
+  }
+  html += '</div></div>';
+  html += '</div>';
+  return html;
+}
+
+function renderVariantC() {
+  const cols = { to_learn: [], in_progress: [], mastered: [] };
+  function categorize(n) {
+    if (n.children) { n.children.forEach(c => categorize(c)); }
+    else {
+      if (n.status === 'done') cols.mastered.push(n);
+      else if (n.status === 'in_progress') cols.in_progress.push(n);
+      else cols.to_learn.push(n);
+    }
+  }
+  DATA.forEach(c => categorize(c));
+
+  const colMeta = {
+    to_learn: { label: 'To Learn', cls: 'to-learn', icon: '◌', iconCls: 'si-locked' },
+    in_progress: { label: 'In Progress', cls: 'in-progress', icon: '▶', iconCls: 'si-progress' },
+    mastered: { label: 'Mastered', cls: 'mastered', icon: '●', iconCls: 'si-done' },
+  };
+
+  let html = '<div class="kanban">';
+  for (const [key, meta] of Object.entries(colMeta)) {
+    html += '<div class="kanban-col ' + meta.cls + '">';
+    html += '<div class="kanban-col-header">';
+    html += '<span class="' + meta.iconCls + '">' + meta.icon + '</span> ' + meta.label;
+    html += '<span class="kch-count">' + cols[key].length + '</span>';
+    html += '</div>';
+    html += '<div class="kanban-cards">';
+    for (const item of cols[key]) {
+      const locked = item.status === 'locked';
+      html += '<div class="kanban-card' + (locked ? ' locked' : '') + '">';
+      html += '<div class="kc-name">' + item.name + '</div>';
+      html += '<div class="kc-meta">';
+      html += '<span class="kc-type">' + item.type + '</span>';
+      if (item.progress > 0 && item.progress < 100) {
+        html += '<span class="kc-progress">' + item.progress + '%</span>';
+      }
+      html += '</div></div>';
+    }
+    if (cols[key].length === 0) {
+      html += '<div style="color:var(--text-dim);font-size:0.85rem;padding:0.5em;text-align:center;border:1px dashed var(--border-dim)">empty</div>';
+    }
+    html += '</div></div>';
+  }
+  html += '</div>';
+  return html;
+}
+
+function renderTreeD(nodes, depth) {
+  let html = '<ul class="tree-list">';
+  for (const n of nodes) {
+    const isSel = n.id === selectedNodeId;
+    const hasChildren = n.children && n.children.length > 0;
+    const selCls = isSel ? (hasChildren ? ' sel-course' : ' selected') : '';
+    html += '<li class="tree-item' + (!hasChildren ? ' tree-leaf' : '') + '">';
+    html += '<div class="tree-item-content' + selCls + '" data-id="' + n.id + '">';
+    if (hasChildren) {
+      html += '<span class="ti-expand" data-toggle="' + n.id + '">' + (n.expanded ? '▼' : '▶') + '</span>';
+    } else {
+      html += '<span class="ti-expand" style="visibility:hidden">▶</span>';
+    }
+    html += '<span class="ti-icon">' + icon(n) + '</span>';
+    html += '<span class="ti-name">' + n.name + '</span>';
+    html += '</div>';
+    if (hasChildren && n.expanded) {
+      html += '<div class="tree-children">' + renderTreeD(n.children, depth + 1) + '</div>';
+    }
+    html += '</li>';
+  }
+  html += '</ul>';
+  return html;
+}
+
+function renderCourseRoadmap(course) {
+  const children = course.children || [];
+  const done = children.filter(c => c.status === 'done').length;
+  const total = children.length;
+  const pct = total ? Math.round(done / total * 100) : 0;
+  const current = children.find(c => c.status === 'in_progress') || children.find(c => c.status === 'available') || null;
+  const upcoming = children.filter(c => c.status !== 'done');
+
+  let html = '<div class="roadmap">';
+  html += '<div class="rm-header">';
+  html += '<div class="rm-course">' + course.name + '</div>';
+  html += '<div class="rm-progress">' + done + '/' + total + ' lessons · ' + pct + '%</div>';
+  html += '<div class="rm-progress-bar"><div class="rm-pb-fill" style="width:' + pct + '%"></div></div>';
+  html += '</div>';
+
+  if (current) {
+    html += '<div class="rm-current">';
+    html += '<div class="rm-curr-label">Continue</div>';
+    html += '<div class="rm-curr-name">' + current.name + '</div>';
+    html += '<div class="rm-curr-desc">' + (current.type === 'lesson' ? 'Read notes and complete the quiz' : 'Write code to solve the challenge') + '</div>';
+    html += '<div class="rm-curr-actions">';
+    html += '<button class="rm-btn">Start</button>';
+    html += '<button class="rm-btn rm-btn-outline">Review Notes</button>';
+    html += '</div></div>';
+  }
+
+  html += '<div class="panel" style="flex:1;display:flex;flex-direction:column;min-height:0">';
+  html += '<div class="panel-title">Lessons</div>';
+  html += '<div class="panel-body rm-upcoming" style="overflow-y:auto;flex:1;min-height:0;padding:0.15em 0">';
+  for (const u of children) {
+    html += '<div class="rm-upcoming-item" data-id="' + u.id + '">';
+    html += '<span class="' + STAT_CLS[u.status] + '">' + STAT_ICONS[u.status] + '</span>';
+    html += '<span class="ui-name">' + u.name + '</span>';
+    html += '<span class="ui-type">' + (u.type || '') + '</span>';
+    html += '</div>';
+  }
+  html += '</div></div>';
+  html += '</div>';
+  return html;
+}
+
+function renderVariantD() {
+  let html = '<div class="tree-split">';
+  html += '<div class="panel tree-panel tree-panel-narrow"><div class="panel-title">Courses</div><div class="panel-body" id="treeBody" style="overflow-y:auto;flex:1;min-height:0">';
+  html += renderTreeD(DATA, 0);
+  html += '</div></div>';
+
+  const node = findNode(selectedNodeId, DATA);
+  if (node && node.children && node.children.length > 0) {
+    html += '<div class="panel content-panel"><div class="panel-body" style="overflow-y:auto;flex:1;min-height:0">';
+    html += renderCourseRoadmap(node);
+    html += '</div></div>';
+  } else if (node) {
+    html += '<div class="panel content-panel">';
+    html += '<div class="panel-title">' + node.name + ' <span style="color:var(--text-muted);font-style:italic;font-weight:normal;text-transform:none;letter-spacing:0;font-size:0.85rem">— ' + (node.type || '') + '</span></div>';
+    html += '<div class="panel-body" style="overflow-y:auto;flex:1;min-height:0;padding:0.2em 0.4em">';
+    html += renderLeafContent(node);
+    html += '</div></div>';
+  } else {
+    html += '<div class="panel content-panel"><div class="panel-body" style="padding:1em;color:var(--text-muted)">Select a course or lesson</div></div>';
+  }
+  html += '</div>';
+  return html;
+}
+
+function renderStreakCalendar() {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const firstDay = new Date(year, month, 1).getDay();
+  const today = now.getDate();
+
+  let html = '<div class="streak-calendar">';
+  html += '<div class="sc-header">';
+  html += '<span class="sc-month">' + now.toLocaleString('en', { month: 'long' }) + '</span>';
+  html += '<span class="sc-year">' + year + '</span>';
+  html += '<span class="sc-streak">🔥 10d streak</span>';
+  html += '</div>';
+
+  html += '<table class="sc-table">';
+  html += '<tr>';
+  const headers = ['S','M','T','W','T','F','S'];
+  for (const h of headers) html += '<th>' + h + '</th>';
+  html += '</tr>';
+
+  let day = 1;
+  for (let w = 0; w < 6; w++) {
+    html += '<tr>';
+    for (let d = 0; d < 7; d++) {
+      if ((w === 0 && d < firstDay) || day > daysInMonth) {
+        html += '<td></td>';
+      } else {
+        const isToday = day === today;
+        const isPast = day < today;
+        const isFuture = day > today;
+        const dow = d;
+        const weekend = dow === 0 || dow === 6;
+        let cls = 'sc-day-num';
+        if (isToday) cls += ' sc-today';
+        else if (isPast) cls += ' sc-filled';
+        else cls += ' sc-future';
+        if (weekend) cls += ' sc-weekend';
+        html += '<td class="' + cls + '">' + day + '</td>';
+        day++;
+      }
+    }
+    html += '</tr>';
+    if (day > daysInMonth) break;
+  }
+  html += '</table>';
+
+  html += '<div class="sc-legend">';
+  html += '<span class="sc-l-box light"></span><span>done</span>';
+  html += '<span class="sc-l-box full"></span><span>today</span>';
+  html += '</div></div>';
+  return html;
+}
+
+function renderHelpingContent() {
+  let html = '<div class="help-content">';
+  html += '<div class="help-row"><span class="hr-label">next review</span><span style="color:var(--yellow);font-weight:bold">closures — 30 min</span></div>';
+  html += '<div class="help-row"><span class="hr-label">focus area</span><span style="color:var(--cyan);font-weight:bold">JS Basics (65%)</span></div>';
+  html += '<div class="help-row"><span class="hr-label">weekly goal</span><span style="color:var(--text);font-weight:bold">5 lessons</span><span style="color:var(--text-muted);font-size:0.8rem">(3 done)</span></div>';
+  html += '</div>';
+  return html;
+}
+
+function renderCourseRoadmapE(course) {
+  const children = course.children || [];
+  const done = children.filter(c => c.status === 'done').length;
+  const total = children.length;
+  const pct = total ? Math.round(done / total * 100) : 0;
+  const current = children.find(c => c.status === 'in_progress') || children.find(c => c.status === 'available') || null;
+
+  let html = '<div class="roadmap">';
+  html += '<div class="rm-header">';
+  html += '<div class="rm-course">' + course.name + '</div>';
+  html += '<div class="rm-progress">' + done + '/' + total + ' lessons · ' + pct + '%</div>';
+  html += '<div class="rm-progress-bar"><div class="rm-pb-fill" style="width:' + pct + '%"></div></div>';
+  html += '</div>';
+
+  if (current) {
+    html += '<div class="rm-current">';
+    html += '<div class="rm-curr-label">Continue</div>';
+    html += '<div class="rm-curr-name">' + current.name + '</div>';
+    html += '<div class="rm-curr-desc">' + (current.type === 'lesson' ? 'Read notes and complete the quiz' : 'Write code to solve the challenge') + '</div>';
+    html += '<div class="rm-curr-actions">';
+    html += '<button class="rm-btn">Start</button>';
+    html += '<button class="rm-btn rm-btn-outline">Review Notes</button>';
+    html += '</div></div>';
+  }
+
+  html += '<div class="panel">';
+  html += '<div class="panel-title">Streak</div>';
+  html += '<div class="panel-body">';
+  html += renderStreakCalendar();
+  html += '</div></div>';
+
+  html += '<div class="panel">';
+  html += '<div class="panel-title">Helping Hand</div>';
+  html += '<div class="panel-body">';
+  html += renderHelpingContent();
+  html += '</div></div>';
+
+  html += '</div>';
+  return html;
+}
+
+function renderVariantE() {
+  let html = '<div class="tree-split">';
+  html += '<div class="panel tree-panel tree-panel-narrow"><div class="panel-title">Courses</div><div class="panel-body" id="treeBody" style="overflow-y:auto;flex:1;min-height:0">';
+  html += renderTreeD(DATA, 0);
+  html += '</div></div>';
+
+  const node = findNode(selectedNodeId, DATA);
+  if (node && node.children && node.children.length > 0) {
+    html += '<div class="panel content-panel"><div class="panel-body" style="overflow-y:auto;flex:1;min-height:0">';
+    html += renderCourseRoadmapE(node);
+    html += '</div></div>';
+  } else if (node) {
+    html += '<div class="panel content-panel">';
+    html += '<div class="panel-title">' + node.name + ' <span style="color:var(--text-muted);font-style:italic;font-weight:normal;text-transform:none;letter-spacing:0;font-size:0.85rem">— ' + (node.type || '') + '</span></div>';
+    html += '<div class="panel-body" style="overflow-y:auto;flex:1;min-height:0;padding:0.2em 0.4em">';
+    html += renderLeafContent(node);
+    html += '</div></div>';
+  } else {
+    html += '<div class="panel content-panel"><div class="panel-body" style="padding:1em;color:var(--text-muted)">Select a course or lesson</div></div>';
+  }
+  html += '</div>';
+  return html;
+}
+
+function render() {
+  const v = getVariant();
+  const c = document.getElementById('screenContent');
+  if (v === 'A') c.innerHTML = renderVariantA();
+  else if (v === 'B') c.innerHTML = renderVariantB();
+  else if (v === 'C') c.innerHTML = renderVariantC();
+  else if (v === 'D') c.innerHTML = renderVariantD();
+  else if (v === 'E') c.innerHTML = renderVariantE();
+  else c.innerHTML = renderVariantA();
+
+  renderPrototypeSwitcher();
+  updateKeybinds();
+}
+
+function renderPrototypeSwitcher() {
+  const existing = document.getElementById('prototypeSwitcher');
+  if (existing) existing.remove();
+  const v = getVariant();
+  const keys = ['A','B','C','D','E'];
+  const bar = document.createElement('div');
+  bar.id = 'prototypeSwitcher';
+  bar.className = 'prototype-switcher';
+  bar.innerHTML = `
+    <span class="ps-arrow" data-dir="prev">◀</span>
+    <span class="ps-dots">${keys.map(k => `<span class="ps-dot${k === v ? ' active' : ''}"></span>`).join('')}</span>
+    <span class="ps-label">${v} — ${VARIANT_NAMES[v]}</span>
+    <span class="ps-arrow" data-dir="next">▶</span>
+    <span class="ps-note">←/→</span>
+  `;
+  bar.querySelectorAll('.ps-arrow').forEach(a => {
+    a.addEventListener('click', () => {
+      const dir = a.dataset.dir;
+      const keys2 = ['A','B','C','D','E'];
+      const idx = keys2.indexOf(getVariant());
+      const next = dir === 'next' ? keys2[(idx + 1) % 5] : keys2[(idx + 4) % 5];
+      setVariant(next);
+    });
+  });
+  document.getElementById('app').appendChild(bar);
+
+  if (v === 'A') {
+    document.querySelectorAll('.tree-item-content').forEach(el => {
+      el.addEventListener('click', (e) => {
+        const id = el.dataset.id;
+        if (e.target.classList.contains('ti-expand')) {
+          const toggleId = e.target.dataset.toggle;
+          const node = findNode(toggleId, DATA);
+          if (node) node.expanded = !node.expanded;
+          render();
+          return;
+        }
+        const leaf = findLeaf(id, DATA);
+        if (leaf) { selectedLeaf = id; render(); }
+      });
+    });
+    const sel = document.querySelector('.tree-item-content.selected');
+    if (sel) sel.scrollIntoView({ block: 'nearest' });
+  }
+
+  if (v === 'D') {
+    document.querySelectorAll('.tree-item-content').forEach(el => {
+      el.addEventListener('click', (e) => {
+        const id = el.dataset.id;
+        if (e.target.classList.contains('ti-expand')) {
+          const toggleId = e.target.dataset.toggle;
+          const node = findNode(toggleId, DATA);
+          if (node) node.expanded = !node.expanded;
+          render();
+          return;
+        }
+        selectedNodeId = id;
+        render();
+      });
+    });
+    document.querySelectorAll('.rm-upcoming-item').forEach(el => {
+      el.addEventListener('click', () => {
+        selectedNodeId = el.dataset.id;
+        render();
+      });
+    });
+    const sel = document.querySelector('.tree-item-content.sel-course, .tree-item-content.selected');
+    if (sel) sel.scrollIntoView({ block: 'nearest' });
+  }
+
+  if (v === 'E') {
+    document.querySelectorAll('.tree-item-content').forEach(el => {
+      el.addEventListener('click', (e) => {
+        const id = el.dataset.id;
+        if (e.target.classList.contains('ti-expand')) {
+          const toggleId = e.target.dataset.toggle;
+          const node = findNode(toggleId, DATA);
+          if (node) node.expanded = !node.expanded;
+          render();
+          return;
+        }
+        selectedNodeId = id;
+        render();
+      });
+    });
+    const sel = document.querySelector('.tree-item-content.sel-course, .tree-item-content.selected');
+    if (sel) sel.scrollIntoView({ block: 'nearest' });
+  }
+}
+
+function updateKeybinds() {
+  const kb = document.getElementById('keybindBar');
+  const sb = document.getElementById('statusBar');
+  const v = getVariant();
+  kb.innerHTML = '<span class="kb-pos">1/6</span><span class="kb-key">←</span><span class="kb-action">/</span><span class="kb-key">→</span><span class="kb-action"> variant</span> <span class="kb-key">j</span><span class="kb-action">/</span><span class="kb-key">k</span><span class="kb-action"> navigate</span> <span class="kb-key">o</span><span class="kb-action"> open</span>';
+  sb.innerHTML = '<span class="prefix">›</span> variant <span style="color:var(--purple);font-weight:bold">' + v + ' — ' + VARIANT_NAMES[v] + '</span> — use <span style="color:var(--text);font-weight:bold">←</span><span style="color:var(--text-muted)">/</span><span style="color:var(--text);font-weight:bold">→</span> to cycle <span style="margin-left:auto;color:var(--text-muted)">PROTOTYPE — throwaway</span>';
+}
+
+function init() {
+  const app = document.getElementById('app');
+  const toggle = document.getElementById('widthToggle');
+  let wide = localStorage.getItem('tui-wide') === 'true';
+  function applyWidth(w) {
+    wide = w;
+    app.classList.toggle('layout-wide', wide);
+    app.classList.toggle('layout-narrow', !wide);
+    toggle.textContent = wide ? '[==]' : '[––]';
+    localStorage.setItem('tui-wide', wide);
+  }
+  applyWidth(wide);
+  toggle.addEventListener('click', () => applyWidth(!wide));
+
+  function getAllNodeIds(nodes) {
+    let ids = [];
+    for (const n of nodes) {
+      ids.push(n.id);
+      if (n.children) ids = ids.concat(getAllNodeIds(n.children));
+    }
+    return ids;
+  }
+
+  document.addEventListener('keydown', (e) => {
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable) return;
+    const v = getVariant();
+    const keys = ['A','B','C','D','E'];
+    const idx = keys.indexOf(v);
+    if (e.key === 'ArrowLeft') { e.preventDefault(); setVariant(keys[(idx + 4) % 5]); }
+    if (e.key === 'ArrowRight') { e.preventDefault(); setVariant(keys[(idx + 1) % 5]); }
+    if (v === 'A') {
+      const all = ALL_LEAF_IDS;
+      const cur = all.indexOf(selectedLeaf);
+      if (e.key === 'j' || e.key === 'ArrowDown') { e.preventDefault(); selectedLeaf = all[Math.min(cur + 1, all.length - 1)]; render(); }
+      if (e.key === 'k' || e.key === 'ArrowUp') { e.preventDefault(); selectedLeaf = all[Math.max(cur - 1, 0)]; render(); }
+    }
+    if (v === 'D' || v === 'E') {
+      const all = getAllNodeIds(DATA);
+      const cur = all.indexOf(selectedNodeId);
+      if (e.key === 'j' || e.key === 'ArrowDown') { e.preventDefault(); selectedNodeId = all[Math.min(cur + 1, all.length - 1)]; render(); }
+      if (e.key === 'k' || e.key === 'ArrowUp') { e.preventDefault(); selectedNodeId = all[Math.max(cur - 1, 0)]; render(); }
+    }
+  });
+
+  render();
+}
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>

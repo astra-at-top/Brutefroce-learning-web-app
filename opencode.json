@@ -1,0 +1,13 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "taskmanager": {
+      "type": "local",
+      "command": ["/home/hello/Task_manager/taskmanager/taskmanager", "--mcp"],
+      "environment": {
+        "TASK_MANAGER_DB": "/home/hello/.taskmanager.db"
+      },
+      "enabled": true
+    }
+  }
+}

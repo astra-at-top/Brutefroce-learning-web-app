@@ -1,0 +1,151 @@
+<div style="padding:1em;max-width:900px;margin:0 auto">
+  <h2 style="color:var(--purple);margin-bottom:0.5em">Admin → API → Learn Flow</h2>
+  <p style="color:var(--text-muted);font-size:0.85rem;margin-bottom:1em">Data enters through Admin wizard, persists in SQLite, displays in Learn tab</p>
+
+  <!-- Architecture Flow -->
+  <div style="border:1px solid var(--border);padding:1em;margin-bottom:1em">
+    <div style="font-size:0.75rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:0.8em">Architecture</div>
+    <div style="display:flex;align-items:center;gap:0.5em;font-size:0.85rem">
+      <div style="flex:1;border:2px solid var(--purple);padding:0.6em;text-align:center;background:#2a1f5a">
+        <div style="font-weight:bold;color:var(--yellow)">Admin Tab</div>
+        <div style="font-size:0.7rem;color:var(--text-muted)">5-Step Wizard</div>
+      </div>
+      <div style="color:var(--green);font-size:1.2rem">→</div>
+      <div style="flex:1;border:2px solid var(--cyan);padding:0.6em;text-align:center;background:#0a1f1a">
+        <div style="font-weight:bold;color:var(--cyan)">Go API</div>
+        <div style="font-size:0.7rem;color:var(--text-muted)">REST Endpoints</div>
+      </div>
+      <div style="color:var(--green);font-size:1.2rem">→</div>
+      <div style="flex:1;border:2px solid var(--border);padding:0.6em;text-align:center;background:var(--surface)">
+        <div style="font-weight:bold;color:var(--yellow)">SQLite</div>
+        <div style="font-size:0.7rem;color:var(--text-muted)">Persist</div>
+      </div>
+      <div style="color:var(--green);font-size:1.2rem">→</div>
+      <div style="flex:1;border:2px solid var(--purple);padding:0.6em;text-align:center;background:#2a1f5a">
+        <div style="font-weight:bold;color:var(--yellow)">Learn Tab</div>
+        <div style="font-size:0.7rem;color:var(--text-muted)">Reads from API</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Admin Wizard Steps -->
+  <div style="border:1px solid var(--border);padding:1em;margin-bottom:1em">
+    <div style="font-size:0.75rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:0.8em">Admin Wizard — 5 Steps</div>
+    <div style="display:flex;gap:0.3em;margin-bottom:0.8em">
+      <div class="v6-step active" style="display:flex;flex-direction:column;align-items:center;flex:1;padding:0.3em;border:1px solid var(--purple)">
+        <span style="width:1.5em;height:1.5em;border-radius:50%;border:2px solid var(--purple);display:flex;align-items:center;justify-content:center;font-size:0.7rem;color:var(--purple);font-weight:bold">1</span>
+        <span style="font-size:0.65rem;color:var(--text);text-transform:uppercase;margin-top:0.2em">Info</span>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;flex:1;padding:0.3em;border:1px solid var(--border-dim)">
+        <span style="width:1.5em;height:1.5em;border-radius:50%;border:2px solid var(--border-dim);display:flex;align-items:center;justify-content:center;font-size:0.7rem;color:var(--text-dim)">2</span>
+        <span style="font-size:0.65rem;color:var(--text-dim);text-transform:uppercase;margin-top:0.2em">Notes</span>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;flex:1;padding:0.3em;border:1px solid var(--border-dim)">
+        <span style="width:1.5em;height:1.5em;border-radius:50%;border:2px solid var(--border-dim);display:flex;align-items:center;justify-content:center;font-size:0.7rem;color:var(--text-dim)">3</span>
+        <span style="font-size:0.65rem;color:var(--text-dim);text-transform:uppercase;margin-top:0.2em">Quiz</span>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;flex:1;padding:0.3em;border:1px solid var(--border-dim)">
+        <span style="width:1.5em;height:1.5em;border-radius:50%;border:2px solid var(--border-dim);display:flex;align-items:center;justify-content:center;font-size:0.7rem;color:var(--text-dim)">4</span>
+        <span style="font-size:0.65rem;color:var(--text-dim);text-transform:uppercase;margin-top:0.2em">Coding</span>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;flex:1;padding:0.3em;border:1px solid var(--border-dim)">
+        <span style="width:1.5em;height:1.5em;border-radius:50%;border:2px solid var(--border-dim);display:flex;align-items:center;justify-content:center;font-size:0.7rem;color:var(--text-dim)">5</span>
+        <span style="font-size:0.65rem;color:var(--text-dim);text-transform:uppercase;margin-top:0.2em">Flashcards</span>
+      </div>
+    </div>
+
+    <!-- Step 1 detail -->
+    <div style="border:1px solid var(--border-dim);padding:0.6em;margin-bottom:0.4em">
+      <div style="font-weight:bold;color:var(--yellow);font-size:0.85rem">Step 1: Info</div>
+      <div style="font-size:0.8rem;color:var(--text-muted);margin-top:0.2em">
+        <span style="display:inline-block;width:8em">Title</span> <span style="color:var(--text)">→ "Variables & Types"</span><br>
+        <span style="display:inline-block;width:8em">Type</span> <span style="color:var(--text)">→ lesson / coding</span><br>
+        <span style="display:inline-block;width:8em">Status</span> <span style="color:var(--text)">→ locked / available / in_progress / done</span>
+      </div>
+    </div>
+
+    <div style="border:1px solid var(--border-dim);padding:0.6em;margin-bottom:0.4em">
+      <div style="font-weight:bold;color:var(--yellow);font-size:0.85rem">Step 2: Notes</div>
+      <div style="font-size:0.8rem;color:var(--text-muted);margin-top:0.2em">
+        <span style="display:inline-block;width:8em">Notes</span> <span style="color:var(--text)">→ Textarea (lesson content)</span><br>
+        <span style="display:inline-block;width:8em">Mnemonic</span> <span style="color:var(--text)">→ "SNOB NUN"</span>
+      </div>
+    </div>
+
+    <div style="border:1px solid var(--border-dim);padding:0.6em;margin-bottom:0.4em">
+      <div style="font-weight:bold;color:var(--yellow);font-size:0.85rem">Step 3: Quiz</div>
+      <div style="font-size:0.8rem;color:var(--text-muted);margin-top:0.2em">
+        <span style="color:var(--text)">Multiple questions with 4 options + correct answer</span><br>
+        <span style="font-size:0.75rem;color:var(--text-dim)">Question: "Which keyword is block-scoped?"</span><br>
+        <span style="font-size:0.75rem;color:var(--text-dim)">Options: ["let", "const", "var"] → correct: let (index 0)</span>
+      </div>
+    </div>
+
+    <div style="border:1px solid var(--border-dim);padding:0.6em;margin-bottom:0.4em">
+      <div style="font-weight:bold;color:var(--yellow);font-size:0.85rem">Step 4: Coding</div>
+      <div style="font-size:0.8rem;color:var(--text-muted);margin-top:0.2em">
+        <span style="display:inline-block;width:8em">Prompt</span> <span style="color:var(--text)">→ Exercise description</span><br>
+        <span style="display:inline-block;width:8em">Starter</span> <span style="color:var(--text)">→ Initial code template</span><br>
+        <span style="display:inline-block;width:8em">Solution</span> <span style="color:var(--text)">→ Expected answer</span>
+      </div>
+    </div>
+
+    <div style="border:1px solid var(--border-dim);padding:0.6em">
+      <div style="font-weight:bold;color:var(--yellow);font-size:0.85rem">Step 5: Flashcards</div>
+      <div style="font-size:0.8rem;color:var(--text-muted);margin-top:0.2em">
+        <span style="color:var(--text)">Pairs of Front / Back cards</span><br>
+        <span style="font-size:0.75rem;color:var(--text-dim)">Front: "What keyword declares block-scoped variable?"</span><br>
+        <span style="font-size:0.75rem;color:var(--text-dim)">Back: "let / const"</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Learn Tab Views -->
+  <div style="border:1px solid var(--border);padding:1em;margin-bottom:1em">
+    <div style="font-size:0.75rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:0.8em">Learn Tab — Reads from API</div>
+    <div style="display:flex;gap:0.5em">
+      <div style="flex:1;border:1px solid var(--border-dim);padding:0.5em;text-align:center">
+        <div style="font-size:0.9rem">📖</div>
+        <div style="font-size:0.75rem;color:var(--text);font-weight:bold">Notes</div>
+        <div style="font-size:0.65rem;color:var(--green)">← from API</div>
+      </div>
+      <div style="flex:1;border:1px solid var(--border-dim);padding:0.5em;text-align:center">
+        <div style="font-size:0.9rem">❓</div>
+        <div style="font-size:0.75rem;color:var(--text);font-weight:bold">Quiz</div>
+        <div style="font-size:0.65rem;color:var(--green)">← from DB now!</div>
+      </div>
+      <div style="flex:1;border:1px solid var(--border-dim);padding:0.5em;text-align:center">
+        <div style="font-size:0.9rem">◈</div>
+        <div style="font-size:0.75rem;color:var(--text);font-weight:bold">Code</div>
+        <div style="font-size:0.65rem;color:var(--green)">← from DB now!</div>
+      </div>
+      <div style="flex:1;border:1px solid var(--border-dim);padding:0.5em;text-align:center">
+        <div style="font-size:0.9rem">▣</div>
+        <div style="font-size:0.75rem;color:var(--text);font-weight:bold">Flashcards</div>
+        <div style="font-size:0.65rem;color:var(--green)">← from DB ✓</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- What Changes -->
+  <div style="border:1px solid var(--border);padding:1em">
+    <div style="font-size:0.75rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:0.8em">Files Changed</div>
+    <table style="width:100%;font-size:0.8rem;border-collapse:collapse">
+      <tr><th style="text-align:left;color:var(--text-muted);border-bottom:1px solid var(--border-dim);padding:0.3em">File</th><th style="text-align:left;color:var(--text-muted);border-bottom:1px solid var(--border-dim);padding:0.3em">Change</th><th style="text-align:center;color:var(--text-muted);border-bottom:1px solid var(--border-dim);padding:0.3em">Status</th></tr>
+      <tr><td style="padding:0.3em;border-bottom:1px solid var(--border-dim)">main.go</td><td style="padding:0.3em;border-bottom:1px solid var(--border-dim)">Add courses table + admin CRUD endpoints</td><td style="padding:0.3em;border-bottom:1px solid var(--border-dim);text-align:center"><span style="color:var(--yellow)">Plan</span></td></tr>
+      <tr><td style="padding:0.3em;border-bottom:1px solid var(--border-dim)">main.go</td><td style="padding:0.3em;border-bottom:1px solid var(--border-dim)">Update quiz/coding to read from DB</td><td style="padding:0.3em;border-bottom:1px solid var(--border-dim);text-align:center"><span style="color:var(--yellow)">Plan</span></td></tr>
+      <tr><td style="padding:0.3em;border-bottom:1px solid var(--border-dim)">index.html</td><td style="padding:0.3em;border-bottom:1px solid var(--border-dim)">Admin: dynamic tree, form wiring, save button</td><td style="padding:0.3em;border-bottom:1px solid var(--border-dim);text-align:center"><span style="color:var(--yellow)">Plan</span></td></tr>
+      <tr><td style="padding:0.3em;border-bottom:1px solid var(--border-dim)">index.html</td><td style="padding:0.3em;border-bottom:1px solid var(--border-dim)">Learn: dynamic tree from API, coding from DB</td><td style="padding:0.3em;border-bottom:1px solid var(--border-dim);text-align:center"><span style="color:var(--yellow)">Plan</span></td></tr>
+      <tr><td style="padding:0.3em">index.html</td><td style="padding:0.3em">Learn: auto-refresh on tab switch after admin edit</td><td style="padding:0.3em;text-align:center"><span style="color:var(--yellow)">Plan</span></td></tr>
+    </table>
+  </div>
+
+  <div style="margin-top:1em;padding:0.8em;border:1px solid var(--purple);text-align:center">
+    <div style="font-weight:bold;color:var(--yellow);font-size:1rem">Approve this design to start implementation?</div>
+    <div style="font-size:0.8rem;color:var(--text-muted);margin-top:0.3em">Click an option below:</div>
+    <div style="display:flex;gap:0.5em;justify-content:center;margin-top:0.5em">
+      <span class="btn" data-choice="approve" style="cursor:pointer;padding:0.4em 1em">✅ Approve — Start Building</span>
+      <span class="btn btn-alt" data-choice="changes" style="cursor:pointer;padding:0.4em 1em">✏️ Request Changes</span>
+    </div>
+  </div>
+</div>

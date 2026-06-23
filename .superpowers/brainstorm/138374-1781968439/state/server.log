@@ -1,0 +1,5 @@
+{"type":"server-started","port":50073,"host":"127.0.0.1","url_host":"localhost","url":"http://localhost:50073","screen_dir":"/home/hello/BrutforseLearning/.superpowers/brainstorm/138374-1781968439/content","state_dir":"/home/hello/BrutforseLearning/.superpowers/brainstorm/138374-1781968439/state"}
+{"type":"screen-added","file":"/home/hello/BrutforseLearning/.superpowers/brainstorm/138374-1781968439/content/admin-learn-flow.html"}
+{"source":"user-event","type":"click","text":"✅ Approve — Start Building","choice":"approve","id":null,"timestamp":1781968516847}
+{"source":"user-event","type":"click","text":"✅ Approve — Start Building","choice":"approve","id":null,"timestamp":1781968518900}
+{"type":"server-stopped","reason":"idle timeout"}

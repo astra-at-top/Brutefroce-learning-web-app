@@ -1651,7 +1651,7 @@ function renderAdminFull(screen) {
       <button class="btn btn-alt" id="syncImportBtn">📥 Import</button>
     </div>
     <span id="syncStatus" style="font-size:0.75rem;color:var(--text-dim);align-self:center"></span>`;
-  document.querySelector('.admin-box')?.closest('.admin-editor-panel')?.after(syncArea);
+  document.querySelector('.admin-split')?.after(syncArea);
 
   document.getElementById('syncExportBtn')?.addEventListener('click', async () => {
     const res = await api('/api/sync/export');
@@ -1693,7 +1693,7 @@ function renderAdminFull(screen) {
         <strong>Usage:</strong> Export → Copy → Modify in AI → Paste into <strong>JSON Import</strong> below → Import
       </div>
     </div>`;
-  document.querySelector('.admin-box')?.closest('.admin-editor-panel')?.after(exportArea);
+  document.querySelector('.admin-split')?.after(exportArea);
 
   let exportExpanded = true;
   document.getElementById('jsonExportToggle')?.addEventListener('click', () => {
@@ -1783,7 +1783,7 @@ function renderAdminFull(screen) {
         Uses <strong>merge mode</strong> — existing courses/lessons are updated, new ones added, items not in JSON preserved, progress and flashcard reviews kept.
       </div>
     </div>`;
-  document.querySelector('.admin-box')?.closest('.admin-editor-panel')?.after(jsonArea);
+  document.querySelector('.admin-split')?.after(jsonArea);
 
   // Show/hide course_id input based on import mode
   document.getElementById('jsonImportMode')?.addEventListener('change', () => {

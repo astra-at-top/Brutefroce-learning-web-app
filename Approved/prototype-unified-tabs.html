@@ -1,0 +1,1190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BruteForce Learning — Unified Prototype</title>
+<style>
+:root {
+  --bg: #0d0d0f; --surface: #111318; --surface-alt: #161820;
+  --border: #2a2d3a; --border-dim: #1e2130;
+  --text: #c8ccd8; --text-muted: #5a5f72; --text-dim: #3f4252;
+  --purple: #9d7dea; --cyan: #4ec9b0; --yellow: #e5c07b;
+  --red: #e06c75; --green: #98c379; --blue: #61afef;
+  --font-mono: "JetBrains Mono","Fira Code","Cascadia Code","Hack","Courier New",monospace;
+  --font-display: "Share Tech Mono","Courier New",monospace;
+}
+*::-webkit-scrollbar { display: none; }
+* { scrollbar-width: none; -ms-overflow-style: none; }
+html { font-size: clamp(12px, 1.6vh, 28px); }
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--text);
+  font-family: var(--font-mono); font-size: 1rem; line-height: 1.5;
+  height: 100vh; overflow: hidden;
+  display: flex; flex-direction: column;
+}
+#app { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+#app.layout-wide { max-width: none; }
+#app.layout-narrow { max-width: min(86rem, 1100px); }
+
+.title-bar {
+  background: #1a1d26; border-bottom: 1px solid var(--border);
+  padding: 0.55em 1em; display: flex; align-items: center; justify-content: center;
+  font-size: 0.95rem; color: var(--text-muted); user-select: none; flex-shrink: 0;
+  position: relative;
+}
+.title-bar .tb-center { margin: 0 auto; }
+.title-bar .tb-toggle {
+  position: absolute; right: 1em; top: 50%; transform: translateY(-50%);
+  cursor: pointer; font-size: 0.8rem; letter-spacing: 0.08em;
+  background: var(--purple); color: #fff; border: none; padding: 0.35em 0.7em;
+  font-family: var(--font-mono); text-transform: uppercase; font-weight: bold;
+  line-height: 1;
+}
+
+.header-bar {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 0.5em 1.2em; border: 1px solid var(--purple);
+  margin: 0.7em 1em 0; flex-shrink: 0;
+}
+.h-l { color: var(--text-muted); font-size: 0.95rem; }
+.h-y { color: var(--yellow); font-weight: bold; }
+.h-g { color: var(--green); }
+.h-p { color: var(--purple); font-weight: bold; }
+.h-s { color: var(--text-dim); }
+.h-stat { display: flex; align-items: baseline; gap: 0.3em; font-size: 0.95rem; }
+
+.main-area {
+  flex: 1; padding: 0.5em 1em; display: flex; flex-direction: column; min-height: 0; overflow: hidden;
+}
+.screen-tabs {
+  display: flex; gap: 0; border-bottom: 1px solid var(--border-dim); flex-shrink: 0;
+}
+.screen-tab {
+  padding: 0.35em 1em; font-size: 0.95rem; color: var(--text-muted);
+  cursor: pointer; user-select: none; text-transform: uppercase;
+  letter-spacing: 0.06em; border-bottom: 2px solid transparent;
+}
+.screen-tab.active { color: var(--purple); border-bottom-color: var(--purple); font-weight: bold; }
+.screen-tab:hover { color: var(--text); background: #1a1d2e; }
+.screen-content { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+
+.keybind-bar {
+  border-top: 1px solid var(--border); padding: 0.45em 1em;
+  font-size: 0.85rem; display: flex; gap: 0.7em; flex-shrink: 0;
+}
+.kb-key { color: var(--text); font-weight: bold; }
+.kb-action { color: var(--text-muted); }
+.kb-pos { color: var(--text-muted); margin-right: auto; }
+
+.status-bar {
+  border-top: 1px solid var(--border); padding: 0.3em 1em;
+  font-size: 0.85rem; color: var(--text-dim); display: flex; align-items: center; gap: 0.3em; flex-shrink: 0;
+}
+.status-bar .prefix { color: var(--text-muted); }
+
+@keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0; } }
+@keyframes fadeSlide { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+.mount-anim { animation: fadeSlide 0.25s ease; }
+@keyframes skelPulse { 0%,100% { opacity: 0.4; } 50% { opacity: 0.8; } }
+
+/* ========================================================================
+   TAB: Dashboard
+   ======================================================================== */
+.tab-panel { display: none; flex: 1; flex-direction: column; min-height: 0; }
+.tab-panel.active { display: flex; }
+
+.tab-dashboard .dash-unified { display: flex; flex-direction: column; gap: 0.8em; flex: 1; padding: 0.5em 0; }
+.tab-dashboard .dash-u-split { display: flex; gap: 0.8em; flex: 1; min-height: 0; }
+.tab-dashboard .dash-u-left { flex: 1; display: flex; flex-direction: column; gap: 0.8em; min-width: 0; }
+.tab-dashboard .dash-u-right { flex: 1; display: flex; flex-direction: column; gap: 0.8em; min-width: 0; }
+
+.tab-dashboard .panel {
+  border: 1px solid var(--border); position: relative; padding: 0.8em;
+}
+.tab-dashboard .panel-title {
+  position: absolute; top: -0.9em; left: 0.8em; background: var(--bg);
+  padding: 0 0.6em; color: var(--purple); font-weight: bold;
+  font-size: 0.9rem; letter-spacing: 0.08em; text-transform: uppercase; line-height: 1.3;
+}
+.tab-dashboard .panel-body { padding: 0; }
+
+.tab-dashboard .stat-4up { display: flex; gap: 0.8em; flex-shrink: 0; }
+.tab-dashboard .stat-card {
+  flex: 1; border: 1px solid var(--border); text-align: center; padding: 1.5em 0.8em;
+}
+.tab-dashboard .stat-card-num { font-size: 1.8rem; line-height: 1; }
+.tab-dashboard .stat-card-label {
+  font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase;
+  letter-spacing: 0.08em; margin-top: 0.6em;
+}
+
+.tab-dashboard .pb-row { display: flex; align-items: center; gap: 0.5em; font-size: 0.95rem; padding: 0.15em 0; }
+.tab-dashboard .pb-label { color: var(--text); width: 20ch; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tab-dashboard .pb-track { flex: 1; height: 1.1em; position: relative; line-height: 1.1em; letter-spacing: 0.15em; color: var(--border); font-size: 0.95rem; overflow: hidden; }
+.tab-dashboard .pb-fill-text { position: absolute; top: 0; left: 0; overflow: hidden; white-space: nowrap; letter-spacing: 0.15em; }
+.tab-dashboard .pb-pct { text-align: right; font-size: 0.85rem; min-width: 4ch; }
+.tab-dashboard .pb-pct.c0 { color: var(--red); } .tab-dashboard .pb-pct.c1 { color: var(--yellow); } .tab-dashboard .pb-pct.c2 { color: var(--green); }
+
+.tab-dashboard .tag-row { display: flex; gap: 0.4em; flex-wrap: wrap; }
+.tab-dashboard .tag {
+  font-size: 0.8rem; padding: 0.1em 0.5em; border: 1px solid var(--border-dim);
+  color: var(--text-muted); display: flex; align-items: center; gap: 0.4em;
+}
+.tab-dashboard .tag .tag-pct { font-weight: bold; color: var(--purple); }
+.tab-dashboard .tag.critical .tag-pct { color: var(--red); }
+.tab-dashboard .tag.warning .tag-pct { color: var(--yellow); }
+.tab-dashboard .tag.ok .tag-pct { color: var(--green); }
+
+.tab-dashboard .mini-feed { display: flex; flex-direction: column; gap: 0.2em; font-size: 0.85rem; }
+.tab-dashboard .mini-feed-item { display: flex; align-items: center; gap: 0.5em; color: var(--text-dim); }
+.tab-dashboard .mini-feed-item .mf-dot { color: var(--green); }
+.tab-dashboard .mini-feed-item .mf-rating { color: var(--yellow); margin-left: auto; }
+.tab-dashboard .selected-dot { color: var(--purple); }
+
+/* ========================================================================
+   TAB: Admin V7 — Table + Wizard
+   ======================================================================== */
+.tab-admin .v1-split { display: flex; gap: 0.6em; flex: 1; min-height: 0; }
+.tab-admin .v1-table-panel { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+.tab-admin .v1-editor-panel { flex: 2; display: flex; flex-direction: column; min-width: 0; }
+
+.tab-admin .v1-box {
+  border: 1px solid var(--border); display: flex; flex-direction: column;
+  overflow: hidden; height: 100%;
+}
+.tab-admin .v1-box .v1-header {
+  padding: 0.3em 0.5em; font-size: 0.7rem; text-transform: uppercase;
+  letter-spacing: 0.08em; color: var(--text-muted);
+  border-bottom: 1px solid var(--border-dim); display: flex; justify-content: space-between; align-items: center;
+  flex-shrink: 0;
+}
+.tab-admin .v1-box .v1-body { flex: 1; overflow-y: auto; padding: 0; }
+
+.tab-admin .v1-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+.tab-admin .v1-table th {
+  padding: 0.25em 0.4em; text-align: left; font-weight: normal;
+  color: var(--text-muted); font-size: 0.65rem; text-transform: uppercase;
+  letter-spacing: 0.05em; border-bottom: 1px solid var(--border);
+  background: var(--surface); position: sticky; top: 0;
+}
+.tab-admin .v1-table td { padding: 0.2em 0.4em; border-bottom: 1px solid var(--border-dim); color: var(--text); }
+.tab-admin .v1-table tr { cursor: pointer; }
+.tab-admin .v1-table tr:hover td { background: #1a1d2e; }
+.tab-admin .v1-table tr.sel td { background: #2a1f5a; }
+.tab-admin .v1-table .v1-depth1 { padding-left: 1em; font-weight: bold; }
+.tab-admin .v1-table .v1-depth2 { padding-left: 2em; }
+
+.tab-admin .v1-editor-scroll { padding: 0.5em; overflow-y: auto; flex: 1; }
+.tab-admin .v1-editor-scroll .v1-ename { color: var(--yellow); font-weight: bold; font-size: 0.9rem; margin-bottom: 0.4em; }
+.tab-admin .v1-split.v7-split .v1-table-panel { flex: 1; }
+.tab-admin .v1-split.v7-split .v1-editor-panel { flex: 2; }
+
+.tab-admin .v6-steps {
+  display: flex; align-items: center; gap: 0; padding: 0.5em 0; flex-shrink: 0;
+}
+.tab-admin .v6-step {
+  display: flex; align-items: center; gap: 0.4em; flex: 1;
+}
+.tab-admin .v6-step .v6-s-num {
+  width: 1.6em; height: 1.6em; display: flex; align-items: center; justify-content: center;
+  border: 1px solid var(--border-dim); font-size: 0.75rem; color: var(--text-dim);
+  flex-shrink: 0;
+}
+.tab-admin .v6-step.active .v6-s-num { border-color: var(--purple); color: var(--purple); font-weight: bold; }
+.tab-admin .v6-step.done .v6-s-num { border-color: var(--green); color: var(--green); }
+.tab-admin .v6-step .v6-s-label { font-size: 0.7rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.05em; }
+.tab-admin .v6-step.active .v6-s-label { color: var(--text); font-weight: bold; }
+.tab-admin .v6-step.done .v6-s-label { color: var(--green); }
+.tab-admin .v6-step .v6-s-line { flex: 1; height: 1px; background: var(--border-dim); margin: 0 0.4em; }
+.tab-admin .v6-step.done .v6-s-line { background: var(--green); }
+
+.tab-admin .fld { margin-bottom: 0.6em; }
+.tab-admin .fld-label {
+  font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase;
+  letter-spacing: 0.08em; margin-bottom: 0.15em; display: block;
+}
+.tab-admin .fld-input {
+  width: 100%; background: var(--surface); border: 1px solid var(--border-dim);
+  color: var(--text); font-family: var(--font-mono); font-size: 0.8rem;
+  padding: 0.35em 0.5em; outline: none;
+}
+.tab-admin .fld-input:focus { border-color: var(--purple); }
+.tab-admin .fld-textarea {
+  width: 100%; background: var(--surface); border: 1px solid var(--border-dim);
+  color: var(--text); font-family: var(--font-mono); font-size: 0.8rem;
+  padding: 0.35em 0.5em; outline: none; min-height: 3em; resize: vertical;
+}
+.tab-admin .fld-textarea:focus { border-color: var(--purple); }
+
+.tab-admin .btn {
+  background: var(--purple); color: #fff; border: none;
+  font-family: var(--font-mono); font-size: 0.75rem; text-transform: uppercase;
+  letter-spacing: 0.06em; padding: 0.3em 0.6em; cursor: pointer; font-weight: bold;
+}
+.tab-admin .btn:hover { opacity: 0.85; }
+.tab-admin .btn-alt { background: transparent; color: var(--purple); border: 1px solid var(--purple); }
+.tab-admin .btn-sm { font-size: 0.65rem; padding: 0.2em 0.4em; }
+.tab-admin .btn-red { background: var(--red); border-color: var(--red); }
+.tab-admin .btn-green { background: var(--green); border-color: var(--green); color: #000; }
+.tab-admin .btn-grp { display: flex; gap: 0.3em; align-items: center; }
+.tab-admin .btn-icon { background: none; border: none; color: var(--text-dim); cursor: pointer; font-size: 0.9rem; padding: 0.1em; }
+.tab-admin .btn-icon:hover { color: var(--text); }
+.tab-admin .empty-state {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 2em; color: var(--text-dim); text-align: center;
+}
+.tab-admin .empty-state .empty-icon { font-size: 1.5rem; margin-bottom: 0.3em; }
+
+.tab-admin .status-badge {
+  font-size: 0.6rem; padding: 0.05em 0.3em; text-transform: uppercase;
+  letter-spacing: 0.05em; border: 1px solid; display: inline-block; line-height: 1.3;
+}
+.tab-admin .sb-locked { color: var(--text-dim); border-color: var(--border-dim); }
+.tab-admin .sb-avail { color: var(--text-muted); border-color: var(--border-dim); }
+.tab-admin .sb-prog { color: var(--yellow); border-color: var(--yellow); }
+.tab-admin .sb-done { color: var(--green); border-color: var(--green); }
+
+/* ========================================================================
+   TAB: Combined — Tree + Module Workspace
+   ======================================================================== */
+.tab-combined .panel {
+  border: 1px solid var(--border); position: relative; padding: 0.8em;
+}
+.tab-combined .panel-title {
+  position: absolute; top: -0.9em; left: 0.8em; background: var(--bg);
+  padding: 0 0.6em; color: var(--purple); font-weight: bold;
+  font-size: 0.9rem; letter-spacing: 0.08em; text-transform: uppercase; line-height: 1.3;
+}
+.tab-combined .panel-body { padding: 0; }
+
+.tab-combined .tree-panel-fixed { flex: 0 0 28%; min-width: 16em; display: flex; flex-direction: column; overflow-y: auto; }
+.tab-combined .tree-split { display: flex; gap: 0.8em; flex: 1; min-height: 0; }
+.tab-combined .tree-list { list-style: none; padding: 0.2em 0; }
+.tab-combined .tree-item { user-select: none; }
+.tab-combined .tree-item-content {
+  display: flex; align-items: center; gap: 0.4em;
+  padding: 0.2em 0.3em; cursor: pointer; font-size: 0.9rem;
+  border-left: 2px solid transparent;
+}
+.tab-combined .tree-item-content:hover { background: #1a1d2e; }
+.tab-combined .tree-item-content.selected { background: #2a1f5a; border-left-color: var(--purple); }
+.tab-combined .tree-item-content.sel-course { border-left-color: var(--yellow); }
+.tab-combined .tree-item-content.sel-course .ti-name { color: var(--yellow); font-weight: bold; }
+.tab-combined .tree-item-content .ti-icon { width: 1.2em; text-align: center; flex-shrink: 0; }
+.tab-combined .tree-item-content .ti-name { color: var(--text); }
+.tab-combined .tree-item-content .ti-expand { color: var(--text-dim); width: 1em; cursor: pointer; flex-shrink: 0; }
+.tab-combined .tree-children { padding-left: 1.2em; }
+.tab-combined .tree-leaf .ti-icon { font-size: 0.85rem; }
+
+.tab-combined .si-locked { color: var(--text-dim); }
+.tab-combined .si-available { color: var(--text-muted); }
+.tab-combined .si-progress { color: var(--yellow); }
+.tab-combined .si-done { color: var(--green); }
+
+.tab-combined .roadmap-outer { display: flex; flex-direction: column; gap: 0.5em; flex: 1; }
+.tab-combined .rm-header { text-align: center; padding: 0.3em 0; }
+.tab-combined .rm-header .rm-course { color: var(--purple); font-weight: bold; font-size: 1.1rem; }
+.tab-combined .rm-header .rm-progress { color: var(--text-muted); font-size: 0.85rem; margin-top: 0.2em; }
+.tab-combined .rm-progress-bar {
+  width: 100%; height: 0.7em; background: var(--surface-alt);
+  border: 1px solid var(--border-dim); margin: 0.3em 0;
+}
+.tab-combined .rm-progress-bar .rm-pb-fill { height: 100%; background: var(--purple); transition: width 0.3s; }
+.tab-combined .rm-current {
+  border: 1px solid var(--purple); padding: 0.8em; position: relative; margin: 0.3em 0;
+}
+.tab-combined .rm-current .rm-curr-label {
+  position: absolute; top: -0.8em; left: 0.8em; background: var(--bg);
+  padding: 0 0.4em; color: var(--yellow); font-weight: bold;
+  font-size: 0.8rem; letter-spacing: 0.06em; text-transform: uppercase;
+}
+.tab-combined .rm-curr-name { color: var(--text); font-weight: bold; font-size: 1rem; }
+.tab-combined .rm-curr-desc { color: var(--text-muted); font-size: 0.85rem; margin: 0.2em 0 0.4em; }
+.tab-combined .rm-curr-actions { display: flex; gap: 0.5em; }
+.tab-combined .rm-btn {
+  background: var(--purple); color: #fff; border: none;
+  font-family: var(--font-mono); font-size: 0.8rem; text-transform: uppercase;
+  letter-spacing: 0.06em; padding: 0.3em 0.7em; cursor: pointer; font-weight: bold;
+}
+.tab-combined .rm-btn-outline { background: transparent; color: var(--purple); border: 1px solid var(--purple); }
+.tab-combined .rm-btn:hover { opacity: 0.85; }
+
+.tab-combined .rmx-panels { display: flex; gap: 0.8em; }
+.tab-combined .rmx-panels .rmx-panel { flex: 1; border: 1px solid var(--border); padding: 0.6em; position: relative; }
+.tab-combined .rmx-panels .rmx-panel .rmx-plabel {
+  position: absolute; top: -0.7em; left: 0.6em; background: var(--bg);
+  padding: 0 0.4em; color: var(--text-muted); font-weight: bold;
+  font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase;
+}
+
+.tab-combined .streak-calendar { display: flex; flex-direction: column; gap: 0.2em; padding: 0.2em 0; }
+.tab-combined .sc-header { display: flex; align-items: center; justify-content: space-between; font-size: 0.8rem; padding: 0 0.2em; }
+.tab-combined .sc-header .sc-month { color: var(--text); font-weight: bold; font-size: 0.95rem; }
+.tab-combined .sc-header .sc-year { color: var(--text-muted); }
+.tab-combined .sc-header .sc-streak { color: var(--yellow); font-weight: bold; }
+.tab-combined .sc-table { width: 100%; border-collapse: collapse; border-spacing: 3px; border-collapse: separate; }
+.tab-combined .sc-table th {
+  font-size: 0.7rem; color: var(--text-dim); text-transform: uppercase;
+  letter-spacing: 0.05em; padding: 0.1em 0; text-align: center; font-weight: normal; border: none;
+}
+.tab-combined .sc-table td {
+  text-align: center; padding: 0.35em 0; font-size: 0.9rem;
+  width: 14.28%; border-radius: 2px; border: 1px solid var(--border-dim);
+}
+.tab-combined .sc-table td.sc-day-num { color: var(--text-muted); }
+.tab-combined .sc-table td.sc-filled { background: var(--purple); border-color: var(--purple); color: #fff; font-weight: bold; }
+.tab-combined .sc-table td.sc-today { border-color: var(--yellow); box-shadow: inset 0 0 0 1px var(--yellow); color: var(--yellow); font-weight: bold; }
+.tab-combined .sc-table td.sc-future { color: var(--text-dim); border-color: transparent; }
+.tab-combined .sc-table td.sc-weekend.sc-day-num { opacity: 0.5; }
+.tab-combined .sc-legend { display: flex; align-items: center; gap: 0.3em; font-size: 0.65rem; color: var(--text-dim); justify-content: center; margin-top: 0.15em; }
+.tab-combined .sc-legend .sc-l-box { width: 0.6em; height: 0.6em; border: 1px solid var(--border-dim); }
+.tab-combined .sc-legend .sc-l-box.light { background: var(--purple); opacity: 0.4; border-color: var(--purple); }
+.tab-combined .sc-legend .sc-l-box.full { background: var(--purple); border-color: var(--purple); }
+
+.tab-combined .help-content { display: flex; flex-direction: column; gap: 0.35em; padding: 0.3em 0; }
+.tab-combined .help-row { display: flex; align-items: center; gap: 0.5em; font-size: 0.85rem; }
+.tab-combined .help-row .hr-label { color: var(--text-muted); min-width: 14ch; }
+
+.tab-combined .module-tabs {
+  display: flex; gap: 0; border-bottom: 1px solid var(--border-dim); flex-shrink: 0;
+}
+.tab-combined .module-tab {
+  padding: 0.4em 1em; font-size: 0.85rem; color: var(--text-muted);
+  cursor: pointer; user-select: none; text-transform: uppercase; letter-spacing: 0.06em;
+  border-bottom: 2px solid transparent; display: flex; align-items: center; gap: 0.4em;
+}
+.tab-combined .module-tab.active { color: var(--purple); border-bottom-color: var(--purple); font-weight: bold; }
+.tab-combined .module-tab:hover { color: var(--text); background: #1a1d2e; }
+.tab-combined .module-container { flex: 1; min-height: 0; overflow-y: auto; position: relative; }
+.tab-combined .module-card { padding: 1em; animation: fadeSlide 0.2s ease; }
+
+.tab-combined .module-loading { display: flex; flex-direction: column; gap: 0.8em; padding: 1.5em; }
+.tab-combined .skel-line {
+  height: 0.8em; background: var(--surface-alt); border: 1px solid var(--border-dim);
+  animation: skelPulse 1.2s ease-in-out infinite;
+}
+.tab-combined .skel-line.w60 { width: 60%; }
+.tab-combined .skel-line.w80 { width: 80%; }
+.tab-combined .skel-line.w40 { width: 40%; }
+.tab-combined .skel-line.h2 { height: 1.5em; }
+.tab-combined .skel-line.h4 { height: 4em; }
+
+.tab-combined .learn-section { padding: 0.3em 0; }
+.tab-combined .learn-section + .learn-section { border-top: 1px solid var(--border-dim); padding-top: 0.6em; margin-top: 0.3em; }
+.tab-combined .ls-label {
+  font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;
+  letter-spacing: 0.08em; margin-bottom: 0.4em;
+}
+.tab-combined .ls-body { font-size: 0.9rem; line-height: 1.6; color: var(--text); }
+.tab-combined .ls-mnemonic { font-size: 0.85rem; color: var(--text-muted); margin-top: 0.5em; }
+
+.tab-combined .quiz-q { font-size: 0.95rem; font-weight: bold; margin-bottom: 0.6em; }
+.tab-combined .quiz-opt {
+  display: flex; align-items: center; gap: 0.5em; padding: 0.4em 0.6em;
+  cursor: pointer; font-size: 0.85rem; border: 1px solid var(--border-dim);
+  margin-bottom: 0.3em; transition: border-color 0.15s;
+}
+.tab-combined .quiz-opt:hover { border-color: var(--border); background: #1a1d2e; }
+.tab-combined .quiz-opt .qo-letter { color: var(--text-muted); font-weight: bold; min-width: 1.5em; }
+.tab-combined .quiz-opt.correct { border-color: var(--green); background: #0f2a1a; }
+.tab-combined .quiz-opt.correct .qo-letter { color: var(--green); }
+.tab-combined .quiz-opt.wrong { border-color: var(--red); background: #2a0f0f; }
+.tab-combined .quiz-opt.wrong .qo-letter { color: var(--red); }
+.tab-combined .quiz-counter { font-size: 0.75rem; color: var(--text-dim); margin-bottom: 0.3em; }
+.tab-combined .quiz-result { font-size: 0.85rem; margin-top: 0.3em; }
+.tab-combined .quiz-result.pass { color: var(--green); }
+.tab-combined .quiz-result.fail { color: var(--red); }
+.tab-combined .quiz-btn {
+  background: var(--purple); color: #fff; border: none;
+  font-family: var(--font-mono); font-size: 0.75rem; text-transform: uppercase;
+  letter-spacing: 0.06em; padding: 0.3em 0.7em; cursor: pointer; font-weight: bold;
+  margin-top: 0.5em;
+}
+.tab-combined .quiz-btn:hover { opacity: 0.85; }
+.tab-combined .quiz-btn.alt { background: var(--surface-alt); color: var(--text-muted); }
+
+.tab-combined .code-prompt { font-weight: bold; font-size: 0.9rem; margin-bottom: 0.5em; }
+.tab-combined .code-editor {
+  background: var(--surface); border: 1px solid var(--border-dim);
+  padding: 0.6em; font-size: 0.85rem; font-family: var(--font-mono);
+  min-height: 5em; white-space: pre-wrap; color: var(--text-dim);
+  margin-bottom: 0.4em;
+}
+.tab-combined .code-out {
+  background: var(--surface-alt); border: 1px solid var(--border-dim);
+  padding: 0.5em; font-size: 0.85rem; margin-top: 0.3em; min-height: 2em;
+  color: var(--text-muted); white-space: pre-wrap;
+}
+.tab-combined .code-out.solution { border-color: var(--purple); color: var(--cyan); }
+
+.tab-combined .fc-card {
+  border: 2px solid var(--border); padding: 2em 1.5em;
+  min-height: 8em; cursor: pointer; display: flex;
+  align-items: center; justify-content: center; text-align: center;
+  font-size: 1.1rem; user-select: none; background: var(--surface);
+  transition: border-color 0.2s;
+}
+.tab-combined .fc-card:hover { border-color: var(--purple); }
+.tab-combined .fc-card .fc-front { color: var(--text); }
+.tab-combined .fc-card .fc-back { color: var(--cyan); }
+.tab-combined .fc-card.flipped { border-color: var(--cyan); }
+.tab-combined .fc-counter { font-size: 0.75rem; color: var(--text-dim); text-align: center; margin-top: 0.4em; }
+.tab-combined .fc-hint { font-size: 0.7rem; color: var(--text-dim); text-align: center; margin-top: 0.2em; }
+.tab-combined .fc-nav { display: flex; gap: 0.5em; justify-content: center; margin-top: 0.6em; }
+.tab-combined .fc-btn {
+  background: var(--surface-alt); color: var(--text); border: 1px solid var(--border-dim);
+  font-family: var(--font-mono); font-size: 0.75rem; text-transform: uppercase;
+  letter-spacing: 0.06em; padding: 0.3em 0.7em; cursor: pointer;
+}
+.tab-combined .fc-btn:hover { border-color: var(--purple); color: var(--purple); }
+.tab-combined .fc-btn:disabled { opacity: 0.3; cursor: default; border-color: var(--border-dim); color: var(--text-dim); }
+.tab-combined .fc-empty { color: var(--text-dim); padding: 1em; text-align: center; font-size: 0.9rem; }
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="title-bar">
+    <span class="tb-center">BruteForce Learning — <span style="color:var(--purple)">Unified</span></span>
+    <button class="tb-toggle" id="widthToggle">[––]</button>
+  </div>
+
+  <div class="header-bar" id="headerBar">
+    <div class="h-stat"><span class="h-l">rating</span> <span class="h-y">1847</span></div>
+    <div class="h-stat"><span class="h-l">solved</span> <span class="h-g">31</span><span class="h-s">/</span><span class="h-l">48</span></div>
+    <div class="h-stat"><span class="h-l">streak</span> <span class="h-y">10d</span></div>
+    <div class="h-stat"><span class="h-l">xp</span> <span class="h-p">450</span><span class="h-s">/</span><span class="h-l">600</span></div>
+  </div>
+
+  <div class="main-area">
+    <div class="screen-tabs" id="tabBar">
+      <div class="screen-tab active" data-tab="dashboard">Dashboard</div>
+      <div class="screen-tab" data-tab="admin">Admin V7</div>
+      <div class="screen-tab" data-tab="combined">Combined</div>
+    </div>
+    <div class="screen-content" id="screenContent"></div>
+  </div>
+
+  <div class="keybind-bar">
+    <span class="kb-pos" id="kbPos">1/3</span>
+    <span class="kb-key">j</span><span class="kb-action">/</span><span class="kb-key">k</span><span class="kb-action"> tab</span>
+  </div>
+  <div class="status-bar">
+    <span class="prefix">›</span> <span id="statusLabel">Dashboard — stats, progress, topics</span>
+  </div>
+</div>
+
+<script>
+// =====================================================================
+// TABS
+// =====================================================================
+const TABS = ['dashboard', 'admin', 'combined'];
+let activeTab = 'dashboard';
+
+// =====================================================================
+// DATA — Admin V7
+// =====================================================================
+const TREE_ADMIN = [
+  { id: 'react', name: 'React', type: 'course',
+    children: [
+      { id: 'js-basics', name: 'JS Basics', type: 'course',
+        children: [
+          { id: 'vars-types', name: 'Variables & Types', type: 'lesson', status: 'done', notes: 'Variables store data. JS has let, const, var.', mnemonic: 'SNOB NUN', quiz: 3, coding: 1, flashcards: 2 },
+          { id: 'functions-scope', name: 'Functions & Scope', type: 'lesson', status: 'done', notes: 'Functions are reusable blocks.', mnemonic: 'GLB', quiz: 2, coding: 1, flashcards: 1 },
+          { id: 'arrays-objects', name: 'Arrays & Objects', type: 'lesson', status: 'in_progress', notes: 'Arrays store ordered collections.', mnemonic: '', quiz: 1, coding: 1, flashcards: 0 },
+          { id: 'closures', name: 'Closures', type: 'lesson', status: 'available', notes: 'Function remembers outer variables.', mnemonic: 'Backpack', quiz: 1, coding: 1, flashcards: 1 },
+        ] },
+      { id: 'usestate', name: 'useState', type: 'course',
+        children: [
+          { id: 'what-is-state', name: 'What is state?', type: 'lesson', status: 'locked', notes: '', mnemonic: '', quiz: 0, coding: 0, flashcards: 1 },
+          { id: 'counter', name: 'Counter exercise', type: 'coding', status: 'locked', notes: '', mnemonic: '', quiz: 0, coding: 1, flashcards: 0 },
+        ] },
+    ] },
+  { id: 'js', name: 'JavaScript', type: 'course',
+    children: [
+      { id: 'js-vars', name: 'Variables & Types', type: 'lesson', status: 'done', notes: '', mnemonic: '', quiz: 1, coding: 0, flashcards: 1 },
+      { id: 'js-funcs', name: 'Functions & Scope', type: 'lesson', status: 'done', notes: '', mnemonic: '', quiz: 1, coding: 1, flashcards: 0 },
+      { id: 'js-closures', name: 'Closures', type: 'lesson', status: 'in_progress', notes: '', mnemonic: '', quiz: 1, coding: 1, flashcards: 1 },
+    ] },
+];
+let adminId = 100;
+function adminGenId() { return 'node-' + (adminId++); }
+function adminGetAll(nodes) {
+  let list = [];
+  for (const n of nodes) { list.push(n); if (n.children) list = list.concat(adminGetAll(n.children)); }
+  return list;
+}
+function adminFind(id, nodes) {
+  if (!nodes) nodes = TREE_ADMIN;
+  for (const n of nodes) { if (n.id === id) return n; if (n.children) { const f = adminFind(id, n.children); if (f) return f; } }
+  return null;
+}
+function adminParent(id, nodes, parent) {
+  if (!nodes) nodes = TREE_ADMIN;
+  for (const n of nodes) { if (n.id === id) return parent; if (n.children) { const f = adminParent(id, n.children, n); if (f) return f; } }
+  return null;
+}
+function adminLeaf(n) { return !n.children || !n.children.length; }
+function adminBadge(s) {
+  if (!s) return '';
+  const cls = s === 'locked' ? 'sb-locked' : s === 'available' ? 'sb-avail' : s === 'in_progress' ? 'sb-prog' : s === 'done' ? 'sb-done' : 'sb-locked';
+  return '<span class="status-badge ' + cls + '">' + s.replace('_',' ') + '</span>';
+}
+
+let adminState = { sel: 'vars-types', step: 1 };
+
+// =====================================================================
+// DATA — Combined
+// =====================================================================
+const TREE_COMBINED = [
+  { id: 'react', name: 'React', expanded: true,
+    children: [
+      { id: 'js-basics', name: 'JS Basics', status: 'in_progress', progress: 65, expanded: true,
+        children: [
+          { id: 'vars-types', name: 'Variables & Types', type: 'lesson', status: 'done', progress: 100 },
+          { id: 'functions-scope', name: 'Functions & Scope', type: 'lesson', status: 'done', progress: 100 },
+          { id: 'arrays-objects', name: 'Arrays & Objects', type: 'lesson', status: 'in_progress', progress: 60 },
+          { id: 'closures', name: 'Closures', type: 'lesson', status: 'available', progress: 0 },
+        ] },
+      { id: 'usestate', name: 'useState', status: 'locked', progress: 0, expanded: false,
+        children: [
+          { id: 'what-is-state', name: 'What is state?', type: 'lesson', status: 'locked', progress: 0 },
+          { id: 'counter', name: 'Counter exercise', type: 'coding', status: 'locked', progress: 0 },
+        ] },
+      { id: 'useeffect', name: 'useEffect', status: 'locked', progress: 0, expanded: false,
+        children: [
+          { id: 'what-are-effects', name: 'What are effects?', type: 'lesson', status: 'locked', progress: 0 },
+          { id: 'data-fetching', name: 'Data fetching', type: 'coding', status: 'locked', progress: 0 },
+        ] },
+    ] },
+  { id: 'js', name: 'JavaScript', status: 'available', progress: 40, expanded: false,
+    children: [
+      { id: 'js-vars', name: 'Variables & Types', type: 'lesson', status: 'done', progress: 100 },
+      { id: 'js-funcs', name: 'Functions & Scope', type: 'lesson', status: 'done', progress: 100 },
+      { id: 'js-arrays', name: 'Arrays & Objects', type: 'lesson', status: 'done', progress: 100 },
+      { id: 'js-closures', name: 'Closures', type: 'lesson', status: 'in_progress', progress: 30 },
+      { id: 'js-promises', name: 'Promises & Async', type: 'lesson', status: 'locked', progress: 0 },
+    ] },
+  { id: 'git', name: 'Git', status: 'locked', progress: 0, expanded: false,
+    children: [
+      { id: 'git-basics', name: 'Git Basics', type: 'lesson', status: 'locked', progress: 0 },
+      { id: 'git-branching', name: 'Branching & Merging', type: 'lesson', status: 'locked', progress: 0 },
+    ] },
+  { id: 'node', name: 'Node.js', status: 'locked', progress: 0, expanded: false,
+    children: [
+      { id: 'node-intro', name: 'Node.js Intro', type: 'lesson', status: 'locked', progress: 0 },
+    ] },
+];
+
+const COMB_STAT_ICONS = { locked: '◌', available: '○', in_progress: '▶', done: '●' };
+const COMB_STAT_CLS = { locked: 'si-locked', available: 'si-available', in_progress: 'si-progress', done: 'si-done' };
+const COMB_MODULES = {
+  learn: { label: 'Learn', icon: '📖' },
+  quiz: { label: 'Quiz', icon: '?' },
+  code: { label: 'Code', icon: '◈' },
+  flashcards: { label: 'Flashcards', icon: '▣' },
+};
+
+let combState = {
+  selectedNodeId: 'react',
+  activeModule: 'learn',
+  quiz: {},
+  code: {},
+  fc: {},
+};
+
+// =====================================================================
+// RENDER: Dashboard tab
+// =====================================================================
+function renderDashboard() {
+  return `<div class="tab-panel active tab-dashboard">
+    <div class="dash-unified">
+      <div class="stat-4up">
+        <div class="stat-card"><div class="stat-card-num" style="color:var(--yellow)">48</div><div class="stat-card-label">Problems</div></div>
+        <div class="stat-card"><div class="stat-card-num" style="color:var(--purple)">10d</div><div class="stat-card-label">Streak</div></div>
+        <div class="stat-card"><div class="stat-card-num" style="color:var(--cyan)">73%</div><div class="stat-card-label">Mastery</div></div>
+        <div class="stat-card"><div class="stat-card-num" style="color:var(--green)">31</div><div class="stat-card-label">Solved</div></div>
+      </div>
+      <div class="dash-u-split">
+        <div class="dash-u-left">
+          <div class="panel" style="flex:1;display:flex;flex-direction:column;min-height:0">
+            <div class="panel-title">Progress</div>
+            <div class="panel-body" style="padding:0.15em 0;flex:1">
+              <div class="pb-row"><span class="pb-label">data structures</span><div class="pb-track">████████████████████████████████<span class="pb-fill-text" style="width:0%;color:var(--red)"></span></div><span class="pb-pct c0">0%</span></div>
+              <div class="pb-row"><span class="pb-label">graphs</span><div class="pb-track">████████████████████████████████<span class="pb-fill-text" style="width:40%;color:var(--cyan)">████████████</span></div><span class="pb-pct c1">40%</span></div>
+              <div class="pb-row"><span class="pb-label">dynamic programming</span><div class="pb-track">████████████████████████████████<span class="pb-fill-text" style="width:65%;color:var(--yellow)">████████████████████</span></div><span class="pb-pct c1">65%</span></div>
+              <div class="pb-row"><span class="pb-label">math</span><div class="pb-track">████████████████████████████████<span class="pb-fill-text" style="width:90%;color:var(--green)">████████████████████████████</span></div><span class="pb-pct c2">90%</span></div>
+            </div>
+          </div>
+          <div class="panel" style="flex-shrink:0">
+            <div class="panel-title">Topics</div>
+            <div class="panel-body tag-row" style="padding:0.4em">
+              <span class="tag critical"><span>data structures</span> <span class="tag-pct">0%</span></span>
+              <span class="tag critical"><span>graphs</span> <span class="tag-pct">40%</span></span>
+              <span class="tag warning"><span>dynamic programming</span> <span class="tag-pct">65%</span></span>
+              <span class="tag ok"><span>math</span> <span class="tag-pct">90%</span></span>
+              <span class="tag critical"><span>sortings</span> <span class="tag-pct">25%</span></span>
+              <span class="tag warning"><span>bfs</span> <span class="tag-pct">50%</span></span>
+            </div>
+          </div>
+        </div>
+        <div class="dash-u-right">
+          <div class="panel">
+            <div class="panel-title">Continue</div>
+            <div class="panel-body" style="padding:0.3em 0.4em">
+              <div style="display:flex;align-items:center;gap:0.4em;margin-bottom:0.3em">
+                <span class="selected-dot">►</span>
+                <span style="color:var(--purple);font-weight:bold">graphs → dijkstra</span>
+              </div>
+              <div style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.4em">Shortest Path — 65% complete</div>
+              <div style="display:flex;align-items:center;gap:0.4em">
+                <span style="font-size:0.85rem;color:var(--text-muted)">65%</span>
+                <div style="flex:1;height:0.5em;background:var(--surface-alt);border:1px solid var(--border-dim)"><div style="width:65%;height:100%;background:var(--purple)"></div></div>
+              </div>
+            </div>
+          </div>
+          <div class="panel" style="flex:1;min-height:0">
+            <div class="panel-title">Recent Solves</div>
+            <div class="panel-body mini-feed" style="padding:0.3em 0.4em">
+              <div class="mini-feed-item"><span class="mf-dot">●</span> <span>Sum of Two Values</span> <span class="mf-rating">1100</span></div>
+              <div class="mini-feed-item"><span class="mf-dot">●</span> <span>Message Route</span> <span class="mf-rating">1400</span></div>
+              <div class="mini-feed-item"><span class="mf-dot">●</span> <span>Counting Rooms</span> <span class="mf-rating">1300</span></div>
+              <div class="mini-feed-item"><span class="mf-dot">●</span> <span>Book Shop</span> <span class="mf-rating">1500</span></div>
+              <div class="mini-feed-item" style="margin-top:0.3em;color:var(--text-muted);font-size:0.85rem">› 4 solves this week</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+// =====================================================================
+// RENDER: Admin V7 tab
+// =====================================================================
+function renderAdmin() {
+  const all = adminGetAll(TREE_ADMIN);
+  let html = '<div class="tab-panel active tab-admin mount-anim"><div class="v1-split v7-split">';
+  html += '<div class="v1-table-panel"><div class="v1-box">';
+  html += '<div class="v1-header"><span>All Items</span><div><button class="btn btn-sm" onclick="adminAdd()">+ Add</button></div></div>';
+  html += '<div class="v1-body"><table class="v1-table">';
+  html += '<tr><th>Name</th><th>Type</th><th>Status</th></tr>';
+  for (const n of all) {
+    const depth = n.children ? 1 : 2;
+    const sel = n.id === adminState.sel ? ' sel' : '';
+    html += '<tr class="' + sel + '" onclick="adminSelect(\'' + n.id + '\')">';
+    const d = 'v1-depth' + Math.min(depth, 2);
+    html += '<td class="' + d + '">' + n.name + '</td>';
+    html += '<td>' + (n.type || '—') + '</td>';
+    html += '<td>' + adminBadge(n.status) + '</td>';
+    html += '</tr>';
+  }
+  html += '</table></div></div></div>';
+
+  html += '<div class="v1-editor-panel"><div class="v1-box">';
+  const node = adminFind(adminState.sel);
+  if (node) {
+    html += '<div class="v1-header"><span class="v1-ename" style="margin:0;font-size:0.8rem">' + node.name + '</span><div class="btn-grp">';
+    html += '<button class="btn btn-sm btn-green" onclick="adminSave()">Save</button>';
+    html += '<button class="btn btn-sm btn-red" onclick="adminDelete(\'' + node.id + '\')">✕</button>';
+    html += '</div></div>';
+
+    if (adminLeaf(node)) {
+      const steps = ['Info', 'Notes', 'Quiz', 'Coding', 'Flashcards'];
+      html += '<div style="padding:0.4em 0.5em;border-bottom:1px solid var(--border-dim);flex-shrink:0">';
+      html += '<div class="v6-steps" style="padding:0">';
+      for (let i = 0; i < steps.length; i++) {
+        const num = i + 1;
+        const cls = num === adminState.step ? 'active' : num < adminState.step ? 'done' : '';
+        html += '<div class="v6-step ' + cls + '">';
+        html += '<span class="v6-s-num">' + (num < adminState.step ? '✓' : num) + '</span>';
+        html += '<span class="v6-s-label">' + steps[i] + '</span>';
+        if (i < steps.length - 1) html += '<span class="v6-s-line"></span>';
+        html += '</div>';
+      }
+      html += '</div></div>';
+
+      html += '<div class="v1-editor-scroll">';
+      if (adminState.step === 1) {
+        html += '<div class="v1-ename" style="font-size:0.85rem">Step 1: Basic Info</div>';
+        html += '<div class="fld"><label class="fld-label">Lesson Name</label><input class="fld-input" id="adminName" value="' + node.name + '"></div>';
+        html += '<div style="display:flex;gap:0.5em">';
+        html += '<div class="fld" style="flex:1"><label class="fld-label">Type</label><select class="fld-input" id="adminType"><option value="lesson"' + (node.type==='lesson'?' selected':'') + '>Lesson</option><option value="coding"' + (node.type==='coding'?' selected':'') + '>Coding</option></select></div>';
+        html += '<div class="fld" style="flex:1"><label class="fld-label">Status</label><select class="fld-input" id="adminStatus"><option value="locked"' + (node.status==='locked'?' selected':'') + '>Locked</option><option value="available"' + (node.status==='available'?' selected':'') + '>Available</option><option value="in_progress"' + (node.status==='in_progress'?' selected':'') + '>In Progress</option><option value="done"' + (node.status==='done'?' selected':'') + '>Done</option></select></div>';
+        html += '</div>';
+        html += '<div class="fld"><label class="fld-label">Course</label><input class="fld-input" placeholder="Parent course" value="' + (adminParent(node.id) || {name:''}).name + '" disabled style="opacity:0.5"></div>';
+      } else if (adminState.step === 2) {
+        html += '<div class="v1-ename" style="font-size:0.85rem">Step 2: Notes & Mnemonic</div>';
+        html += '<div class="fld"><label class="fld-label">Lesson Notes</label><textarea class="fld-textarea" id="adminNotes" style="min-height:8em">' + (node.notes || '') + '</textarea></div>';
+        html += '<div class="fld"><label class="fld-label">Memory Hook / Mnemonic</label><input class="fld-input" id="adminMnemonic" placeholder="e.g. SNOB NUN" value="' + (node.mnemonic || '') + '"></div>';
+        html += '<div style="color:var(--text-dim);font-size:0.7rem;padding:0.2em 0">Short, weird, visual — that is how mnemonics stick.</div>';
+      } else if (adminState.step === 3) {
+        html += '<div class="v1-ename" style="font-size:0.85rem">Step 3: Quiz Questions <span style="color:var(--text-dim);font-weight:normal;font-size:0.75rem">(' + (node.quiz || 0) + ' questions)</span></div>';
+        for (let i = 0; i < (node.quiz || 2); i++) {
+          html += '<div style="border:1px solid var(--border-dim);padding:0.4em;margin-bottom:0.3em">';
+          html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.2em">';
+          html += '<span style="font-size:0.75rem;color:var(--text-muted)">Q' + (i+1) + '</span>';
+          html += '<span class="btn-icon" onclick="adminRemoveQuiz(' + i + ')" style="font-size:0.7rem;color:var(--red)">✕</span>';
+          html += '</div>';
+          html += '<div class="fld" style="margin:0"><input class="fld-input" placeholder="Question" value="Sample question ' + (i+1) + '" id="adminq_q_' + i + '"></div>';
+          html += '<div style="display:flex;gap:0.2em;margin-top:0.2em">';
+          for (let j = 0; j < 4; j++) {
+            html += '<input class="fld-input" style="flex:1;font-size:0.7rem" placeholder="Opt ' + String.fromCharCode(65+j) + '" id="adminq_o' + j + '_' + i + '">';
+          }
+          html += '</div></div>';
+        }
+        html += '<button class="btn btn-sm btn-alt" onclick="adminAddQuiz()">+ Add Question</button>';
+      } else if (adminState.step === 4) {
+        html += '<div class="v1-ename" style="font-size:0.85rem">Step 4: Coding Exercise</div>';
+        html += '<div class="fld"><label class="fld-label">Prompt / Description</label><textarea class="fld-textarea" id="adminCodingPrompt" style="min-height:3em"></textarea></div>';
+        html += '<div class="fld"><label class="fld-label">Starter Code</label><textarea class="fld-textarea" id="adminCodingStarter" style="min-height:4em;font-family:var(--font-mono)"></textarea></div>';
+        html += '<div class="fld"><label class="fld-label">Solution</label><textarea class="fld-textarea" id="adminCodingSolution" style="min-height:4em;font-family:var(--font-mono)"></textarea></div>';
+      } else if (adminState.step === 5) {
+        html += '<div class="v1-ename" style="font-size:0.85rem">Step 5: Flashcards <span style="color:var(--text-dim);font-weight:normal;font-size:0.75rem">(' + (node.flashcards || 0) + ' cards)</span></div>';
+        for (let i = 0; i < (node.flashcards || 2); i++) {
+          html += '<div style="border:1px solid var(--border-dim);padding:0.4em;margin-bottom:0.3em">';
+          html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.2em">';
+          html += '<span style="font-size:0.75rem;color:var(--text-muted)">Card ' + (i+1) + '</span>';
+          html += '<span class="btn-icon" onclick="adminRemoveFlashcard(' + i + ')" style="font-size:0.7rem;color:var(--red)">✕</span>';
+          html += '</div>';
+          html += '<div class="fld" style="margin:0"><input class="fld-input" placeholder="Front (question)" id="adminf_f_' + i + '"></div>';
+          html += '<div class="fld" style="margin:0;margin-top:0.15em"><textarea class="fld-textarea" placeholder="Back (answer)" id="adminf_b_' + i + '" style="min-height:2em"></textarea></div>';
+          html += '</div>';
+        }
+        html += '<button class="btn btn-sm btn-alt" onclick="adminAddFlashcard()">+ Add Card</button>';
+      }
+      html += '</div>';
+
+      html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:0.3em 0.5em;border-top:1px solid var(--border-dim);flex-shrink:0;background:var(--surface)">';
+      html += '<button class="btn btn-sm" onclick="adminPrev()"' + (adminState.step <= 1 ? ' disabled style="opacity:0.3"' : '') + '>◀ Back</button>';
+      html += '<span style="font-size:0.75rem;color:var(--text-dim)">Step ' + adminState.step + ' / 5</span>';
+      html += '<button class="btn btn-sm" onclick="adminNext()"' + (adminState.step >= 5 ? ' disabled style="opacity:0.3"' : '') + '>Next ▶</button>';
+      html += '</div>';
+    } else {
+      html += '<div class="v1-header"><span class="v1-ename" style="margin:0;font-size:0.8rem">' + node.name + '</span></div>';
+      html += '<div class="v1-editor-scroll">';
+      html += '<div style="color:var(--text-dim);font-size:0.85rem;padding:0.5em">Course node — select a leaf lesson from the table to edit its content with the wizard.</div>';
+      html += '<div style="color:var(--text-muted);font-size:0.8rem">Children: ' + (node.children ? node.children.length : 0) + '</div>';
+      html += '</div>';
+    }
+  } else {
+    html += '<div class="v1-header"><span>Select an item</span></div>';
+    html += '<div class="v1-editor-scroll"><div class="empty-state"><div class="empty-icon">◈</div><div class="empty-text">Select a lesson from the table to edit</div></div></div>';
+  }
+  html += '</div></div></div></div>';
+  return html;
+}
+
+function adminSelect(id) { adminState.sel = id; adminState.step = 1; switchTab('admin'); }
+function adminPrev() { if (adminState.step > 1) adminState.step--; switchTab('admin'); }
+function adminNext() { if (adminState.step < 5) adminState.step++; switchTab('admin'); }
+function adminAdd() {
+  const id = adminGenId();
+  TREE_ADMIN.push({ id, name: 'New Lesson', type: 'lesson', status: 'locked', notes: '', mnemonic: '', quiz: 0, coding: 0, flashcards: 0 });
+  adminState.sel = id; adminState.step = 1; switchTab('admin');
+}
+function adminDelete(id) {
+  if (!confirm('Delete?')) return;
+  const p = adminParent(id); if (p) p.children = p.children.filter(c => c.id !== id); else TREE_ADMIN.splice(TREE_ADMIN.findIndex(c => c.id === id), 1);
+  adminState.sel = TREE_ADMIN[0] ? TREE_ADMIN[0].id : null; switchTab('admin');
+}
+function adminSave() {
+  const n = adminFind(adminState.sel); if (!n) return;
+  const name = document.getElementById('adminName'); if (name) n.name = name.value;
+  const type = document.getElementById('adminType'); if (type) n.type = type.value;
+  const status = document.getElementById('adminStatus'); if (status) n.status = status.value;
+  const notes = document.getElementById('adminNotes'); if (notes) n.notes = notes.value;
+  const mnemonic = document.getElementById('adminMnemonic'); if (mnemonic) n.mnemonic = mnemonic.value;
+}
+function adminAddQuiz() { const n = adminFind(adminState.sel); if (n) n.quiz = (n.quiz || 0) + 1; switchTab('admin'); }
+function adminRemoveQuiz(idx) { const n = adminFind(adminState.sel); if (n && n.quiz > 0) n.quiz--; switchTab('admin'); }
+function adminAddFlashcard() { const n = adminFind(adminState.sel); if (n) n.flashcards = (n.flashcards || 0) + 1; switchTab('admin'); }
+function adminRemoveFlashcard(idx) { const n = adminFind(adminState.sel); if (n && n.flashcards > 0) n.flashcards--; switchTab('admin'); }
+
+// =====================================================================
+// RENDER: Combined tab
+// =====================================================================
+function combIcon(n) {
+  if (n.children) {
+    if (n.status === 'done') return '<span class="si-done">●</span>';
+    if (n.status === 'in_progress') return '<span class="si-progress">▶</span>';
+    return '<span class="si-locked">◌</span>';
+  }
+  return '<span class="' + COMB_STAT_CLS[n.status] + '">' + COMB_STAT_ICONS[n.status] + '</span>';
+}
+
+function combRenderTree(nodes, depth) {
+  let html = '<ul class="tree-list">';
+  for (const n of nodes) {
+    const hc = n.children && n.children.length > 0;
+    const isSel = n.id === combState.selectedNodeId;
+    const selCls = isSel ? (hc ? ' sel-course' : ' selected') : '';
+    html += '<li class="tree-item' + (!hc ? ' tree-leaf' : '') + '">';
+    html += '<div class="tree-item-content' + selCls + '" data-id="' + n.id + '">';
+    if (hc) {
+      html += '<span class="ti-expand" data-toggle="' + n.id + '">' + (n.expanded ? '▼' : '▶') + '</span>';
+    } else {
+      html += '<span class="ti-expand" style="visibility:hidden">▶</span>';
+    }
+    html += '<span class="ti-icon">' + combIcon(n) + '</span>';
+    html += '<span class="ti-name">' + n.name + '</span>';
+    html += '</div>';
+    if (hc && n.expanded) {
+      html += '<div class="tree-children">' + combRenderTree(n.children, depth + 1) + '</div>';
+    }
+    html += '</li>';
+  }
+  html += '</ul>';
+  return html;
+}
+
+function combFindNode(id, nodes) {
+  nodes = nodes || TREE_COMBINED;
+  for (const n of nodes) {
+    if (n.id === id) return n;
+    if (n.children) { const f = combFindNode(id, n.children); if (f) return f; }
+  }
+  return null;
+}
+
+function combIsCourse(n) { return n && n.children && n.children.length > 0; }
+
+function combGetCurrentLesson(course) {
+  if (!course || !course.children) return null;
+  return course.children.find(c => c.status === 'in_progress') ||
+         course.children.find(c => c.status === 'available') ||
+         course.children[0] || null;
+}
+
+function combCalcStatus(nodes) {
+  return nodes.map(n => {
+    if (n.children) {
+      const all = combCalcStatus(n.children);
+      const st = all.map(a => a.status);
+      if (st.every(s => s === 'done')) return { ...n, status: 'done', progress: 100 };
+      if (st.some(s => s === 'in_progress' || s === 'done')) return { ...n, status: 'in_progress', progress: Math.round(all.reduce((s, n) => s + n.progress, 0) / all.length) };
+      return { ...n, status: 'locked', progress: 0 };
+    }
+    return n;
+  });
+}
+
+function combRenderStreak() {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth();
+  const dim = new Date(year, month + 1, 0).getDate();
+  const fd = new Date(year, month, 1).getDay();
+  const today = now.getDate();
+  let html = '<div class="streak-calendar">';
+  html += '<div class="sc-header"><span class="sc-month">' + now.toLocaleString('en', { month: 'long' }) + '</span><span class="sc-year">' + year + '</span><span class="sc-streak">🔥 10d streak</span></div>';
+  html += '<table class="sc-table"><tr>';
+  for (const h of ['S','M','T','W','T','F','S']) html += '<th>' + h + '</th>';
+  html += '</tr>';
+  let day = 1;
+  for (let w = 0; w < 6; w++) {
+    html += '<tr>';
+    for (let d = 0; d < 7; d++) {
+      if ((w === 0 && d < fd) || day > dim) { html += '<td></td>'; }
+      else {
+        let cls = 'sc-day-num';
+        if (day === today) cls += ' sc-today';
+        else if (day < today) cls += ' sc-filled';
+        else cls += ' sc-future';
+        html += '<td class="' + cls + '">' + day + '</td>';
+        day++;
+      }
+    }
+    html += '</tr>';
+    if (day > dim) break;
+  }
+  html += '</table><div class="sc-legend"><span class="sc-l-box light"></span><span>done</span><span class="sc-l-box full"></span><span>today</span></div></div>';
+  return html;
+}
+
+function combRenderHelp() {
+  return '<div class="help-content">' +
+    '<div class="help-row"><span class="hr-label">next review</span><span style="color:var(--yellow);font-weight:bold">closures — 30 min</span></div>' +
+    '<div class="help-row"><span class="hr-label">focus area</span><span style="color:var(--cyan);font-weight:bold">JS Basics (65%)</span></div>' +
+    '<div class="help-row"><span class="hr-label">weekly goal</span><span style="color:var(--text);font-weight:bold">5 lessons</span><span style="color:var(--text-muted);font-size:0.8rem">(3 done)</span></div></div>';
+}
+
+function combRenderRoadmap(course) {
+  const children = course.children || [];
+  const done = children.filter(c => {
+    if (c.children) return c.children.every(cc => cc.status === 'done');
+    return c.status === 'done';
+  }).length;
+  const total = children.length;
+  const pct = total ? Math.round(done / total * 100) : 0;
+  const current = combGetCurrentLesson(course);
+  let html = '<div class="roadmap-outer">';
+  html += '<div class="rm-header"><div class="rm-course">' + course.name + '</div><div class="rm-progress">' + done + '/' + total + ' lessons · ' + pct + '%</div><div class="rm-progress-bar"><div class="rm-pb-fill" style="width:' + pct + '%"></div></div></div>';
+  if (current) {
+    html += '<div class="rm-current"><div class="rm-curr-label">Continue</div><div class="rm-curr-name">' + current.name + '</div>';
+    html += '<div class="rm-curr-desc">' + (current.type === 'lesson' ? 'Read notes and complete the quiz' : 'Write code to solve the challenge') + '</div>';
+    html += '<div class="rm-curr-actions"><button class="rm-btn" data-action="open-lesson" data-id="' + current.id + '">Start</button>';
+    html += '<button class="rm-btn rm-btn-outline" data-action="open-lesson" data-id="' + current.id + '">Review Notes</button></div></div>';
+  }
+  html += '<div class="rmx-panels"><div class="rmx-panel"><div class="rmx-plabel">Streak</div>' + combRenderStreak() + '</div>';
+  html += '<div class="rmx-panel"><div class="rmx-plabel">Helping Hand</div>' + combRenderHelp() + '</div></div></div>';
+  return html;
+}
+
+async function combLoadModule(containerId) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  const node = combFindNode(combState.selectedNodeId);
+  const isCourse = combIsCourse(node);
+  const lessonId = isCourse ? (combGetCurrentLesson(node) || { id: null }).id : combState.selectedNodeId;
+  if (!lessonId) { container.innerHTML = '<div class="module-card fc-empty">Select a lesson</div>'; return; }
+
+  const CONTENT = {
+    'vars-types': { notes: 'Variables store data. JavaScript has <span style="color:var(--cyan)">let</span>, const, and var.', mnemonic: '"SNOB NUN"', quiz: [{ q: 'Which keyword is block-scoped?', opts: ['let', 'const', 'var'], correct: [0, 1] }], code: { prompt: 'Declare a variable name with value "Alice".', starter: 'let name = ', solution: 'let name = "Alice";' }, fc: [{ front: 'What keyword declares a block-scoped variable?', back: 'let / const' }] },
+    'closures': { notes: 'A closure is a function that remembers its outer variables.', mnemonic: '"Backpack"', quiz: [{ q: 'A closure has access to:', opts: ['local only', 'outer + global', 'global only'], correct: [1] }], code: { prompt: 'Write makeCounter that returns a function counting up.', starter: 'function makeCounter() {', solution: 'function makeCounter() {\n  let count = 0;\n  return () => ++count;\n}' }, fc: [{ front: 'What is a closure?', back: 'A function that remembers its outer scope' }] },
+  };
+
+  const data = CONTENT[lessonId];
+  let html = '<div class="module-card">';
+  switch (combState.activeModule) {
+    case 'learn': {
+      html += '<div class="learn-section"><div class="ls-label">Notes</div><div class="ls-body">' + (data ? data.notes : 'Content coming soon.') + '</div>';
+      if (data && data.mnemonic) html += '<div class="ls-mnemonic">🧠 ' + data.mnemonic + '</div>';
+      html += '<div class="learn-section"><div class="ls-label">Review Schedule</div><div class="ls-body" style="color:var(--text-muted);font-size:0.85rem">Next review: <span style="color:var(--yellow)">in 3 days</span></div></div>';
+      html += '</div>';
+      break;
+    }
+    case 'quiz': {
+      const quizData = data ? data.quiz : null;
+      if (!quizData) { html += '<div class="fc-empty">No quiz questions.</div>'; break; }
+      if (!combState.quiz[lessonId]) combState.quiz[lessonId] = { current: 0, answers: {} };
+      const s = combState.quiz[lessonId];
+      const q = quizData[s.current];
+      html += '<div class="quiz-counter">Q' + (s.current + 1) + '/' + quizData.length + '</div>';
+      html += '<div class="quiz-q">' + q.q + '</div>';
+      for (let i = 0; i < q.opts.length; i++) {
+        let cls = 'quiz-opt';
+        if (s.answers[s.current] !== undefined) {
+          if (q.correct.includes(i)) cls += ' correct';
+          else if (s.answers[s.current] === i) cls += ' wrong';
+        }
+        html += '<div class="' + cls + '" data-idx="' + i + '" data-action="quiz-answer"><span class="qo-letter">' + String.fromCharCode(65 + i) + '</span><span class="qo-text">' + q.opts[i] + '</span></div>';
+      }
+      if (s.answers[s.current] === undefined) {
+        html += '<div style="font-size:0.75rem;color:var(--text-dim);margin-top:0.3em">Select an answer</div>';
+      } else {
+        const ok = q.correct.includes(s.answers[s.current]);
+        html += '<div class="quiz-result ' + (ok ? 'pass' : 'fail') + '">' + (ok ? '✓ Correct' : '✗ Answer: ' + q.correct.map(i => q.opts[i]).join(', ')) + '</div>';
+        if (s.current < quizData.length - 1) html += '<button class="quiz-btn" data-action="quiz-next">Next →</button>';
+      }
+      break;
+    }
+    case 'code': {
+      const codeData = data ? data.code : null;
+      if (!codeData) { html += '<div class="fc-empty">No coding exercises.</div>'; break; }
+      if (!combState.code[lessonId]) combState.code[lessonId] = { output: '', showSolution: false };
+      const s = combState.code[lessonId];
+      html += '<div class="code-prompt">' + codeData.prompt + '</div>';
+      html += '<div class="code-editor" contenteditable="true">' + codeData.starter + '\n<span style="caret-color:var(--purple)">_</span></div>';
+      html += '<button class="quiz-btn" data-action="code-run">▶ Run</button>';
+      html += '<button class="quiz-btn alt" data-action="code-reveal">' + (s.showSolution ? 'Hide' : 'Reveal') + '</button>';
+      if (s.output) html += '<div class="code-out">' + s.output + '</div>';
+      if (s.showSolution) html += '<div class="code-out solution">// Solution<br>' + codeData.solution.replace(/\n/g, '<br>') + '</div>';
+      break;
+    }
+    case 'flashcards': {
+      const fcData = data ? data.fc : null;
+      if (!fcData) { html += '<div class="fc-empty">No flashcards.</div>'; break; }
+      if (!combState.fc[lessonId]) combState.fc[lessonId] = { current: 0, flipped: false };
+      const s = combState.fc[lessonId];
+      const card = fcData[s.current];
+      html += '<div class="fc-counter">Card ' + (s.current + 1) + '/' + fcData.length + '</div>';
+      html += '<div class="fc-card' + (s.flipped ? ' flipped' : '') + '" data-action="fc-flip">';
+      if (s.flipped) html += '<div class="fc-back">' + card.back + '</div>';
+      else html += '<div class="fc-front">' + card.front + '</div><div class="fc-hint">[ click to reveal ]</div>';
+      html += '</div><div class="fc-nav">';
+      html += '<button class="fc-btn" data-action="fc-prev"' + (s.current === 0 ? ' disabled' : '') + '>◀ Prev</button>';
+      html += '<button class="fc-btn" data-action="fc-next"' + (s.current === fcData.length - 1 ? ' disabled' : '') + '>Next ▶</button>';
+      html += '</div>';
+      break;
+    }
+  }
+  html += '</div>';
+  container.innerHTML = html;
+  combBindActions(lessonId);
+}
+
+function combBindActions(lessonId) {
+  document.querySelectorAll('.tab-combined .quiz-opt').forEach(el => {
+    el.addEventListener('click', () => {
+      if (!combState.quiz[lessonId]) combState.quiz[lessonId] = { current: 0, answers: {} };
+      const s = combState.quiz[lessonId];
+      if (s.answers[s.current] !== undefined) return;
+      s.answers[s.current] = parseInt(el.dataset.idx);
+      combRefreshModule();
+    });
+  });
+  document.querySelectorAll('.tab-combined .quiz-btn[data-action="quiz-next"]').forEach(el => {
+    el.addEventListener('click', () => {
+      if (combState.quiz[lessonId]) combState.quiz[lessonId].current++;
+      combRefreshModule();
+    });
+  });
+  document.querySelectorAll('.tab-combined .quiz-btn[data-action^="code-"]').forEach(el => {
+    el.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const action = el.dataset.action;
+      if (!combState.code[lessonId]) combState.code[lessonId] = { output: '', showSolution: false };
+      if (action === 'code-run') combState.code[lessonId].output = '<span style="color:var(--green)">✓ Code runs (simulated)</span>';
+      else if (action === 'code-reveal') combState.code[lessonId].showSolution = !combState.code[lessonId].showSolution;
+      combRefreshModule();
+    });
+  });
+  document.querySelectorAll('.tab-combined .fc-card').forEach(el => {
+    el.addEventListener('click', () => {
+      if (!combState.fc[lessonId]) combState.fc[lessonId] = { current: 0, flipped: false };
+      combState.fc[lessonId].flipped = !combState.fc[lessonId].flipped;
+      combRefreshModule();
+    });
+  });
+  document.querySelectorAll('.tab-combined .fc-btn').forEach(el => {
+    el.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (!combState.fc[lessonId]) combState.fc[lessonId] = { current: 0, flipped: false };
+      const s = combState.fc[lessonId];
+      const action = el.dataset.action;
+      if (action === 'fc-next') { s.current++; s.flipped = false; }
+      else if (action === 'fc-prev') { s.current = Math.max(0, s.current - 1); s.flipped = false; }
+      combRefreshModule();
+    });
+  });
+}
+
+function combRefreshModule() {
+  combLoadModule('combModule');
+}
+
+// =====================================================================
+// TAB SWITCHING
+// =====================================================================
+function switchTab(tab) {
+  activeTab = tab;
+  document.querySelectorAll('.screen-tab').forEach(el => {
+    el.classList.toggle('active', el.dataset.tab === tab);
+  });
+  document.getElementById('kbPos').textContent = (TABS.indexOf(tab) + 1) + '/' + TABS.length;
+
+  const labels = { dashboard: 'Dashboard — stats, progress, topics', admin: 'Admin V7 — table + wizard editor', combined: 'Combined — tree + module workspace' };
+  document.getElementById('statusLabel').textContent = labels[tab];
+  renderTab(tab);
+}
+
+function renderTab(tab) {
+  const screen = document.getElementById('screenContent');
+  if (tab === 'dashboard') {
+    screen.innerHTML = renderDashboard();
+  } else if (tab === 'admin') {
+    screen.innerHTML = renderAdmin();
+  } else if (tab === 'combined') {
+    const DATA = combCalcStatus(TREE_COMBINED);
+    const node = combFindNode(combState.selectedNodeId, DATA);
+    const isCourse = combIsCourse(node);
+    const courseName = (function find(nodes) {
+      for (const n of nodes) {
+        if (n.id === combState.selectedNodeId) return combIsCourse(n) ? n.name : null;
+        if (n.children) { const f = find(n.children); if (f) return f; }
+      }
+      return '—';
+    })(DATA);
+
+    let html = '<div class="tab-panel active tab-combined mount-anim"><div class="tree-split">';
+    html += '<div class="tree-panel-fixed"><div class="panel" style="height:100%;display:flex;flex-direction:column">';
+    html += '<div class="panel-title">Courses</div><div class="panel-body" style="overflow-y:auto;flex:1;min-height:0">';
+    html += combRenderTree(DATA, 0);
+    html += '</div></div></div>';
+    html += '<div class="panel" style="flex:1;display:flex;flex-direction:column;min-width:0">';
+    if (isCourse) {
+      html += '<div class="panel-body" style="overflow-y:auto;flex:1;min-height:0;padding:0.2em 0.4em">';
+      html += combRenderRoadmap(node);
+      html += '</div>';
+    } else {
+      html += '<div class="panel-body" style="overflow-y:auto;flex:1;min-height:0;padding:0.2em 0.4em">';
+      html += '<div class="module-tabs">';
+      for (const [id, meta] of Object.entries(COMB_MODULES)) {
+        html += '<div class="module-tab' + (id === combState.activeModule ? ' active' : '') + '" data-module="' + id + '">' + meta.icon + ' ' + meta.label + '</div>';
+      }
+      html += '</div>';
+      html += '<div class="module-container" id="combModule"><div class="module-loading"><div class="skel-line w60 h2"></div><div class="skel-line w80"></div><div class="skel-line h4"></div></div></div>';
+      html += '</div>';
+    }
+    html += '</div></div></div>';
+    screen.innerHTML = html;
+
+    document.querySelectorAll('.tab-combined .tree-item-content').forEach(el => {
+      el.addEventListener('click', (e) => {
+        const id = el.dataset.id;
+        if (e.target.classList.contains('ti-expand')) {
+          const node = combFindNode(e.target.dataset.toggle);
+          if (node) node.expanded = !node.expanded;
+          renderTab('combined');
+          return;
+        }
+        combState.selectedNodeId = id;
+        renderTab('combined');
+      });
+    });
+    document.querySelectorAll('.tab-combined [data-action="open-lesson"]').forEach(el => {
+      el.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const id = el.dataset.id;
+        if (id) { combState.selectedNodeId = id; renderTab('combined'); }
+      });
+    });
+    document.querySelectorAll('.tab-combined .module-tab').forEach(el => {
+      el.addEventListener('click', () => {
+        combState.activeModule = el.dataset.module;
+        renderTab('combined');
+      });
+    });
+    if (!isCourse) combLoadModule('combModule');
+  }
+}
+
+// =====================================================================
+// INIT
+// =====================================================================
+function init() {
+  const app = document.getElementById('app');
+  const toggle = document.getElementById('widthToggle');
+  let wide = localStorage.getItem('tui-wide') === 'true';
+  function applyWidth(w) {
+    wide = w;
+    app.classList.toggle('layout-wide', wide);
+    app.classList.toggle('layout-narrow', !wide);
+    toggle.textContent = wide ? '[==]' : '[––]';
+    localStorage.setItem('tui-wide', wide);
+  }
+  applyWidth(wide);
+  toggle.addEventListener('click', () => applyWidth(!wide));
+
+  // Tab clicks
+  document.querySelectorAll('.screen-tab').forEach(el => {
+    el.addEventListener('click', () => switchTab(el.dataset.tab));
+  });
+
+  // Keyboard
+  document.addEventListener('keydown', (e) => {
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable) return;
+    const idx = TABS.indexOf(activeTab);
+    if (e.key === 'j' || e.key === 'ArrowDown') { e.preventDefault(); switchTab(TABS[Math.min(idx + 1, TABS.length - 1)]); }
+    if (e.key === 'k' || e.key === 'ArrowUp') { e.preventDefault(); switchTab(TABS[Math.max(idx - 1, 0)]); }
+  });
+
+  switchTab('dashboard');
+}
+
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>
