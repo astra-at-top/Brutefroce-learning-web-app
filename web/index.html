@@ -373,6 +373,29 @@ body {
 .dopamine-box .dm-claim { margin-top: 0.5em; }
 .dopamine-box .dm-skip { margin-top: 0.3em; font-size: 0.75rem; color: var(--text-dim); cursor: pointer; text-decoration: underline; }
 
+/* ===== Modal (reuse overlay pattern) ===== */
+.modal-overlay {
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center;
+  z-index: 100; animation: fadeSlide 0.3s ease;
+}
+.modal-box {
+  background: var(--surface); border: 2px solid var(--border); padding: 0;
+  max-width: 52em; width: 92%; max-height: 85vh; display: flex; flex-direction: column;
+}
+.modal-header {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 0.5em 0.8em; background: var(--bg2); border-bottom: 1px solid var(--border-dim);
+  font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); flex-shrink: 0;
+}
+.modal-close {
+  cursor: pointer; font-size: 1.1rem; color: var(--text-dim); padding: 0 0.3em; user-select: none;
+}
+.modal-close:hover { color: var(--red); }
+.modal-body {
+  padding: 0.8em; overflow-y: auto; flex: 1;
+}
+
 /* ===== Leaderboard ===== */
 .leaderboard { padding: 0.3em 0; }
 .lb-row { display: flex; align-items: center; gap: 0.5em; padding: 0.25em 0.4em; font-size: 0.85rem; }
@@ -477,6 +500,73 @@ body {
     <div class="dm-rewards" id="dmRewards"></div>
     <div class="dm-claim"><button class="btn" id="dmClaimBtn">Claim & Continue</button></div>
     <div class="dm-skip" id="dmSkip">Skip</div>
+  </div>
+</div>
+
+<!-- JSON Export Modal -->
+<div id="jsonExportOverlay" class="modal-overlay" style="display:none">
+  <div class="modal-box">
+    <div class="modal-header">
+      <span>📤 Export as JSON</span>
+      <span class="modal-close" data-modal-close="jsonExportOverlay">✕</span>
+    </div>
+    <div class="modal-body">
+      <div class="btn-grp" style="margin-bottom:0.5em">
+        <button class="btn" id="jsonExportBtn">▶ Export as JSON</button>
+        <button class="btn btn-alt" id="jsonExportCopyBtn" style="display:none">📋 Copy</button>
+        <span id="jsonExportStatus" style="font-size:0.75rem;color:var(--text-dim)"></span>
+      </div>
+      <textarea id="jsonExportTextarea" readonly placeholder="Click 'Export as JSON' to load current data..." style="width:100%;min-height:250px;font-family:'Courier New',monospace;font-size:0.75rem;padding:0.5em;background:var(--surface-alt);border:1px solid var(--border-dim);border-radius:4px;color:var(--text);resize:vertical;box-sizing:border-box"></textarea>
+      <div style="font-size:0.65rem;color:var(--text-dim);margin-top:0.4em;line-height:1.6">
+        <strong>Usage:</strong> Export → Copy → Modify in AI → Paste into <strong>JSON Import</strong> → Import
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- JSON Import Modal -->
+<div id="jsonImportOverlay" class="modal-overlay" style="display:none">
+  <div class="modal-box">
+    <div class="modal-header">
+      <span>📥 JSON Import (Merge)</span>
+      <span class="modal-close" data-modal-close="jsonImportOverlay">✕</span>
+    </div>
+    <div class="modal-body">
+      <div style="display:flex;gap:0.5em;margin-bottom:0.5em">
+        <select id="jsonImportMode" class="fld-select" style="font-size:0.8rem;width:auto">
+          <option value="courses">Import Courses (merge)</option>
+          <option value="lesson">Import Single Lesson</option>
+        </select>
+        <input class="fld-input" id="jsonImportCourseId" placeholder="Course ID (for lesson import)" style="width:14em;font-size:0.8rem;display:none">
+      </div>
+      <textarea id="jsonImportTextarea" placeholder='Paste your JSON here...' style="width:100%;min-height:250px;font-family:'Courier New',monospace;font-size:0.75rem;padding:0.5em;background:var(--surface-alt);border:1px solid var(--border-dim);border-radius:4px;color:var(--text);resize:vertical;box-sizing:border-box">{
+  "courses": [
+    {
+      "id": "javascript",
+      "name": "JavaScript",
+      "lessons": [
+        {
+          "id": "vars-types",
+          "title": "Variables & Types",
+          "status": "done",
+          "notes": "...",
+          "quiz": [{"question":"...","options":["a","b","c","d"],"correct_index":0}],
+          "flashcards": [{"front":"...","back":"..."}]
+        }
+      ]
+    }
+  ]
+}</textarea>
+      <div class="btn-grp" style="margin-top:0.5em">
+        <button class="btn btn-green" id="jsonImportBtn">▶ Import JSON</button>
+        <span id="jsonImportStatus" style="font-size:0.75rem;color:var(--text-dim)"></span>
+      </div>
+      <div style="font-size:0.65rem;color:var(--text-dim);margin-top:0.4em;line-height:1.6">
+        <strong>Format:</strong> Course import → <code>{"courses":[...]}</code> with nested lessons (quiz, coding, flashcards).
+        Lesson import → <code>{"lesson":{...}}</code> with <code>course_id</code>.
+        Uses <strong>merge mode</strong> — updates existing, adds new, preserves progress.
+      </div>
+    </div>
   </div>
 </div>
 
@@ -1359,7 +1449,7 @@ function renderAdminFull(screen) {
   h += '</div></div></div></div>';
 
   // Editor
-  h += '<div class="admin-editor-panel"><div class="admin-box"><div class="ad-header">' + (sel ? (sel.name || sel.id) : 'Select a node') + '</div><div class="ad-body" style="padding:0.5em;overflow-y:auto">';
+  h += '<div class="admin-editor-panel"><div class="admin-box"><div class="ad-header" style="display:flex;justify-content:space-between;align-items:center"><span>' + (sel ? (sel.name || sel.id) : 'Select a node') + '</span><div class="btn-grp" style="gap:0.3em"><button class="btn btn-sm" id="admExportJsonBtn">📤 Export JSON</button><button class="btn btn-sm btn-alt" id="admImportJsonBtn">📥 Import JSON</button></div></div><div class="ad-body" style="padding:0.5em;overflow-y:auto">';
 
   if (sel && isLeaf && adminForm) {
     const infoFilled = adminForm.title && adminForm.title.trim().length > 0;
@@ -1674,34 +1764,19 @@ function renderAdminFull(screen) {
     }
   });
 
-  // Export as JSON section
-  const exportArea = document.createElement('div');
-  exportArea.style.cssText = 'border-top:1px solid var(--border-dim);flex-shrink:0';
-  exportArea.innerHTML = `
-    <div style="display:flex;justify-content:space-between;align-items:center;padding:0.4em 1em;cursor:pointer;background:var(--bg2)" id="jsonExportToggle">
-      <span style="font-size:0.7rem;color:var(--blue);letter-spacing:0.05em;text-transform:uppercase">📤 Export as JSON — copy current data to modify</span>
-      <span style="font-size:0.65rem;color:var(--text-dim)" id="jsonExportArrow">▼</span>
-    </div>
-    <div id="jsonExportBody" style="padding:0.5em 1em">
-      <div class="btn-grp" style="margin-bottom:0.4em">
-        <button class="btn" id="jsonExportBtn">▶ Export as JSON</button>
-        <button class="btn btn-alt" id="jsonExportCopyBtn" style="display:none">📋 Copy</button>
-        <span id="jsonExportStatus" style="font-size:0.7rem;color:var(--text-dim);align-self:center"></span>
-      </div>
-      <textarea id="jsonExportTextarea" readonly placeholder="Click 'Export as JSON' to load current data..." style="width:100%;min-height:120px;font-family:'Courier New',monospace;font-size:0.7rem;padding:0.5em;background:var(--surface-alt);border:1px solid var(--border-dim);border-radius:4px;color:var(--text);resize:vertical"></textarea>
-      <div style="font-size:0.6rem;color:var(--text-dim);margin-top:0.3em;line-height:1.6">
-        <strong>Usage:</strong> Export → Copy → Modify in AI → Paste into <strong>JSON Import</strong> below → Import
-      </div>
-    </div>`;
-  document.querySelector('.admin-split')?.after(exportArea);
-
-  let exportExpanded = true;
-  document.getElementById('jsonExportToggle')?.addEventListener('click', () => {
-    exportExpanded = !exportExpanded;
-    document.getElementById('jsonExportBody').style.display = exportExpanded ? '' : 'none';
-    document.getElementById('jsonExportArrow').textContent = exportExpanded ? '▼' : '▶';
+  // Modal: Export JSON — open modal and run export on click
+  document.getElementById('admExportJsonBtn')?.addEventListener('click', () => {
+    const overlay = document.getElementById('jsonExportOverlay');
+    overlay.style.display = 'flex';
+    // Reset state on open
+    document.getElementById('jsonExportBtn').textContent = '▶ Export as JSON';
+    document.getElementById('jsonExportBtn').disabled = false;
+    document.getElementById('jsonExportCopyBtn').style.display = 'none';
+    document.getElementById('jsonExportTextarea').value = '';
+    document.getElementById('jsonExportStatus').textContent = '';
   });
 
+  // Export button inside modal
   document.getElementById('jsonExportBtn')?.addEventListener('click', async () => {
     const btn = document.getElementById('jsonExportBtn');
     const status = document.getElementById('jsonExportStatus');
@@ -1714,7 +1789,6 @@ function renderAdminFull(screen) {
       const data = await res.json();
       const pretty = JSON.stringify(data, null, 2);
       textarea.value = pretty;
-      textarea.style.display = '';
       copyBtn.style.display = '';
       const courseCount = data.courses ? data.courses.length : 0;
       let lessonCount = 0;
@@ -1727,6 +1801,7 @@ function renderAdminFull(screen) {
     btn.disabled = false;
   });
 
+  // Copy button inside modal
   document.getElementById('jsonExportCopyBtn')?.addEventListener('click', async () => {
     const textarea = document.getElementById('jsonExportTextarea');
     try {
@@ -1739,51 +1814,12 @@ function renderAdminFull(screen) {
     }
   });
 
-  // JSON Import section
-  const jsonArea = document.createElement('div');
-  jsonArea.style.cssText = 'border-top:1px solid var(--border-dim);flex-shrink:0';
-  jsonArea.innerHTML = `
-    <div style="display:flex;justify-content:space-between;align-items:center;padding:0.4em 1em;cursor:pointer;background:var(--bg2)" id="jsonImportToggle">
-      <span style="font-size:0.7rem;color:var(--green);letter-spacing:0.05em;text-transform:uppercase">📥 JSON Import (Merge) — paste modified data here</span>
-      <span style="font-size:0.65rem;color:var(--text-dim)" id="jsonImportArrow">▼</span>
-    </div>
-    <div id="jsonImportBody" style="padding:0.5em 1em">
-      <div style="display:flex;gap:0.5em;margin-bottom:0.4em">
-        <select id="jsonImportMode" class="fld-select" style="font-size:0.75rem;width:auto">
-          <option value="courses">Import Courses (merge)</option>
-          <option value="lesson">Import Single Lesson</option>
-        </select>
-        <input class="fld-input" id="jsonImportCourseId" placeholder="Course ID (for lesson import)" style="width:12em;font-size:0.75rem;display:none">
-      </div>
-      <textarea id="jsonImportTextarea" placeholder='Paste your JSON here...' style="width:100%;min-height:120px;font-family:'Courier New',monospace;font-size:0.7rem;padding:0.5em;background:var(--bg);border:1px solid var(--border-dim);border-radius:4px;color:var(--text);resize:vertical">{
-  "courses": [
-    {
-      "id": "javascript",
-      "name": "JavaScript",
-      "lessons": [
-        {
-          "id": "vars-types",
-          "title": "Variables & Types",
-          "status": "done",
-          "notes": "...",
-          "quiz": [{"question":"...","options":["a","b","c","d"],"correct_index":0}],
-          "flashcards": [{"front":"...","back":"..."}]
-        }
-      ]
-    }
-  ]
-}</textarea>
-      <div class="btn-grp" style="margin-top:0.4em">
-        <button class="btn btn-green" id="jsonImportBtn">▶ Import JSON</button>
-        <span id="jsonImportStatus" style="font-size:0.7rem;color:var(--text-dim);align-self:center"></span>
-      </div>
-      <div style="font-size:0.6rem;color:var(--text-dim);margin-top:0.3em;line-height:1.6">
-        <strong>Format:</strong> Same as Export format above. Course import → <code>{ "courses": [...] }</code> with nested lessons (quiz, coding, flashcards).
-        Lesson import → <code>{ "lesson": { "id":"...", "title":"...", ... } }</code> with <code>course_id</code> in parent.
-        Uses <strong>merge mode</strong> — existing courses/lessons are updated, new ones added, items not in JSON preserved, progress and flashcard reviews kept.
-      </div>
-    </div>`;
-  document.querySelector('.admin-split')?.after(jsonArea);
+  // Modal: Import JSON — open modal
+  document.getElementById('admImportJsonBtn')?.addEventListener('click', () => {
+    const overlay = document.getElementById('jsonImportOverlay');
+    document.getElementById('jsonImportStatus').textContent = '';
+    overlay.style.display = 'flex';
+  });
 
   // Show/hide course_id input based on import mode
   document.getElementById('jsonImportMode')?.addEventListener('change', () => {
@@ -1791,15 +1827,7 @@ function renderAdminFull(screen) {
     document.getElementById('jsonImportCourseId').style.display = mode === 'lesson' ? '' : 'none';
   });
 
-  // Collapse toggle
-  let jsonExpanded = true;
-  document.getElementById('jsonImportToggle')?.addEventListener('click', () => {
-    jsonExpanded = !jsonExpanded;
-    document.getElementById('jsonImportBody').style.display = jsonExpanded ? '' : 'none';
-    document.getElementById('jsonImportArrow').textContent = jsonExpanded ? '▼' : '▶';
-  });
-
-  // Import button
+  // Import button inside modal
   document.getElementById('jsonImportBtn')?.addEventListener('click', async () => {
     const raw = document.getElementById('jsonImportTextarea').value.trim();
     if (!raw) { document.getElementById('jsonImportStatus').textContent = '❌ Paste JSON first'; return; }
@@ -1836,6 +1864,7 @@ function renderAdminFull(screen) {
           ? result.courses_imported + ' courses, ' + result.lessons_imported + ' lessons'
           : 'lesson: ' + (result.lesson_imported || 'ok');
         document.getElementById('jsonImportStatus').textContent = '✅ Imported: ' + info;
+        document.getElementById('jsonImportOverlay').style.display = 'none';
         adminDirty = true;
         await renderAdmin(screen);
       } else {
@@ -1844,6 +1873,21 @@ function renderAdminFull(screen) {
     } catch (e) {
       document.getElementById('jsonImportStatus').textContent = '❌ Network error: ' + e.message;
     }
+  });
+
+  // Modal close buttons
+  document.querySelectorAll('[data-modal-close]').forEach(el => {
+    el.addEventListener('click', () => {
+      const overlayId = el.dataset.modalClose;
+      document.getElementById(overlayId).style.display = 'none';
+    });
+  });
+
+  // Close modal on overlay click (only if clicking the overlay itself, not the box)
+  document.querySelectorAll('.modal-overlay').forEach(el => {
+    el.addEventListener('click', (e) => {
+      if (e.target === el) el.style.display = 'none';
+    });
   });
 
   document.getElementById('statusBar').innerHTML = '<span class="prefix">›</span> Admin — content editor with wizard + sync + json';
