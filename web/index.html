@@ -1905,10 +1905,33 @@ function renderAdminFull(screen) {
 
   // Copy Format button — copies the example JSON to clipboard
   document.getElementById('jsonImportCopyFormatBtn')?.addEventListener('click', async () => {
+    const mode = document.getElementById('jsonImportMode').value;
+    const isCourses = mode === 'courses';
+    const instructions = `You are a learning content generator for BruteForce Learning, a terminal-themed interactive learning platform.
+
+Generate ${isCourses ? 'courses with lessons' : 'a single lesson'} in the JSON format below. Follow these rules:
+
+1. **NOTES must use Markdown formatting:**
+   - \`## headings\` for sections
+   - **bold** for key terms
+   - \`code\` for inline code, variables, function names
+   - Code fences (\`\`\`) for multi-line code blocks
+   - Bullet lists for enumerations
+   - Blank lines between paragraphs
+
+2. Each lesson should have:
+   - A clear, focused title
+   - 2-4 quiz questions with 4 options each (mark the correct one with \`correct_index\`)
+   - 2-4 flashcards (front/back pairs)
+   - Coding exercises when applicable (set \`"type": "coding"\`)
+
+3. Content should be beginner-friendly but technically accurate. Use real code examples, not placeholders.
+
+JSON format:\n\n`;
     const textarea = document.getElementById('jsonImportTextarea');
     try {
-      await navigator.clipboard.writeText(textarea.value);
-      document.getElementById('jsonImportStatus').textContent = '✅ Format copied! Paste into AI.';
+      await navigator.clipboard.writeText(instructions + textarea.value);
+      document.getElementById('jsonImportStatus').textContent = '✅ Format + instructions copied! Paste into AI.';
     } catch {
       textarea.select();
       document.execCommand('copy');
