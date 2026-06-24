@@ -1816,17 +1816,62 @@ function renderAdminFull(screen) {
     }
   });
 
-  // Modal: Import JSON — open modal
+  // Modal: Import JSON — open modal (triggers the change handler to set correct example)
   document.getElementById('admImportJsonBtn')?.addEventListener('click', () => {
     const overlay = document.getElementById('jsonImportOverlay');
     document.getElementById('jsonImportStatus').textContent = '';
     overlay.style.display = 'flex';
+    // Trigger change to set correct example for current mode
+    document.getElementById('jsonImportMode').dispatchEvent(new Event('change'));
   });
 
-  // Show/hide course_id input based on import mode
+  // Show/hide course_id input and swap example JSON based on import mode
   document.getElementById('jsonImportMode')?.addEventListener('change', () => {
     const mode = document.getElementById('jsonImportMode').value;
     document.getElementById('jsonImportCourseId').style.display = mode === 'lesson' ? '' : 'none';
+    const textarea = document.getElementById('jsonImportTextarea');
+    if (mode === 'lesson') {
+      textarea.value = JSON.stringify(JSON.parse(`{
+  "lesson": {
+    "id": "my-lesson",
+    "title": "My Lesson",
+    "status": "available",
+    "type": "lesson",
+    "notes": "Lesson notes here...",
+    "mnemonic": "A memory trick",
+    "quiz": [
+      {
+        "question": "What is X?",
+        "options": ["A", "B", "C", "D"],
+        "correct_index": 0
+      }
+    ],
+    "flashcards": [
+      {"front": "Term", "back": "Definition"}
+    ]
+  },
+  "course_id": "target-course-id"
+}`), null, 2);
+    } else {
+      textarea.value = JSON.stringify(JSON.parse(`{
+  "courses": [
+    {
+      "id": "javascript",
+      "name": "JavaScript",
+      "lessons": [
+        {
+          "id": "vars-types",
+          "title": "Variables & Types",
+          "status": "done",
+          "notes": "...",
+          "quiz": [{"question":"...","options":["a","b","c","d"],"correct_index":0}],
+          "flashcards": [{"front":"...","back":"..."}]
+        }
+      ]
+    }
+  ]
+}`), null, 2);
+    }
   });
 
   // Copy Format button — copies the example JSON to clipboard
