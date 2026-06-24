@@ -322,11 +322,49 @@ body {
 .btn:hover { opacity: 0.85; }
 .btn-alt { background: transparent; color: var(--purple); border: 1px solid var(--purple); }
 .btn-sm { font-size: 0.65rem; padding: 0.2em 0.4em; }
-.btn-red { background: var(--red); }
+.btn-red { background: var(--red-dim) !important; color: white !important; }
 .btn-green { background: var(--green); color: #000; }
 .btn-grp { display: flex; gap: 0.3em; align-items: center; }
 .btn-icon { background: none; border: none; color: var(--text-dim); cursor: pointer; font-size: 0.9rem; padding: 0.1em; }
 .btn-icon:hover { color: var(--text); }
+
+/* ===== Admin Modal ===== */
+.admin-modal-overlay {
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center;
+  z-index: 200; display: none;
+}
+.admin-modal-overlay.active { display: flex; }
+.admin-modal {
+  background: var(--surface); border: 2px solid var(--purple); border-radius: 12px;
+  max-width: 600px; width: 90%; max-height: 90vh; overflow-y: auto;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+}
+.admin-modal-header {
+  background: var(--purple); padding: 12px 16px; display: flex; justify-content: space-between; align-items: center;
+}
+.admin-modal-header h3 { color: white; margin: 0; font-size: 1rem; }
+.admin-modal-close { background: none; border: none; color: white; font-size: 1.2rem; cursor: pointer; padding: 0; }
+.admin-modal-body { padding: 20px; }
+.admin-modal-footer { padding: 12px 16px; display: flex; gap: 8px; justify-content: flex-end; border-top: 1px solid var(--border); }
+.admin-modal .form-group { margin-bottom: 16px; }
+.admin-modal .form-group label { display: block; color: var(--purple); font-size: 0.75rem; text-transform: uppercase; margin-bottom: 4px; }
+.admin-modal textarea { width: 100%; height: 60px; background: var(--bg-deep); border: 1px solid var(--border); color: var(--text); border-radius: 4px; padding: 8px; font-family: inherit; resize: vertical; }
+.admin-modal input[type="text"] { width: 100%; background: var(--bg-deep); border: 1px solid var(--border); color: var(--text); border-radius: 4px; padding: 8px; }
+.admin-modal .option-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.admin-modal .option-row input[type="radio"] { accent-color: var(--purple); }
+.admin-modal .option-row input[type="text"] { flex: 1; }
+.admin-modal .option-label { color: var(--text-dim); font-size: 0.8rem; width: 20px; }
+.admin-item-card {
+  display: flex; justify-content: space-between; align-items: flex-start;
+  background: var(--bg); border: 1px solid var(--border); border-radius: 6px;
+  padding: 10px 12px; margin-bottom: 8px;
+}
+.admin-item-content { flex: 1; min-width: 0; }
+.admin-item-num { color: var(--purple); font-size: 0.7rem; font-weight: bold; margin-bottom: 2px; }
+.admin-item-text { color: var(--text); font-size: 0.85rem; margin-bottom: 4px; }
+.admin-item-meta { color: var(--text-dim); font-size: 0.7rem; }
+.admin-item-actions { display: flex; gap: 4px; flex-shrink: 0; }
 
 .v6-steps { display: flex; align-items: center; gap: 0; margin-bottom: 0.6em; }
 .v6-step { display: flex; align-items: center; gap: 0.3em; flex: 1; }
@@ -596,6 +634,18 @@ body {
         <button class="btn" id="confirmStandaloneNo">✕ No, go back</button>
       </div>
     </div>
+  </div>
+</div>
+
+<!-- Admin Modal Overlay -->
+<div class="admin-modal-overlay" id="adminModalOverlay">
+  <div class="admin-modal" id="adminModal">
+    <div class="admin-modal-header">
+      <h3 id="adminModalTitle">Edit Item</h3>
+      <button class="admin-modal-close" onclick="adminModal.close()">✕</button>
+    </div>
+    <div class="admin-modal-body" id="adminModalBody"></div>
+    <div class="admin-modal-footer" id="adminModalFooter"></div>
   </div>
 </div>
 
@@ -1403,6 +1453,210 @@ let adminForm = null;
 let adminDirty = false;
 let pendingStandaloneImport = null;
 
+// Admin Modal Controller
+const adminModal = {
+  overlay: null,
+  modal: null,
+  titleEl: null,
+  bodyEl: null,
+  footerEl: null,
+  currentType: null,
+  currentIndex: null,
+  lessonId: null,
+
+  init() {
+    this.overlay = document.getElementById('adminModalOverlay');
+    this.modal = document.getElementById('adminModal');
+    this.titleEl = document.getElementById('adminModalTitle');
+    this.bodyEl = document.getElementById('adminModalBody');
+    this.footerEl = document.getElementById('adminModalFooter');
+    this.overlay.addEventListener('click', (e) => { if (e.target === this.overlay) this.close(); });
+  },
+
+  open(type, index, lessonId) {
+    this.currentType = type;
+    this.currentIndex = index;
+    this.lessonId = lessonId;
+    if (type === 'quiz') this.openQuizModal(index);
+    else if (type === 'flashcard') this.openFlashcardModal(index);
+    else if (type === 'coding') this.openCodingModal();
+    this.overlay.classList.add('active');
+  },
+
+  close() {
+    this.overlay.classList.remove('active');
+    this.currentType = null;
+    this.currentIndex = null;
+  },
+
+  confirmDelete(type, index) {
+    if (confirm('Delete this ' + type + '?')) {
+      this.deleteItem(type, index);
+    }
+  },
+
+  async deleteItem(type, index) {
+    if (type === 'quiz') {
+      adminForm.quiz.splice(index, 1);
+    } else if (type === 'flashcard') {
+      adminForm.flashcards.splice(index, 1);
+    }
+
+    adminDirty = true;
+    this.close();
+
+    await api('/api/admin/lessons/' + this.lessonId, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        quiz: adminForm.quiz,
+        flashcards: adminForm.flashcards
+      })
+    });
+
+    renderAdminLesson();
+  },
+
+  openQuizModal(index) {
+    const isEdit = index >= 0;
+    const question = isEdit ? adminForm.quiz[index] : { question: '', options: ['', '', '', ''], correct_index: 0 };
+
+    this.titleEl.textContent = isEdit ? 'Edit Question' : 'Add Question';
+
+    this.bodyEl.innerHTML = `
+      <div class="form-group">
+        <label>Question</label>
+        <textarea id="modalQQuestion">${escapeHtml(question.question)}</textarea>
+      </div>
+      <div class="form-group">
+        <label>Options (select correct answer)</label>
+        ${[0,1,2,3].map(i => `
+          <div class="option-row">
+            <input type="radio" name="correctOpt" value="${i}" ${question.correct_index === i ? 'checked' : ''}>
+            <span class="option-label">${String.fromCharCode(65 + i)}.</span>
+            <input type="text" id="modalQOpt${i}" value="${escapeHtml(question.options[i])}" placeholder="Option ${i + 1}">
+          </div>
+        `).join('')}
+      </div>
+    `;
+
+    this.footerEl.innerHTML = `
+      <button class="btn btn-sm" onclick="adminModal.close()">Cancel</button>
+      <button class="btn btn-sm btn-primary" onclick="adminModal.saveQuiz(${index})">Save</button>
+    `;
+  },
+
+  saveQuiz(index) {
+    const question = document.getElementById('modalQQuestion').value.trim();
+    const options = [0,1,2,3].map(i => document.getElementById('modalQOpt' + i).value.trim());
+    const correct_index = parseInt(document.querySelector('input[name="correctOpt"]:checked')?.value || '0');
+
+    if (!question || options.some(o => !o)) {
+      alert('Question and all options required');
+      return;
+    }
+
+    if (!adminForm.quiz) adminForm.quiz = [];
+
+    const newQuestion = { question, options, correct_index };
+
+    if (index >= 0) {
+      adminForm.quiz[index] = newQuestion;
+    } else {
+      adminForm.quiz.push(newQuestion);
+    }
+
+    adminDirty = true;
+    this.close();
+    renderAdminLesson();
+  },
+
+  openFlashcardModal(index) {
+    const isEdit = index >= 0;
+    const card = isEdit ? adminForm.flashcards[index] : { front: '', back: '' };
+    
+    this.titleEl.textContent = isEdit ? 'Edit Flashcard' : 'Add Flashcard';
+    
+    this.bodyEl.innerHTML = `
+      <div class="form-group">
+        <label>Front (Question)</label>
+        <textarea id="modalFcFront">${escapeHtml(card.front)}</textarea>
+      </div>
+      <div class="form-group">
+        <label>Back (Answer)</label>
+        <textarea id="modalFcBack">${escapeHtml(card.back)}</textarea>
+      </div>
+    `;
+    
+    this.footerEl.innerHTML = `
+      <button class="btn btn-sm" onclick="adminModal.close()">Cancel</button>
+      <button class="btn btn-sm btn-primary" onclick="adminModal.saveFlashcard(${index})">Save</button>
+    `;
+  },
+
+  saveFlashcard(index) {
+    const front = document.getElementById('modalFcFront').value.trim();
+    const back = document.getElementById('modalFcBack').value.trim();
+    
+    if (!front || !back) {
+      alert('Both front and back are required');
+      return;
+    }
+    
+    if (!adminForm.flashcards) adminForm.flashcards = [];
+    
+    if (index >= 0) {
+      adminForm.flashcards[index] = { front, back };
+    } else {
+      adminForm.flashcards.push({ front, back });
+    }
+    
+    adminDirty = true;
+    this.close();
+    renderAdminLesson();
+  },
+
+  openCodingModal() {
+    const coding = adminForm.coding || { prompt: '', starter: '', solution: '' };
+    
+    this.titleEl.textContent = 'Edit Coding Exercise';
+    
+    this.bodyEl.innerHTML = `
+      <div class="form-group">
+        <label>Prompt</label>
+        <textarea id="modalCodPrompt" style="height: 80px">${escapeHtml(coding.prompt)}</textarea>
+      </div>
+      <div class="form-group">
+        <label>Starter Code</label>
+        <textarea id="modalCodStarter" style="height: 100px; font-family: monospace;">${escapeHtml(coding.starter)}</textarea>
+      </div>
+      <div class="form-group">
+        <label>Solution</label>
+        <textarea id="modalCodSolution" style="height: 100px; font-family: monospace;">${escapeHtml(coding.solution)}</textarea>
+      </div>
+    `;
+    
+    this.footerEl.innerHTML = `
+      <button class="btn btn-sm" onclick="adminModal.close()">Cancel</button>
+      <button class="btn btn-sm btn-primary" onclick="adminModal.saveCoding()">Save</button>
+    `;
+  },
+
+  saveCoding() {
+    const coding = {
+      prompt: document.getElementById('modalCodPrompt').value,
+      starter: document.getElementById('modalCodStarter').value,
+      solution: document.getElementById('modalCodSolution').value
+    };
+    
+    adminForm.coding = coding;
+    adminDirty = true;
+    this.close();
+    renderAdminLesson();
+  }
+};
+adminModal.init();
+
 async function loadAdminTree() {
   adminData = await api('/api/admin/courses').catch(() => []);
 }
@@ -1515,35 +1769,65 @@ function renderAdminFull(screen) {
         h += '<div class="fld"><label class="fld-label">Mnemonic</label><input class="fld-input" id="admFldMnemonic" value="' + escHtml(adminForm.mnemonic) + '"></div>';
         break;
       case 3:
-        h += '<div class="fld"><label class="fld-label">Quiz Questions</label>';
-        (adminForm.quiz.length > 0 ? adminForm.quiz : [{ question: '', options: ['', '', '', ''], correct_index: 0 }]).forEach((q, qi) => {
-          h += '<div style="border:1px solid var(--border-dim);padding:0.4em;margin-bottom:0.4em">';
-          h += '<input class="fld-input" data-adm-q="' + qi + '" data-adm-qf="question" value="' + escHtml(q.question) + '" placeholder="Question ' + (qi + 1) + '" style="margin-bottom:0.2em">';
-          (q.options && q.options.length ? q.options : ['', '', '', '']).forEach((opt, oi) => {
-            h += '<div style="display:flex;align-items:center;gap:0.3em;margin-top:0.15em">';
-            h += '<input type="radio" name="q' + qi + '_correct" data-adm-q="' + qi + '" data-adm-qf="correct" value="' + oi + '"' + (oi === q.correct_index ? ' checked' : '') + '>';
-            h += '<input class="fld-input" data-adm-q="' + qi + '" data-adm-qf="opt-' + oi + '" value="' + escHtml(opt) + '" placeholder="Option ' + (oi + 1) + '" style="flex:1;font-size:0.75rem">';
+        h += '<div class="v1-ename">Step 3: Quiz</div>';
+        const questions = adminForm.quiz || [];
+        h += '<div style="max-height: 300px; overflow-y: auto; margin-bottom: 12px;">';
+        if (questions.length === 0) {
+          h += '<div style="color: var(--text-dim); text-align: center; padding: 20px;">No questions yet</div>';
+        } else {
+          for (let i = 0; i < questions.length; i++) {
+            const q = questions[i];
+            h += '<div class="admin-item-card">';
+            h += '<div class="admin-item-content">';
+            h += '<div class="admin-item-num">Q' + (i + 1) + '</div>';
+            h += '<div class="admin-item-text">' + escapeHtml(q.question) + '</div>';
+            h += '<div class="admin-item-meta">Correct: ' + escapeHtml(q.options[q.correct_index]) + '</div>';
             h += '</div>';
-          });
-          h += '<button class="btn-icon" data-adm-q-del="' + qi + '" style="margin-top:0.2em;font-size:0.75rem">✕ Remove</button>';
-          h += '</div>';
-        });
-        h += '<button class="btn btn-sm" id="admAddQuestion">+ Add Question</button></div>';
+            h += '<div class="admin-item-actions">';
+            h += '<button class="btn btn-sm" onclick="adminModal.open(\'quiz\', ' + i + ', adminForm.id)">✏️</button>';
+            h += '<button class="btn btn-sm btn-red" onclick="adminModal.confirmDelete(\'quiz\', ' + i + ')">✕</button>';
+            h += '</div>';
+            h += '</div>';
+          }
+        }
+        h += '</div>';
+        h += '<button class="btn btn-sm btn-alt" onclick="adminModal.open(\'quiz\', -1, adminForm.id)">+ Add Question</button>';
         break;
       case 4:
-        h += '<div class="fld"><label class="fld-label">Exercise Prompt</label><textarea class="fld-textarea" id="admFldCodingPrompt">' + escHtml(adminForm.coding.prompt || '') + '</textarea></div>';
-        h += '<div class="fld"><label class="fld-label">Starter Code</label><textarea class="fld-textarea" id="admFldCodingStarter">' + escHtml(adminForm.coding.starter || '') + '</textarea></div>';
-        h += '<div class="fld"><label class="fld-label">Solution</label><textarea class="fld-textarea" id="admFldCodingSolution">' + escHtml(adminForm.coding.solution || '') + '</textarea></div>';
+        h += '<div class="v1-ename">Step 4: Coding</div>';
+        const coding = adminForm.coding || {};
+        h += '<div class="admin-item-card" style="margin-bottom: 12px;">';
+        h += '<div class="admin-item-content">';
+        h += '<div class="admin-item-meta">Prompt: ' + escapeHtml((coding.prompt || '').substring(0, 60)) + '</div>';
+        h += '<div class="admin-item-meta">Starter: ' + escapeHtml((coding.starter || '').substring(0, 40)) + '</div>';
+        h += '</div>';
+        h += '<button class="btn btn-sm" onclick="adminModal.open(\'coding\', 0, adminForm.id)">✏️</button>';
+        h += '</div>';
         break;
       case 5:
-        h += '<div class="fld"><label class="fld-label">Flashcards</label>';
-        (adminForm.flashcards.length > 0 ? adminForm.flashcards : [{ front: '', back: '' }]).forEach((fc, fi) => {
-          h += '<div style="display:flex;gap:0.3em;margin-top:0.2em">';
-          h += '<input class="fld-input" data-adm-fc="' + fi + '" data-adm-fcf="front" value="' + escHtml(fc.front) + '" placeholder="Front" style="flex:1;font-size:0.75rem">';
-          h += '<input class="fld-input" data-adm-fc="' + fi + '" data-adm-fcf="back" value="' + escHtml(fc.back) + '" placeholder="Back" style="flex:1;font-size:0.75rem">';
-          h += '<button class="btn-icon" data-adm-fc-del="' + fi + '" style="font-size:0.75rem">✕</button></div>';
-        });
-        h += '<button class="btn btn-sm" id="admAddFlashcard" style="margin-top:0.3em">+ Add Card</button></div>';
+        h += '<div class="v1-ename">Step 5: Flashcards</div>';
+        const cards = adminForm.flashcards || [];
+        h += '<div style="max-height: 300px; overflow-y: auto; margin-bottom: 12px;">';
+        if (cards.length === 0) {
+          h += '<div style="color: var(--text-dim); text-align: center; padding: 20px;">No flashcards yet</div>';
+        } else {
+          for (let i = 0; i < cards.length; i++) {
+            const card = cards[i];
+            h += '<div class="admin-item-card">';
+            h += '<div class="admin-item-content">';
+            h += '<div class="admin-item-num">Card ' + (i + 1) + '</div>';
+            h += '<div class="admin-item-text">' + escapeHtml(card.front.substring(0, 50)) + (card.front.length > 50 ? '...' : '') + '</div>';
+            h += '<div class="admin-item-meta">Back: ' + escapeHtml(card.back.substring(0, 30)) + (card.back.length > 30 ? '...' : '') + '</div>';
+            h += '</div>';
+            h += '<div class="admin-item-actions">';
+            h += '<button class="btn btn-sm" onclick="adminModal.open(\'flashcard\', ' + i + ', adminForm.id)">✏️</button>';
+            h += '<button class="btn btn-sm btn-red" onclick="adminModal.confirmDelete(\'flashcard\', ' + i + ')">✕</button>';
+            h += '</div>';
+            h += '</div>';
+          }
+        }
+        h += '</div>';
+        h += '<button class="btn btn-sm btn-alt" onclick="adminModal.open(\'flashcard\', -1, adminForm.id)">+ Add Flashcard</button>';
         break;
     }
 
@@ -2053,6 +2337,11 @@ JSON format:\n\n`;
 function escHtml(s) {
   if (!s) return '';
   return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function escapeHtml(s) {
+  if (!s) return '';
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
 // ============ MICRO-COMMITMENT BANNERS ============
