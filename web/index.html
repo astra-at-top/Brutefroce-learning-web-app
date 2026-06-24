@@ -223,6 +223,15 @@ body {
 .ls-label { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.4em; }
 .ls-body { font-size: 0.9rem; line-height: 1.6; color: var(--text); }
 .ls-mnemonic { font-size: 0.85rem; color: var(--text-muted); margin-top: 0.5em; }
+.ls-body h1, .ls-body h2, .ls-body h3 { color: var(--yellow); margin: 0.6em 0 0.3em; font-weight: bold; font-size: 0.95rem; text-transform: uppercase; letter-spacing: 0.05em; }
+.ls-body h1 { font-size: 1.05rem; }
+.ls-body p { margin: 0.4em 0; }
+.ls-body code { background: var(--surface-alt); color: var(--cyan); padding: 0.1em 0.3em; border-radius: 3px; font-size: 0.85em; }
+.ls-body pre { background: var(--surface-alt); border: 1px solid var(--border-dim); padding: 0.6em; overflow-x: auto; margin: 0.5em 0; }
+.ls-body pre code { background: none; padding: 0; }
+.ls-body ul, .ls-body ol { margin: 0.3em 0; padding-left: 1.5em; }
+.ls-body li { margin: 0.15em 0; }
+.ls-body strong { color: var(--text); font-weight: bold; }
 
 .quiz-q { font-size: 0.95rem; font-weight: bold; margin-bottom: 0.6em; }
 .quiz-opt { display: flex; align-items: center; gap: 0.5em; padding: 0.4em 0.6em; cursor: pointer; font-size: 0.85rem; border: 1px solid var(--border-dim); margin-bottom: 0.3em; transition: border-color 0.15s; }
@@ -459,6 +468,7 @@ body {
 .fc-rbtn.easy { color: var(--green); } .fc-rbtn.easy:hover { border-color: var(--green); }
 .fc-rbtn.good { color: var(--cyan); } .fc-rbtn.good:hover { border-color: var(--cyan); }
 </style>
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 </head>
 <body>
 <div id="app">
@@ -935,7 +945,7 @@ async function loadLearnModule(lessonId) {
     switch (learnState.activeModule) {
       case 'learn':
         const lesson = await api('/api/lessons/' + lessonId);
-        html += '<div class="learn-section"><div class="ls-label">Notes</div><div class="ls-body">' + (lesson.notes || 'Content coming soon.') + '</div>';
+        html += '<div class="learn-section"><div class="ls-label">Notes</div><div class="ls-body">' + (lesson.notes ? marked.parse(lesson.notes) : 'Content coming soon.') + '</div>';
         if (lesson.mnemonic) html += '<div class="ls-mnemonic">🧠 ' + lesson.mnemonic + '</div>';
         html += '</div><div class="learn-section"><div class="ls-label">Review Schedule</div>';
         initFcSchedule(lessonId);
