@@ -558,6 +558,7 @@ body {
   ]
 }</textarea>
       <div class="btn-grp" style="margin-top:0.5em">
+        <button class="btn btn-alt" id="jsonImportCopyFormatBtn">📋 Copy Format</button>
         <button class="btn btn-green" id="jsonImportBtn">▶ Import JSON</button>
         <span id="jsonImportStatus" style="font-size:0.75rem;color:var(--text-dim)"></span>
       </div>
@@ -1826,6 +1827,19 @@ function renderAdminFull(screen) {
   document.getElementById('jsonImportMode')?.addEventListener('change', () => {
     const mode = document.getElementById('jsonImportMode').value;
     document.getElementById('jsonImportCourseId').style.display = mode === 'lesson' ? '' : 'none';
+  });
+
+  // Copy Format button — copies the example JSON to clipboard
+  document.getElementById('jsonImportCopyFormatBtn')?.addEventListener('click', async () => {
+    const textarea = document.getElementById('jsonImportTextarea');
+    try {
+      await navigator.clipboard.writeText(textarea.value);
+      document.getElementById('jsonImportStatus').textContent = '✅ Format copied! Paste into AI.';
+    } catch {
+      textarea.select();
+      document.execCommand('copy');
+      document.getElementById('jsonImportStatus').textContent = '✅ Format copied!';
+    }
   });
 
   // Import button inside modal
