@@ -571,6 +571,24 @@ body {
   </div>
 </div>
 
+<!-- Confirm Standalone Import Modal -->
+<div id="confirmStandaloneOverlay" class="modal-overlay" style="display:none">
+  <div class="modal-box" style="max-width:30em">
+    <div class="modal-header">
+      <span>❓ No Course ID</span>
+      <span class="modal-close" data-modal-close="confirmStandaloneOverlay">✕</span>
+    </div>
+    <div class="modal-body" style="text-align:center">
+      <div style="font-size:1rem;margin:1em 0">This lesson has no course ID.</div>
+      <div style="font-size:0.85rem;color:var(--text-dim);margin-bottom:1.5em">Import it as a standalone lesson (not attached to any course)?<br>You can assign it to a course later from the editor.</div>
+      <div class="btn-grp" style="justify-content:center;gap:0.8em">
+        <button class="btn btn-green" id="confirmStandaloneYes">✅ Yes, import standalone</button>
+        <button class="btn" id="confirmStandaloneNo">✕ No, go back</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
 const LS_PREFIX = 'bfl_';
 
@@ -1371,6 +1389,7 @@ let adminSelId = restore('adminSel', null);
 let adminStep = restore('adminStep', 1);
 let adminForm = null;
 let adminDirty = false;
+let pendingStandaloneImport = null;
 
 async function loadAdminTree() {
   adminData = await api('/api/admin/courses').catch(() => []);
@@ -1906,6 +1925,13 @@ function renderAdminFull(screen) {
         document.getElementById('jsonImportStatus').textContent = '❌ For lesson import, JSON must have a "lesson" key';
         return;
       }
+      // If no course_id, ask user before importing standalone
+      if (!parsed.course_id && !cid) {
+        pendingStandaloneImport = parsed;
+        document.getElementById('jsonImportOverlay').style.display = 'none';
+        document.getElementById('confirmStandaloneOverlay').style.display = 'flex';
+        return;
+      }
     } else if (!parsed.courses) {
       document.getElementById('jsonImportStatus').textContent = '❌ For course import, JSON must have a "courses" array';
       return;
@@ -1935,11 +1961,51 @@ function renderAdminFull(screen) {
     }
   });
 
+  // Confirm standalone import — Yes: proceed with empty course_id
+  document.getElementById('confirmStandaloneYes')?.addEventListener('click', async () => {
+    if (!pendingStandaloneImport) return;
+    document.getElementById('confirmStandaloneOverlay').style.display = 'none';
+    document.getElementById('jsonImportStatus').textContent = '⏳ Importing as standalone...';
+    try {
+      pendingStandaloneImport.mode = 'merge';
+      const res = await fetch('/api/admin/import', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(pendingStandaloneImport),
+      });
+      const result = await res.json();
+      if (res.ok) {
+        document.getElementById('jsonImportStatus').textContent = '✅ Standalone lesson imported';
+        document.getElementById('jsonImportOverlay').style.display = 'none';
+        pendingStandaloneImport = null;
+        adminDirty = true;
+        await renderAdmin(screen);
+      } else {
+        document.getElementById('jsonImportStatus').textContent = '❌ ' + (result.error || 'import failed');
+        document.getElementById('jsonImportOverlay').style.display = 'flex';
+      }
+    } catch (e) {
+      document.getElementById('jsonImportStatus').textContent = '❌ Network error: ' + e.message;
+      document.getElementById('jsonImportOverlay').style.display = 'flex';
+    }
+  });
+
+  // Confirm standalone import — No: back to import modal with data preserved
+  document.getElementById('confirmStandaloneNo')?.addEventListener('click', () => {
+    document.getElementById('confirmStandaloneOverlay').style.display = 'none';
+    document.getElementById('jsonImportOverlay').style.display = 'flex';
+    pendingStandaloneImport = null;
+  });
+
   // Modal close buttons
   document.querySelectorAll('[data-modal-close]').forEach(el => {
     el.addEventListener('click', () => {
       const overlayId = el.dataset.modalClose;
       document.getElementById(overlayId).style.display = 'none';
+      // If closing the standalone confirmation, restore import modal
+      if (overlayId === 'confirmStandaloneOverlay' && pendingStandaloneImport) {
+        document.getElementById('jsonImportOverlay').style.display = 'flex';
+        pendingStandaloneImport = null;
+      }
     });
   });
 
