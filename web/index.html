@@ -1860,46 +1860,42 @@ function renderAdminFull(screen) {
     document.getElementById('jsonImportCourseId').style.display = mode === 'lesson' ? '' : 'none';
     const textarea = document.getElementById('jsonImportTextarea');
     if (mode === 'lesson') {
-      textarea.value = JSON.stringify(JSON.parse(`{
-  "lesson": {
-    "id": "my-lesson",
-    "title": "My Lesson",
-    "status": "available",
-    "type": "lesson",
-    "notes": "Lesson notes here...",
-    "mnemonic": "A memory trick",
-    "quiz": [
-      {
-        "question": "What is X?",
-        "options": ["A", "B", "C", "D"],
-        "correct_index": 0
-      }
-    ],
-    "flashcards": [
-      {"front": "Term", "back": "Definition"}
-    ]
-  },
-  "course_id": "target-course-id"
-}`), null, 2);
+      function qi(q, ci) { return { question: q, options: ['A', 'B', 'C', 'D'], correct_index: ci }; }
+      function fc(f, b) { return { front: f, back: b }; }
+      const quiz = []; for (let i = 1; i <= 5; i++) quiz.push(qi('Question ' + i + '?', (i - 1) % 4));
+      const fcs = []; for (let i = 1; i <= 5; i++) fcs.push(fc('Flashcard front ' + i + '?', 'Answer ' + i));
+      textarea.value = JSON.stringify({
+        lesson: {
+          id: 'my-lesson',
+          title: 'My Lesson',
+          status: 'available',
+          type: 'lesson',
+          notes: '## Introduction\nThis lesson covers **key concepts** with `code examples`.\n\n- Point one\n- Point two',
+          mnemonic: 'A memory trick',
+          quiz: quiz,
+          flashcards: fcs,
+        },
+        course_id: 'target-course-id',
+      }, null, 2);
     } else {
-      textarea.value = JSON.stringify(JSON.parse(`{
-  "courses": [
-    {
-      "id": "javascript",
-      "name": "JavaScript",
-      "lessons": [
-        {
-          "id": "vars-types",
-          "title": "Variables & Types",
-          "status": "done",
-          "notes": "...",
-          "quiz": [{"question":"...","options":["a","b","c","d"],"correct_index":0}],
-          "flashcards": [{"front":"...","back":"..."}]
-        }
-      ]
-    }
-  ]
-}`), null, 2);
+      function qi(q, ci) { return { question: q, options: ['A', 'B', 'C', 'D'], correct_index: ci }; }
+      function fc(f, b) { return { front: f, back: b }; }
+      const quiz = []; for (let i = 1; i <= 5; i++) quiz.push(qi('Q' + i + '?', (i - 1) % 4));
+      const fcs = []; for (let i = 1; i <= 5; i++) fcs.push(fc('Front ' + i, 'Back ' + i));
+      textarea.value = JSON.stringify({
+        courses: [{
+          id: 'javascript',
+          name: 'JavaScript',
+          lessons: [{
+            id: 'vars-types',
+            title: 'Variables & Types',
+            status: 'available',
+            notes: '## Variables\nUse `const` and `let` instead of `var`.\n\n- **const** for values that won\'t change\n- **let** for values that will',
+            quiz: quiz,
+            flashcards: fcs,
+          }],
+        }],
+      }, null, 2);
     }
   });
 
@@ -1921,8 +1917,8 @@ Generate ${isCourses ? 'courses with lessons' : 'a single lesson'} in the JSON f
 
 2. Each lesson should have:
    - A clear, focused title
-   - 2-4 quiz questions with 4 options each (mark the correct one with \`correct_index\`)
-   - 2-4 flashcards (front/back pairs)
+   - At least 50 quiz questions with 4 options each (mark the correct one with \`correct_index\`)
+   - More than 50 flashcards (front/back pairs)
    - Coding exercises when applicable (set \`"type": "coding"\`)
 
 3. Content should be beginner-friendly but technically accurate. Use real code examples, not placeholders.
