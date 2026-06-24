@@ -921,6 +921,7 @@ function bindLearnEvents() {
     el.addEventListener('click', () => {
       learnState.activeModule = el.dataset.module;
       persist('learnModule', learnState.activeModule);
+      document.querySelectorAll('.module-tab').forEach(t => t.classList.toggle('active', t.dataset.module === learnState.activeModule));
       const node = findNode(learnState.selectedNodeId);
       if (!isCourseNode(node)) loadLearnModule(learnState.selectedNodeId);
     });
@@ -1028,6 +1029,7 @@ async function loadLearnModule(lessonId) {
     bindModuleActions(lessonId);
     bindMicroBanners();
   } catch (e) {
+    console.error('Module error:', e);
     container.innerHTML = '<div class="module-card" style="color:var(--red)">Error loading module.</div>';
   }
 }
