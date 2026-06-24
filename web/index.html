@@ -1473,6 +1473,7 @@ function renderAdminFull(screen) {
     switch (adminStep) {
       case 1:
         h += '<div class="fld"><label class="fld-label">Title *</label><input class="fld-input" id="admFldTitle" value="' + escHtml(adminForm.title) + '"></div>';
+        h += '<div class="fld"><label class="fld-label">Course ID</label><input class="fld-input" id="admFldCourseId" value="' + escHtml(adminForm.course_id) + '" readonly style="background:var(--surface-alt);color:var(--text-dim);cursor:default"></div>';
         h += '<div class="fld"><label class="fld-label">Type</label><select class="fld-select" id="admFldType"><option' + (adminForm.type === 'lesson' ? ' selected' : '') + '>lesson</option><option' + (adminForm.type === 'coding' ? ' selected' : '') + '>coding</option></select></div>';
         h += '<div class="fld"><label class="fld-label">Status</label><select class="fld-select" id="admFldStatus"><option' + (adminForm.status === 'locked' ? ' selected' : '') + '>locked</option><option' + (adminForm.status === 'available' ? ' selected' : '') + '>available</option><option' + (adminForm.status === 'in_progress' ? ' selected' : '') + '>in_progress</option><option' + (adminForm.status === 'done' ? ' selected' : '') + '>done</option></select></div>';
         h += '<div style="font-size:0.75rem;color:var(--text-dim);margin-top:0.3em">' + (infoFilled ? '✅ Info complete — click any step above' : 'Fill in the Title above, then navigate freely') + '</div>';
