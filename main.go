@@ -441,8 +441,8 @@ func handleLessons(w http.ResponseWriter, r *http.Request) {
 
 	var id, title, notes, mnemonic, status, ltype string
 	var progress, quizCount int
-	err := db.QueryRow("SELECT id,title,notes,mnemonic,status,type,progress,quiz_count FROM lessons WHERE id=?", path).
-		Scan(&id, &title, &notes, &mnemonic, &status, &ltype, &progress, &quizCount)
+	err := db.QueryRow("SELECT id,title,notes,mnemonic,status,progress,type,quiz_count FROM lessons WHERE id=?", path).
+		Scan(&id, &title, &notes, &mnemonic, &status, &progress, &ltype, &quizCount)
 	if err != nil {
 		http.Error(w, "not found", 404)
 		return
