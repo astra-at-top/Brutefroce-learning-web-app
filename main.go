@@ -19,6 +19,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -54,6 +55,7 @@ func main() {
 	defer db.Close()
 
 	initSchema()
+	autoBackup()
 	seedData()
 
 	mux := http.NewServeMux()
@@ -66,6 +68,13 @@ func main() {
 	mux.HandleFunc("/api/powerscore", handlePowerScore)
 	mux.HandleFunc("/api/sync/export", handleSyncExport)
 	mux.HandleFunc("/api/sync/import", handleSyncImport)
+	mux.HandleFunc("/api/verify-code", handleVerifyCode)
+
+	// Backup endpoints
+	mux.HandleFunc("/api/backup", handleBackup)
+	mux.HandleFunc("/api/backups", handleBackups)
+	mux.HandleFunc("/api/backup/restore", handleBackupRestore)
+	mux.HandleFunc("/api/backup/delete", handleBackupDelete)
 
 	// AI endpoint
 	mux.HandleFunc("/api/ai/review", handleAIReview)
@@ -100,6 +109,8 @@ func initSchema() {
 			title TEXT NOT NULL,
 			notes TEXT DEFAULT '',
 			mnemonic TEXT DEFAULT '',
+			mnemonic_summary TEXT DEFAULT '',
+			mnemonic_keypoints TEXT DEFAULT '',
 			status TEXT DEFAULT 'locked',
 			progress INTEGER DEFAULT 0,
 			type TEXT DEFAULT 'lesson',
@@ -163,6 +174,23 @@ func initSchema() {
 	if foundCourse == 0 {
 		db.Exec("ALTER TABLE lessons ADD COLUMN course_id TEXT DEFAULT ''")
 	}
+	// Migrate mnemonic columns
+	for _, col := range []string{"mnemonic_summary", "mnemonic_keypoints"} {
+		var f int
+		db.QueryRow("SELECT COUNT(*) FROM pragma_table_info('lessons') WHERE name=?", col).Scan(&f)
+		if f == 0 {
+			db.Exec("ALTER TABLE lessons ADD COLUMN " + col + " TEXT DEFAULT ''")
+		}
+	}
+	// Migrate existing mnemonic data: split "XXX - description" or "XXX: description" into mnemonic + summary
+	db.Exec(`UPDATE lessons SET mnemonic_summary = TRIM(SUBSTR(mnemonic, INSTR(mnemonic, ' - ') + 3))
+		WHERE mnemonic_summary = '' AND mnemonic LIKE '% - %'`)
+	db.Exec(`UPDATE lessons SET mnemonic = TRIM(SUBSTR(mnemonic, 1, INSTR(mnemonic, ' - ') - 1))
+		WHERE mnemonic LIKE '% - %' AND mnemonic_summary != ''`)
+	db.Exec(`UPDATE lessons SET mnemonic_summary = TRIM(SUBSTR(mnemonic, INSTR(mnemonic, ': ') + 2))
+		WHERE mnemonic_summary = '' AND mnemonic LIKE '%: %' AND mnemonic NOT LIKE '% - %'`)
+	db.Exec(`UPDATE lessons SET mnemonic = TRIM(SUBSTR(mnemonic, 1, INSTR(mnemonic, ': ') - 1))
+		WHERE mnemonic LIKE '%: %' AND mnemonic_summary != '' AND mnemonic NOT LIKE '% - %'`)
 }
 
 func seedData() {
@@ -251,8 +279,8 @@ func seedData() {
 		},
 	}
 	for _, l := range lessons {
-		db.Exec("INSERT INTO lessons (id,title,notes,mnemonic,status,type,course_id,progress,quiz_count,quiz_data,coding_data) VALUES (?,?,?,?,?,?,?,?,?,?,?)",
-			l.ID, l.Title, l.Notes, l.Mnemonic, l.Status, l.LType, l.CourseID, l.Progress, l.QuizCount, l.QuizData, l.CodingData)
+		db.Exec("INSERT INTO lessons (id,title,notes,mnemonic,mnemonic_summary,mnemonic_keypoints,status,type,course_id,progress,quiz_count,quiz_data,coding_data) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)",
+			l.ID, l.Title, l.Notes, l.Mnemonic, "", "", l.Status, l.LType, l.CourseID, l.Progress, l.QuizCount, l.QuizData, l.CodingData)
 	}
 
 	type fcSeed struct{ LessonID, Front, Back string }
@@ -439,16 +467,17 @@ func handleLessons(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var id, title, notes, mnemonic, status, ltype string
+	var id, title, notes, mnemonic, mnemonicSummary, mnemonicKeypoints, status, ltype string
 	var progress, quizCount int
-	err := db.QueryRow("SELECT id,title,notes,mnemonic,status,type,progress,quiz_count FROM lessons WHERE id=?", path).
-		Scan(&id, &title, &notes, &mnemonic, &status, &ltype, &progress, &quizCount)
+	err := db.QueryRow("SELECT id,title,notes,mnemonic,mnemonic_summary,mnemonic_keypoints,status,progress,type,quiz_count FROM lessons WHERE id=?", path).
+		Scan(&id, &title, &notes, &mnemonic, &mnemonicSummary, &mnemonicKeypoints, &status, &progress, &ltype, &quizCount)
 	if err != nil {
 		http.Error(w, "not found", 404)
 		return
 	}
 	jsonResp(w, map[string]interface{}{
 		"id": id, "title": title, "notes": notes, "mnemonic": mnemonic,
+		"mnemonic_summary": mnemonicSummary, "mnemonic_keypoints": mnemonicKeypoints,
 		"status": status, "type": ltype, "progress": progress, "quiz_count": quizCount,
 	})
 }
@@ -546,10 +575,10 @@ func handleAdminLessonByID(w http.ResponseWriter, r *http.Request) {
 
 	switch r.Method {
 	case "GET":
-		var id, title, notes, mnemonic, status, ltype, courseID, quizData, codingData string
+		var id, title, notes, mnemonic, mnemonicSummary, mnemonicKeypoints, status, ltype, courseID, quizData, codingData string
 		var progress, quizCount int
-		err := db.QueryRow("SELECT id,title,notes,mnemonic,status,type,course_id,progress,quiz_count,quiz_data,coding_data FROM lessons WHERE id=?", path).
-			Scan(&id, &title, &notes, &mnemonic, &status, &ltype, &courseID, &progress, &quizCount, &quizData, &codingData)
+		err := db.QueryRow("SELECT id,title,notes,mnemonic,mnemonic_summary,mnemonic_keypoints,status,type,course_id,progress,quiz_count,quiz_data,coding_data FROM lessons WHERE id=?", path).
+			Scan(&id, &title, &notes, &mnemonic, &mnemonicSummary, &mnemonicKeypoints, &status, &ltype, &courseID, &progress, &quizCount, &quizData, &codingData)
 		if err != nil {
 			jsonError(w, "not found", 404)
 			return
@@ -573,6 +602,7 @@ func handleAdminLessonByID(w http.ResponseWriter, r *http.Request) {
 
 		jsonResp(w, map[string]interface{}{
 			"id": id, "title": title, "notes": notes, "mnemonic": mnemonic,
+			"mnemonic_summary": mnemonicSummary, "mnemonic_keypoints": mnemonicKeypoints,
 			"status": status, "type": ltype, "course_id": courseID,
 			"progress": progress, "quiz_count": quizCount,
 			"quiz": quiz, "coding": coding, "flashcards": flashcards,
@@ -623,10 +653,12 @@ func handleAdminLessonByID(w http.ResponseWriter, r *http.Request) {
 		status, _ := data["status"].(string)
 		notes, _ := data["notes"].(string)
 		mnemonic, _ := data["mnemonic"].(string)
+		mnemonicSummary, _ := data["mnemonic_summary"].(string)
+		mnemonicKeypoints, _ := data["mnemonic_keypoints"].(string)
 		courseID, _ := data["course_id"].(string)
 
-		db.Exec("UPDATE lessons SET title=?,type=?,status=?,notes=?,mnemonic=?,course_id=? WHERE id=?",
-			title, ltype, status, notes, mnemonic, courseID, path)
+		db.Exec("UPDATE lessons SET title=?,type=?,status=?,notes=?,mnemonic=?,mnemonic_summary=?,mnemonic_keypoints=?,course_id=? WHERE id=?",
+			title, ltype, status, notes, mnemonic, mnemonicSummary, mnemonicKeypoints, courseID, path)
 		jsonResp(w, map[string]string{"status": "saved"})
 
 	case "DELETE":
@@ -651,6 +683,8 @@ func handleAdminExport(w http.ResponseWriter, r *http.Request) {
 		Title      string                   `json:"title"`
 		Notes      string                   `json:"notes"`
 		Mnemonic   string                   `json:"mnemonic"`
+		MnemonicSummary   string            `json:"mnemonic_summary"`
+		MnemonicKeypoints string            `json:"mnemonic_keypoints"`
 		Status     string                   `json:"status"`
 		Type       string                   `json:"type"`
 		Quiz       []map[string]interface{} `json:"quiz"`
@@ -681,7 +715,7 @@ func handleAdminExport(w http.ResponseWriter, r *http.Request) {
 		courseOrder = append(courseOrder, id)
 	}
 
-	lRows, err := db.Query("SELECT id, title, notes, mnemonic, status, type, course_id, quiz_data, coding_data FROM lessons ORDER BY id")
+	lRows, err := db.Query("SELECT id, title, notes, mnemonic, mnemonic_summary, mnemonic_keypoints, status, type, course_id, quiz_data, coding_data FROM lessons ORDER BY id")
 	if err != nil {
 		jsonError(w, err.Error(), 500)
 		return
@@ -689,12 +723,12 @@ func handleAdminExport(w http.ResponseWriter, r *http.Request) {
 	defer lRows.Close()
 
 	type lessonRow struct {
-		ID, Title, Notes, Mnemonic, Status, Ltype, CourseID, QuizData, CodingData string
+		ID, Title, Notes, Mnemonic, MnemonicSummary, MnemonicKeypoints, Status, Ltype, CourseID, QuizData, CodingData string
 	}
 	lessonMap := map[string][]lessonRow{}
 	for lRows.Next() {
 		var l lessonRow
-		lRows.Scan(&l.ID, &l.Title, &l.Notes, &l.Mnemonic, &l.Status, &l.Ltype, &l.CourseID, &l.QuizData, &l.CodingData)
+		lRows.Scan(&l.ID, &l.Title, &l.Notes, &l.Mnemonic, &l.MnemonicSummary, &l.MnemonicKeypoints, &l.Status, &l.Ltype, &l.CourseID, &l.QuizData, &l.CodingData)
 		lessonMap[l.CourseID] = append(lessonMap[l.CourseID], l)
 	}
 
@@ -722,6 +756,7 @@ func handleAdminExport(w http.ResponseWriter, r *http.Request) {
 			}
 			c.Lessons = append(c.Lessons, lessonExport{
 				ID: l.ID, Title: l.Title, Notes: l.Notes, Mnemonic: l.Mnemonic,
+				MnemonicSummary: l.MnemonicSummary, MnemonicKeypoints: l.MnemonicKeypoints,
 				Status: l.Status, Type: l.Ltype, Quiz: quiz, Coding: coding, Flashcards: fcs,
 			})
 		}
@@ -821,6 +856,8 @@ func handleAdminImport(w http.ResponseWriter, r *http.Request) {
 					}
 					notes, _ := lesson["notes"].(string)
 					mnemonic, _ := lesson["mnemonic"].(string)
+					mnemonicSummary, _ := lesson["mnemonic_summary"].(string)
+					mnemonicKeypoints, _ := lesson["mnemonic_keypoints"].(string)
 					progress := 0
 					if p, ok := lesson["progress"].(float64); ok {
 						progress = int(p)
@@ -850,12 +887,12 @@ func handleAdminImport(w http.ResponseWriter, r *http.Request) {
 
 					if mode == "replace" {
 						db.Exec("DELETE FROM lessons WHERE id=?", lid)
-						db.Exec("INSERT INTO lessons (id,title,notes,mnemonic,status,type,course_id,progress,quiz_count,quiz_data,coding_data) VALUES (?,?,?,?,?,?,?,?,?,?,?)",
-							lid, title, notes, mnemonic, status, ltype, id, progress, quizCount, quizData, codingData)
+						db.Exec("INSERT INTO lessons (id,title,notes,mnemonic,mnemonic_summary,mnemonic_keypoints,status,type,course_id,progress,quiz_count,quiz_data,coding_data) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)",
+							lid, title, notes, mnemonic, mnemonicSummary, mnemonicKeypoints, status, ltype, id, progress, quizCount, quizData, codingData)
 					} else {
 						db.Exec("DELETE FROM flashcard_data WHERE lesson_id=?", lid)
-						db.Exec("INSERT INTO lessons (id,title,notes,mnemonic,status,type,course_id,progress,quiz_count,quiz_data,coding_data) VALUES (?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET title=excluded.title, notes=excluded.notes, mnemonic=excluded.mnemonic, status=excluded.status, type=excluded.type, course_id=excluded.course_id, quiz_data=excluded.quiz_data, coding_data=excluded.coding_data, quiz_count=excluded.quiz_count",
-							lid, title, notes, mnemonic, status, ltype, id, progress, quizCount, quizData, codingData)
+						db.Exec("INSERT INTO lessons (id,title,notes,mnemonic,mnemonic_summary,mnemonic_keypoints,status,type,course_id,progress,quiz_count,quiz_data,coding_data) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET title=excluded.title, notes=excluded.notes, mnemonic=excluded.mnemonic, mnemonic_summary=excluded.mnemonic_summary, mnemonic_keypoints=excluded.mnemonic_keypoints, status=excluded.status, type=excluded.type, course_id=excluded.course_id, quiz_data=excluded.quiz_data, coding_data=excluded.coding_data, quiz_count=excluded.quiz_count",
+							lid, title, notes, mnemonic, mnemonicSummary, mnemonicKeypoints, status, ltype, id, progress, quizCount, quizData, codingData)
 					}
 					lessonCount++
 
@@ -1153,7 +1190,7 @@ func handleFlashcards(w http.ResponseWriter, r *http.Request) {
 	}
 	defer rows.Close()
 
-	var cards []map[string]interface{}
+	cards := make([]map[string]interface{}, 0)
 	for rows.Next() {
 		var front, back, nextReview string
 		var ease float64
@@ -1341,6 +1378,326 @@ func handleSyncImport(w http.ResponseWriter, r *http.Request) {
 	jsonResp(w, map[string]interface{}{"status": "imported"})
 }
 
+// ======== BACKUP ========
+
+func autoBackup() {
+	os.MkdirAll("./data/backups", 0755)
+	today := time.Now().Format("2006-01-02")
+
+	// Prune old auto-backups, keep last 10
+	entries, _ := os.ReadDir("./data/backups")
+	var autoBackups []string
+	for _, e := range entries {
+		if strings.HasPrefix(e.Name(), "auto-") && strings.HasSuffix(e.Name(), ".json") {
+			autoBackups = append(autoBackups, e.Name())
+		}
+	}
+	if len(autoBackups) > 9 {
+		// Sort by name (which is the timestamp) and remove oldest
+		sort.Strings(autoBackups)
+		for i := 0; i < len(autoBackups)-9; i++ {
+			os.Remove("./data/backups/" + autoBackups[i])
+		}
+	}
+
+	// Check if today's auto-backup already exists
+	autoFile := "auto-" + today + ".json"
+	if _, err := os.Stat("./data/backups/" + autoFile); err == nil {
+		return // Already backed up today
+	}
+
+	saveBackupTo(autoFile)
+}
+
+func saveBackupTo(filename string) (int, error) {
+	os.MkdirAll("./data/backups", 0755)
+
+	// Same export logic as handleSyncExport
+	lessons := []map[string]interface{}{}
+	rows, _ := db.Query("SELECT id,title,notes,mnemonic,status,type,course_id,progress,quiz_count,quiz_data,coding_data FROM lessons")
+	for rows.Next() {
+		var id, title, notes, mnemonic, status, ltype, courseID, quizData, codingData string
+		var progress, quizCount int
+		rows.Scan(&id, &title, &notes, &mnemonic, &status, &ltype, &courseID, &progress, &quizCount, &quizData, &codingData)
+		lessons = append(lessons, map[string]interface{}{
+			"id": id, "title": title, "notes": notes, "mnemonic": mnemonic,
+			"status": status, "type": ltype, "course_id": courseID,
+			"progress": progress, "quiz_count": quizCount,
+			"quiz_data": quizData, "coding_data": codingData,
+		})
+	}
+	rows.Close()
+
+	fcRows, _ := db.Query("SELECT lesson_id,front,back,ease,interval_days,repetitions,next_review,last_reviewed FROM flashcard_reviews")
+	var fcCards []map[string]interface{}
+	for fcRows.Next() {
+		var lessonID, front, back, nextReview, lastReviewed string
+		var ease float64
+		var interval, reps int
+		fcRows.Scan(&lessonID, &front, &back, &ease, &interval, &reps, &nextReview, &lastReviewed)
+		fcCards = append(fcCards, map[string]interface{}{
+			"lesson_id": lessonID, "front": front, "back": back,
+			"ease": ease, "interval": interval, "repetitions": reps,
+			"next_review": nextReview, "last_reviewed": lastReviewed,
+		})
+	}
+	fcRows.Close()
+
+	fdRows, _ := db.Query("SELECT lesson_id,front,back,sort_order FROM flashcard_data")
+	var fcData []map[string]interface{}
+	for fdRows.Next() {
+		var lessonID, front, back string
+		var sortOrder int
+		fdRows.Scan(&lessonID, &front, &back, &sortOrder)
+		fcData = append(fcData, map[string]interface{}{
+			"lesson_id": lessonID, "front": front, "back": back, "sort_order": sortOrder,
+		})
+	}
+	fdRows.Close()
+
+	progRows, _ := db.Query("SELECT key, value FROM progress")
+	progress := map[string]string{}
+	for progRows.Next() {
+		var k, v string
+		progRows.Scan(&k, &v)
+		progress[k] = v
+	}
+	progRows.Close()
+
+	courseRows, _ := db.Query("SELECT id, name, parent_id, sort_order FROM courses")
+	var courses []map[string]interface{}
+	for courseRows.Next() {
+		var id, name, parentID string
+		var sort int
+		courseRows.Scan(&id, &name, &parentID, &sort)
+		courses = append(courses, map[string]interface{}{"id": id, "name": name, "parent_id": parentID, "sort_order": sort})
+	}
+	courseRows.Close()
+
+	export := map[string]interface{}{
+		"version": 2, "exported_at": time.Now().Format(time.RFC3339),
+		"lessons": lessons, "flashcards": fcCards,
+		"flashcard_data": fcData, "progress": progress, "courses": courses,
+	}
+
+	data, _ := json.MarshalIndent(export, "", "  ")
+	err := os.WriteFile("./data/backups/"+filename, data, 0644)
+	if err != nil {
+		return 0, err
+	}
+	return len(data), nil
+}
+
+func handleBackup(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "POST" {
+		http.Error(w, "method not allowed", 405)
+		return
+	}
+	filename := "backup-" + time.Now().Format("2006-01-02T15-04-05") + ".json"
+	size, err := saveBackupTo(filename)
+	if err != nil {
+		jsonError(w, "backup failed: "+err.Error(), 500)
+		return
+	}
+	jsonResp(w, map[string]interface{}{
+		"status": "ok", "file": filename, "size": size,
+		"exported_at": time.Now().Format(time.RFC3339),
+	})
+}
+
+func handleBackups(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "GET" {
+		http.Error(w, "method not allowed", 405)
+		return
+	}
+	os.MkdirAll("./data/backups", 0755)
+	entries, _ := os.ReadDir("./data/backups")
+	var backups []map[string]interface{}
+	for _, e := range entries {
+		if e.IsDir() || !strings.HasSuffix(e.Name(), ".json") {
+			continue
+		}
+		info, err := e.Info()
+		if err != nil {
+			continue
+		}
+		backups = append(backups, map[string]interface{}{
+			"file": e.Name(), "size": info.Size(),
+			"modified": info.ModTime().Format(time.RFC3339),
+			"auto":     strings.HasPrefix(e.Name(), "auto-"),
+		})
+	}
+	// Sort newest first
+	sort.Slice(backups, func(i, j int) bool {
+		return backups[i]["modified"].(string) > backups[j]["modified"].(string)
+	})
+	if backups == nil {
+		backups = []map[string]interface{}{}
+	}
+	jsonResp(w, backups)
+}
+
+func handleBackupRestore(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "POST" {
+		http.Error(w, "method not allowed", 405)
+		return
+	}
+	body, _ := io.ReadAll(r.Body)
+	var req struct {
+		File string `json:"file"`
+	}
+	json.Unmarshal(body, &req)
+	if req.File == "" || strings.Contains(req.File, "..") || strings.Contains(req.File, "/") {
+		jsonError(w, "invalid filename", 400)
+		return
+	}
+
+	data, err := os.ReadFile("./data/backups/" + req.File)
+	if err != nil {
+		jsonError(w, "backup file not found", 404)
+		return
+	}
+
+	var export map[string]interface{}
+	if err := json.Unmarshal(data, &export); err != nil {
+		jsonError(w, "corrupt backup file: "+err.Error(), 400)
+		return
+	}
+
+	// Replace mode — clear all data first
+	db.Exec("DELETE FROM flashcard_reviews")
+	db.Exec("DELETE FROM flashcard_data")
+	db.Exec("DELETE FROM lessons")
+	db.Exec("DELETE FROM courses")
+	db.Exec("DELETE FROM progress")
+
+	// Restore courses
+	if courses, ok := export["courses"].([]interface{}); ok {
+		for _, c := range courses {
+			cm, _ := c.(map[string]interface{})
+			if cm == nil {
+				continue
+			}
+			id, _ := cm["id"].(string)
+			name, _ := cm["name"].(string)
+			parentID, _ := cm["parent_id"].(string)
+			sort := 0
+			if s, ok := cm["sort_order"].(float64); ok {
+				sort = int(s)
+			}
+			db.Exec("INSERT INTO courses (id,name,parent_id,sort_order) VALUES (?,?,?,?)", id, name, parentID, sort)
+		}
+	}
+
+	// Restore lessons
+	if lessons, ok := export["lessons"].([]interface{}); ok {
+		for _, l := range lessons {
+			lm, _ := l.(map[string]interface{})
+			if lm == nil {
+				continue
+			}
+			id, _ := lm["id"].(string)
+			title, _ := lm["title"].(string)
+			notes, _ := lm["notes"].(string)
+			mnemonic, _ := lm["mnemonic"].(string)
+			status, _ := lm["status"].(string)
+			ltype, _ := lm["type"].(string)
+			courseID, _ := lm["course_id"].(string)
+			progress := 0
+			if p, ok := lm["progress"].(float64); ok {
+				progress = int(p)
+			}
+			quizCount := 0
+			if qc, ok := lm["quiz_count"].(float64); ok {
+				quizCount = int(qc)
+			}
+			quizData, _ := lm["quiz_data"].(string)
+			codingData, _ := lm["coding_data"].(string)
+			db.Exec("INSERT INTO lessons (id,title,notes,mnemonic,status,type,course_id,progress,quiz_count,quiz_data,coding_data) VALUES (?,?,?,?,?,?,?,?,?,?,?)",
+				id, title, notes, mnemonic, status, ltype, courseID, progress, quizCount, quizData, codingData)
+		}
+	}
+
+	// Restore flashcards (reviews)
+	if cards, ok := export["flashcards"].([]interface{}); ok {
+		for _, c := range cards {
+			cm, _ := c.(map[string]interface{})
+			if cm == nil {
+				continue
+			}
+			lessonID, _ := cm["lesson_id"].(string)
+			front, _ := cm["front"].(string)
+			back, _ := cm["back"].(string)
+			ease := 2.5
+			if e, ok := cm["ease"].(float64); ok {
+				ease = e
+			}
+			interval := 1
+			if i, ok := cm["interval"].(float64); ok {
+				interval = int(i)
+			}
+			reps := 0
+			if r, ok := cm["repetitions"].(float64); ok {
+				reps = int(r)
+			}
+			nextReview, _ := cm["next_review"].(string)
+			lastReviewed, _ := cm["last_reviewed"].(string)
+			db.Exec("INSERT INTO flashcard_reviews (lesson_id,front,back,ease,interval_days,repetitions,next_review,last_reviewed) VALUES (?,?,?,?,?,?,?,?)",
+				lessonID, front, back, ease, interval, reps, nextReview, lastReviewed)
+		}
+	}
+
+	// Restore flashcard_data
+	if fcData, ok := export["flashcard_data"].([]interface{}); ok {
+		for _, f := range fcData {
+			fm, _ := f.(map[string]interface{})
+			if fm == nil {
+				continue
+			}
+			lessonID, _ := fm["lesson_id"].(string)
+			front, _ := fm["front"].(string)
+			back, _ := fm["back"].(string)
+			sortOrder := 0
+			if s, ok := fm["sort_order"].(float64); ok {
+				sortOrder = int(s)
+			}
+			db.Exec("INSERT INTO flashcard_data (lesson_id,front,back,sort_order) VALUES (?,?,?,?)", lessonID, front, back, sortOrder)
+		}
+	}
+
+	// Restore progress
+	if progress, ok := export["progress"].(map[string]interface{}); ok {
+		for k, v := range progress {
+			setProgress(k, fmt.Sprintf("%v", v))
+		}
+	}
+
+	jsonResp(w, map[string]interface{}{"status": "restored"})
+}
+
+func handleBackupDelete(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "POST" {
+		http.Error(w, "method not allowed", 405)
+		return
+	}
+	body, _ := io.ReadAll(r.Body)
+	var req struct {
+		File string `json:"file"`
+	}
+	json.Unmarshal(body, &req)
+	if req.File == "" || strings.Contains(req.File, "..") || strings.Contains(req.File, "/") {
+		jsonError(w, "invalid filename", 400)
+		return
+	}
+
+	err := os.Remove("./data/backups/" + req.File)
+	if err != nil {
+		jsonError(w, "file not found", 404)
+		return
+	}
+	jsonResp(w, map[string]interface{}{"status": "deleted"})
+}
+
 func encrypt(data []byte, key string) string {
 	block, _ := aes.NewCipher(padKey(key))
 	gcm, _ := cipher.NewGCM(block)
@@ -1505,4 +1862,117 @@ Keep it concise and encouraging.`, req.Prompt, req.Code, req.Solution)
 	}
 
 	jsonResp(w, map[string]string{"review": reviewText.String()})
+}
+
+func handleVerifyCode(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "POST" {
+		jsonError(w, "method not allowed", 405)
+		return
+	}
+	if opencodeCmd == nil {
+		jsonError(w, "AI verification unavailable: opencode not running", 503)
+		return
+	}
+
+	body, _ := io.ReadAll(r.Body)
+	var req struct {
+		LessonID string `json:"lessonId"`
+		UserCode string `json:"userCode"`
+	}
+	if err := json.Unmarshal(body, &req); err != nil {
+		jsonError(w, "invalid request", 400)
+		return
+	}
+	if req.LessonID == "" || req.UserCode == "" {
+		jsonError(w, "lessonId and userCode are required", 400)
+		return
+	}
+	userCode := strings.TrimSpace(req.UserCode)
+	if userCode == "" {
+		jsonResp(w, map[string]interface{}{"passed": false, "feedback": "Write some code first before running!"})
+		return
+	}
+
+	// Fetch lesson's coding data
+	var codingData string
+	err := db.QueryRow("SELECT coding_data FROM lessons WHERE id=?", req.LessonID).Scan(&codingData)
+	if err != nil || codingData == "" || codingData == "{}" {
+		jsonResp(w, map[string]interface{}{"passed": false, "feedback": "No coding exercise found for this lesson."})
+		return
+	}
+	var data struct {
+		Prompt   string `json:"prompt"`
+		Solution string `json:"solution"`
+	}
+	json.Unmarshal([]byte(codingData), &data)
+	if data.Solution == "" {
+		jsonResp(w, map[string]interface{}{"passed": false, "feedback": "No expected solution available for verification."})
+		return
+	}
+
+	prompt := fmt.Sprintf(`You are verifying a coding exercise answer. Be generous — accept any functionally equivalent solution.
+
+Exercise prompt: %s
+
+Expected solution:
+%s
+
+User's code:
+%s
+
+Reply with EXACTLY ONE line, nothing else:
+PASS <optional brief praise> — if the code is functionally correct
+FAIL <what's wrong or missing> — if the code is incorrect`, data.Prompt, data.Solution, userCode)
+
+	ctx, cancel := context.WithTimeout(r.Context(), 60*time.Second)
+	defer cancel()
+
+	cmd := exec.CommandContext(ctx, "opencode", "run",
+		"--attach", "http://127.0.0.1:"+opencodePort,
+		"--format", "json",
+		prompt,
+	)
+
+	stdout, err := cmd.StdoutPipe()
+	if err != nil {
+		jsonError(w, "failed to create pipe", 500)
+		return
+	}
+	if err := cmd.Start(); err != nil {
+		jsonError(w, "failed to run opencode", 500)
+		return
+	}
+
+	var resultText strings.Builder
+	scanner := bufio.NewScanner(stdout)
+	for scanner.Scan() {
+		var event struct {
+			Type string `json:"type"`
+			Part struct {
+				Text string `json:"text"`
+			} `json:"part"`
+		}
+		if err := json.Unmarshal([]byte(scanner.Text()), &event); err != nil {
+			continue
+		}
+		if event.Type == "text" {
+			resultText.WriteString(event.Part.Text)
+		}
+	}
+	cmd.Wait()
+
+	full := strings.TrimSpace(resultText.String())
+	passed := strings.HasPrefix(full, "PASS")
+	feedback := full
+	if idx := strings.IndexAny(full, "\n"); idx > 0 {
+		feedback = full[:idx]
+	}
+	if feedback == "" {
+		feedback = "Verification returned no result. Please try again."
+	}
+
+	jsonResp(w, map[string]interface{}{
+		"passed":   passed,
+		"feedback": feedback,
+	})
 }

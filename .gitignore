@@ -1,0 +1,24 @@
+# Binaries
+brutforselearning
+brutforse_binary
+*.exe
+
+# Data (SQLite DB + personal progress)
+data/*.db
+data/*.db.backup
+data/backups/
+data/sync/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temp
+.superpowers/
+*.log
