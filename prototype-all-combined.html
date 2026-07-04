@@ -1,0 +1,1296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BruteForce Learning — All Prototypes</title>
+<style>
+:root {
+  --bg: #0d0d0f; --surface: #111318; --surface-alt: #161820;
+  --border: #2a2d3a; --border-dim: #1e2130;
+  --text: #c8ccd8; --text-muted: #5a5f72; --text-dim: #3f4252;
+  --purple: #9d7dea; --cyan: #4ec9b0; --yellow: #e5c07b;
+  --red: #e06c75; --green: #98c379; --blue: #61afef;
+  --font-mono: "JetBrains Mono","Fira Code","Cascadia Code","Hack","Courier New",monospace;
+}
+*::-webkit-scrollbar { display: none; }
+* { scrollbar-width: none; -ms-overflow-style: none; }
+html { font-size: clamp(12px, 1.6vh, 28px); }
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--text);
+  font-family: var(--font-mono); font-size: 1rem; line-height: 1.5;
+  height: 100vh; overflow: hidden;
+  display: flex; flex-direction: column;
+}
+#app { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+
+.title-bar {
+  background: #1a1d26; border-bottom: 1px solid var(--border);
+  padding: 0.55em 1em; display: flex; align-items: center;
+  font-size: 0.95rem; color: var(--text-muted); user-select: none; flex-shrink: 0;
+}
+.title-bar .tb-brand { color: var(--purple); font-weight: bold; }
+.title-bar .tb-sub { color: var(--text-dim); font-size: 0.85rem; margin-left: 0.5em; }
+.title-bar .tb-variant { margin-left: auto; color: var(--yellow); font-weight: bold; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.06em; }
+
+.main-area { flex: 1; padding: 0.5em 1em; display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
+
+/* ===== Proto Switcher ===== */
+.proto-switcher {
+  position: fixed; bottom: 3.5em; left: 50%; transform: translateX(-50%);
+  display: flex; align-items: center; gap: 0.8em;
+  background: #1a1d26; border: 1px solid var(--purple);
+  padding: 0.35em 0.8em; z-index: 999; user-select: none;
+}
+.proto-switcher .ps-arrow { cursor: pointer; color: var(--text-muted); font-size: 1.1rem; padding: 0.05em 0.2em; }
+.proto-switcher .ps-arrow:hover { color: var(--purple); }
+.proto-switcher .ps-label { color: var(--purple); font-weight: bold; letter-spacing: 0.05em; text-transform: uppercase; min-width: 22ch; text-align: center; }
+.proto-switcher .ps-note { color: var(--text-dim); font-size: 0.75rem; }
+.proto-switcher .ps-dots { display: flex; gap: 0.3em; }
+.proto-switcher .ps-dot { width: 0.45em; height: 0.45em; background: var(--text-dim); border: 1px solid var(--border); }
+.proto-switcher .ps-dot.active { background: var(--purple); border-color: var(--purple); }
+
+.keybind-bar {
+  border-top: 1px solid var(--border); padding: 0.45em 1em;
+  font-size: 0.85rem; display: flex; gap: 0.7em; flex-shrink: 0;
+}
+.kb-key { color: var(--text); font-weight: bold; }
+.kb-action { color: var(--text-muted); }
+.status-bar {
+  border-top: 1px solid var(--border); padding: 0.3em 1em;
+  font-size: 0.85rem; color: var(--text-dim); display: flex; align-items: center; gap: 0.3em; flex-shrink: 0;
+}
+.status-bar .prefix { color: var(--text-muted); }
+
+@keyframes fadeSlide { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+.mount-anim { animation: fadeSlide 0.25s ease; }
+
+/* ========================================================================
+   VARIANT A: Dashboard
+   ======================================================================== */
+.var-dashboard { display: none; height: 100%; }
+.var-dashboard.active { display: flex; flex-direction: column; }
+.var-dashboard .font-display { font-family: "Share Tech Mono","Courier New",monospace; }
+.var-dashboard .dash-unified { display: flex; flex-direction: column; gap: 0.8em; flex: 1; }
+.var-dashboard .dash-u-split { display: flex; gap: 0.8em; flex: 1; min-height: 0; }
+.var-dashboard .dash-u-left { flex: 1; display: flex; flex-direction: column; gap: 0.8em; min-width: 0; }
+.var-dashboard .dash-u-right { flex: 1; display: flex; flex-direction: column; gap: 0.8em; min-width: 0; }
+
+.var-dashboard .header-bar {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 0.5em 1.2em; border: 1px solid var(--purple);
+  margin: 0 0 0.5em; flex-shrink: 0;
+}
+.var-dashboard .h-l { color: var(--text-muted); font-size: 0.95rem; }
+.var-dashboard .h-y { color: var(--yellow); font-weight: bold; }
+.var-dashboard .h-g { color: var(--green); }
+.var-dashboard .h-p { color: var(--purple); font-weight: bold; }
+.var-dashboard .h-s { color: var(--text-dim); }
+.var-dashboard .h-stat { display: flex; align-items: baseline; gap: 0.3em; font-size: 0.95rem; }
+
+.var-dashboard .screen-tabs {
+  display: flex; gap: 0; border-bottom: 1px solid var(--border-dim); flex-shrink: 0;
+}
+.var-dashboard .screen-tab {
+  padding: 0.35em 1em; font-size: 0.95rem; color: var(--text-muted);
+  cursor: pointer; text-transform: uppercase; letter-spacing: 0.06em;
+  border-bottom: 2px solid transparent; user-select: none;
+}
+.var-dashboard .screen-tab.active { color: var(--purple); border-bottom-color: var(--purple); font-weight: bold; }
+.var-dashboard .screen-tab:hover { color: var(--text); background: #1a1d2e; }
+.var-dashboard .screen-content { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 1em; }
+
+.var-dashboard .panel {
+  border: 1px solid var(--border); position: relative; padding: 0.8em;
+}
+.var-dashboard .panel-title {
+  position: absolute; top: -0.9em; left: 0.8em; background: var(--bg);
+  padding: 0 0.6em; color: var(--purple); font-weight: bold;
+  font-size: 0.9rem; letter-spacing: 0.08em; text-transform: uppercase; line-height: 1.3;
+}
+.var-dashboard .panel-body { padding: 0; }
+
+.var-dashboard .stat-4up { display: flex; gap: 0.8em; flex-shrink: 0; }
+.var-dashboard .stat-card {
+  flex: 1; border: 1px solid var(--border); text-align: center; padding: 1.5em 0.8em;
+}
+.var-dashboard .stat-card-num { font-size: 1.8rem; line-height: 1; }
+.var-dashboard .stat-card-label {
+  font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase;
+  letter-spacing: 0.08em; margin-top: 0.6em;
+}
+
+.var-dashboard .pb-row { display: flex; align-items: center; gap: 0.5em; font-size: 0.95rem; padding: 0.15em 0; }
+.var-dashboard .pb-label { color: var(--text); width: 20ch; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.var-dashboard .pb-track { flex: 1; height: 1.1em; position: relative; line-height: 1.1em; letter-spacing: 0.15em; color: var(--border); font-size: 0.95rem; overflow: hidden; }
+.var-dashboard .pb-fill-text { position: absolute; top: 0; left: 0; overflow: hidden; white-space: nowrap; letter-spacing: 0.15em; }
+.var-dashboard .pb-pct { text-align: right; font-size: 0.85rem; min-width: 4ch; }
+.var-dashboard .pb-pct.c0 { color: var(--red); } .var-dashboard .pb-pct.c1 { color: var(--yellow); } .var-dashboard .pb-pct.c2 { color: var(--green); }
+
+.var-dashboard .tag-row { display: flex; gap: 0.4em; flex-wrap: wrap; }
+.var-dashboard .tag {
+  font-size: 0.8rem; padding: 0.1em 0.5em; border: 1px solid var(--border-dim);
+  color: var(--text-muted); display: flex; align-items: center; gap: 0.4em;
+}
+.var-dashboard .tag .tag-pct { font-weight: bold; color: var(--purple); }
+.var-dashboard .tag.critical .tag-pct { color: var(--red); }
+.var-dashboard .tag.warning .tag-pct { color: var(--yellow); }
+.var-dashboard .tag.ok .tag-pct { color: var(--green); }
+
+.var-dashboard .mini-feed { display: flex; flex-direction: column; gap: 0.2em; font-size: 0.85rem; }
+.var-dashboard .mini-feed-item { display: flex; align-items: center; gap: 0.5em; color: var(--text-dim); }
+.var-dashboard .mini-feed-item .mf-dot { color: var(--green); }
+.var-dashboard .mini-feed-item .mf-rating { color: var(--yellow); margin-left: auto; }
+
+.var-dashboard .selected-dot { color: var(--purple); }
+
+/* ========================================================================
+   VARIANT B: Admin V7 — Table + Wizard
+   ======================================================================== */
+.var-admin { display: none; height: 100%; }
+.var-admin.active { display: flex; flex-direction: column; }
+
+.var-admin .v1-split { display: flex; gap: 0.6em; flex: 1; min-height: 0; }
+.var-admin .v1-table-panel { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+.var-admin .v1-editor-panel { flex: 2; display: flex; flex-direction: column; min-width: 0; }
+
+.var-admin .v1-box {
+  border: 1px solid var(--border); display: flex; flex-direction: column;
+  overflow: hidden; height: 100%;
+}
+.var-admin .v1-box .v1-header {
+  padding: 0.3em 0.5em; font-size: 0.7rem; text-transform: uppercase;
+  letter-spacing: 0.08em; color: var(--text-muted);
+  border-bottom: 1px solid var(--border-dim); display: flex; justify-content: space-between; align-items: center;
+  flex-shrink: 0;
+}
+.var-admin .v1-box .v1-body { flex: 1; overflow-y: auto; padding: 0; }
+
+.var-admin .v1-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+.var-admin .v1-table th {
+  padding: 0.25em 0.4em; text-align: left; font-weight: normal;
+  color: var(--text-muted); font-size: 0.65rem; text-transform: uppercase;
+  letter-spacing: 0.05em; border-bottom: 1px solid var(--border);
+  background: var(--surface); position: sticky; top: 0;
+}
+.var-admin .v1-table td { padding: 0.2em 0.4em; border-bottom: 1px solid var(--border-dim); color: var(--text); }
+.var-admin .v1-table tr { cursor: pointer; }
+.var-admin .v1-table tr:hover td { background: #1a1d2e; }
+.var-admin .v1-table tr.sel td { background: #2a1f5a; }
+.var-admin .v1-table .v1-depth1 { padding-left: 1em; font-weight: bold; }
+.var-admin .v1-table .v1-depth2 { padding-left: 2em; }
+
+.var-admin .v1-editor-scroll { padding: 0.5em; overflow-y: auto; flex: 1; }
+.var-admin .v1-editor-scroll .v1-ename { color: var(--yellow); font-weight: bold; font-size: 0.9rem; margin-bottom: 0.4em; }
+.var-admin .v1-split.v7-split .v1-table-panel { flex: 1; }
+.var-admin .v1-split.v7-split .v1-editor-panel { flex: 2; }
+
+.var-admin .v6-steps {
+  display: flex; align-items: center; gap: 0; padding: 0.5em 0; flex-shrink: 0;
+}
+.var-admin .v6-step {
+  display: flex; align-items: center; gap: 0.4em; flex: 1;
+}
+.var-admin .v6-step .v6-s-num {
+  width: 1.6em; height: 1.6em; display: flex; align-items: center; justify-content: center;
+  border: 1px solid var(--border-dim); font-size: 0.75rem; color: var(--text-dim);
+  flex-shrink: 0;
+}
+.var-admin .v6-step.active .v6-s-num { border-color: var(--purple); color: var(--purple); font-weight: bold; }
+.var-admin .v6-step.done .v6-s-num { border-color: var(--green); color: var(--green); }
+.var-admin .v6-step .v6-s-label { font-size: 0.7rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.05em; }
+.var-admin .v6-step.active .v6-s-label { color: var(--text); font-weight: bold; }
+.var-admin .v6-step.done .v6-s-label { color: var(--green); }
+.var-admin .v6-step .v6-s-line { flex: 1; height: 1px; background: var(--border-dim); margin: 0 0.4em; }
+.var-admin .v6-step.done .v6-s-line { background: var(--green); }
+
+.var-admin .fld { margin-bottom: 0.6em; }
+.var-admin .fld-label {
+  font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase;
+  letter-spacing: 0.08em; margin-bottom: 0.15em; display: block;
+}
+.var-admin .fld-input {
+  width: 100%; background: var(--surface); border: 1px solid var(--border-dim);
+  color: var(--text); font-family: var(--font-mono); font-size: 0.8rem;
+  padding: 0.35em 0.5em; outline: none;
+}
+.var-admin .fld-input:focus { border-color: var(--purple); }
+.var-admin .fld-textarea {
+  width: 100%; background: var(--surface); border: 1px solid var(--border-dim);
+  color: var(--text); font-family: var(--font-mono); font-size: 0.8rem;
+  padding: 0.35em 0.5em; outline: none; min-height: 3em; resize: vertical;
+}
+.var-admin .fld-textarea:focus { border-color: var(--purple); }
+
+.var-admin .btn {
+  background: var(--purple); color: #fff; border: none;
+  font-family: var(--font-mono); font-size: 0.75rem; text-transform: uppercase;
+  letter-spacing: 0.06em; padding: 0.3em 0.6em; cursor: pointer; font-weight: bold;
+}
+.var-admin .btn:hover { opacity: 0.85; }
+.var-admin .btn-alt { background: transparent; color: var(--purple); border: 1px solid var(--purple); }
+.var-admin .btn-sm { font-size: 0.65rem; padding: 0.2em 0.4em; }
+.var-admin .btn-red { background: var(--red); border-color: var(--red); }
+.var-admin .btn-green { background: var(--green); border-color: var(--green); color: #000; }
+.var-admin .btn-grp { display: flex; gap: 0.3em; align-items: center; }
+.var-admin .btn-icon { background: none; border: none; color: var(--text-dim); cursor: pointer; font-size: 0.9rem; padding: 0.1em; }
+.var-admin .btn-icon:hover { color: var(--text); }
+
+.var-admin .status-badge {
+  font-size: 0.6rem; padding: 0.05em 0.3em; text-transform: uppercase;
+  letter-spacing: 0.05em; border: 1px solid; display: inline-block; line-height: 1.3;
+}
+.var-admin .sb-locked { color: var(--text-dim); border-color: var(--border-dim); }
+.var-admin .sb-avail { color: var(--text-muted); border-color: var(--border-dim); }
+.var-admin .sb-prog { color: var(--yellow); border-color: var(--yellow); }
+.var-admin .sb-done { color: var(--green); border-color: var(--green); }
+
+.var-admin .empty-state {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 2em; color: var(--text-dim); text-align: center;
+}
+.var-admin .empty-state .empty-icon { font-size: 1.5rem; margin-bottom: 0.3em; }
+
+/* ========================================================================
+   VARIANT C: Combined (E x Approach 2)
+   ======================================================================== */
+.var-combined { display: none; height: 100%; flex-direction: column; }
+.var-combined.active { display: flex; }
+
+.var-combined .screen-tabs {
+  display: flex; gap: 0; border-bottom: 1px solid var(--border-dim); flex-shrink: 0;
+}
+.var-combined .screen-tab {
+  padding: 0.35em 1em; font-size: 0.95rem; color: var(--text-muted);
+  cursor: pointer; text-transform: uppercase; letter-spacing: 0.06em;
+  border-bottom: 2px solid transparent; user-select: none;
+}
+.var-combined .screen-tab.active { color: var(--purple); border-bottom-color: var(--purple); font-weight: bold; }
+.var-combined .screen-tab:hover { color: var(--text); background: #1a1d2e; }
+.var-combined .screen-content { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 1em; }
+
+.var-combined .panel {
+  border: 1px solid var(--border); position: relative; padding: 0.8em;
+}
+.var-combined .panel-title {
+  position: absolute; top: -0.9em; left: 0.8em; background: var(--bg);
+  padding: 0 0.6em; color: var(--purple); font-weight: bold;
+  font-size: 0.9rem; letter-spacing: 0.08em; text-transform: uppercase; line-height: 1.3;
+}
+.var-combined .panel-body { padding: 0; }
+
+.var-combined .header-bar {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 0.5em 1.2em; border: 1px solid var(--purple);
+  margin: 0 0 0.5em; flex-shrink: 0;
+}
+.var-combined .h-l { color: var(--text-muted); font-size: 0.95rem; }
+.var-combined .h-y { color: var(--yellow); font-weight: bold; }
+.var-combined .h-g { color: var(--green); }
+.var-combined .h-p { color: var(--purple); font-weight: bold; }
+.var-combined .h-s { color: var(--text-dim); }
+.var-combined .h-stat { display: flex; align-items: baseline; gap: 0.3em; font-size: 0.95rem; }
+
+.var-combined .tree-panel-fixed { flex: 0 0 28%; min-width: 16em; display: flex; flex-direction: column; overflow-y: auto; }
+.var-combined .tree-split { display: flex; gap: 0.8em; flex: 1; min-height: 0; }
+.var-combined .tree-list { list-style: none; padding: 0.2em 0; }
+.var-combined .tree-item { user-select: none; }
+.var-combined .tree-item-content {
+  display: flex; align-items: center; gap: 0.4em;
+  padding: 0.2em 0.3em; cursor: pointer; font-size: 0.9rem;
+  border-left: 2px solid transparent;
+}
+.var-combined .tree-item-content:hover { background: #1a1d2e; }
+.var-combined .tree-item-content.selected { background: #2a1f5a; border-left-color: var(--purple); }
+.var-combined .tree-item-content.sel-course { border-left-color: var(--yellow); }
+.var-combined .tree-item-content.sel-course .ti-name { color: var(--yellow); font-weight: bold; }
+.var-combined .tree-item-content .ti-icon { width: 1.2em; text-align: center; flex-shrink: 0; }
+.var-combined .tree-item-content .ti-name { color: var(--text); }
+.var-combined .tree-item-content .ti-expand { color: var(--text-dim); width: 1em; cursor: pointer; flex-shrink: 0; }
+.var-combined .tree-children { padding-left: 1.2em; }
+.var-combined .tree-leaf .ti-icon { font-size: 0.85rem; }
+
+.var-combined .si-locked { color: var(--text-dim); }
+.var-combined .si-available { color: var(--text-muted); }
+.var-combined .si-progress { color: var(--yellow); }
+.var-combined .si-done { color: var(--green); }
+
+.var-combined .roadmap-outer { display: flex; flex-direction: column; gap: 0.5em; flex: 1; }
+.var-combined .rm-header { text-align: center; padding: 0.3em 0; }
+.var-combined .rm-header .rm-course { color: var(--purple); font-weight: bold; font-size: 1.1rem; }
+.var-combined .rm-header .rm-progress { color: var(--text-muted); font-size: 0.85rem; margin-top: 0.2em; }
+.var-combined .rm-progress-bar {
+  width: 100%; height: 0.7em; background: var(--surface-alt);
+  border: 1px solid var(--border-dim); margin: 0.3em 0;
+}
+.var-combined .rm-progress-bar .rm-pb-fill { height: 100%; background: var(--purple); transition: width 0.3s; }
+.var-combined .rm-current {
+  border: 1px solid var(--purple); padding: 0.8em; position: relative; margin: 0.3em 0;
+}
+.var-combined .rm-current .rm-curr-label {
+  position: absolute; top: -0.8em; left: 0.8em; background: var(--bg);
+  padding: 0 0.4em; color: var(--yellow); font-weight: bold;
+  font-size: 0.8rem; letter-spacing: 0.06em; text-transform: uppercase;
+}
+.var-combined .rm-curr-name { color: var(--text); font-weight: bold; font-size: 1rem; }
+.var-combined .rm-curr-desc { color: var(--text-muted); font-size: 0.85rem; margin: 0.2em 0 0.4em; }
+.var-combined .rm-curr-actions { display: flex; gap: 0.5em; }
+.var-combined .rm-btn {
+  background: var(--purple); color: #fff; border: none;
+  font-family: var(--font-mono); font-size: 0.8rem; text-transform: uppercase;
+  letter-spacing: 0.06em; padding: 0.3em 0.7em; cursor: pointer; font-weight: bold;
+}
+.var-combined .rm-btn-outline { background: transparent; color: var(--purple); border: 1px solid var(--purple); }
+.var-combined .rm-btn:hover { opacity: 0.85; }
+.var-combined .rm-upcoming { display: flex; flex-direction: column; gap: 0.2em; }
+
+.var-combined .rmx-panels { display: flex; gap: 0.8em; }
+.var-combined .rmx-panels .rmx-panel { flex: 1; border: 1px solid var(--border); padding: 0.6em; position: relative; }
+.var-combined .rmx-panels .rmx-panel .rmx-plabel {
+  position: absolute; top: -0.7em; left: 0.6em; background: var(--bg);
+  padding: 0 0.4em; color: var(--text-muted); font-weight: bold;
+  font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase;
+}
+
+.var-combined .streak-calendar { display: flex; flex-direction: column; gap: 0.2em; padding: 0.2em 0; }
+.var-combined .sc-header { display: flex; align-items: center; justify-content: space-between; font-size: 0.8rem; padding: 0 0.2em; }
+.var-combined .sc-header .sc-month { color: var(--text); font-weight: bold; font-size: 0.95rem; }
+.var-combined .sc-header .sc-year { color: var(--text-muted); }
+.var-combined .sc-header .sc-streak { color: var(--yellow); font-weight: bold; }
+.var-combined .sc-table { width: 100%; border-collapse: collapse; border-spacing: 3px; border-collapse: separate; }
+.var-combined .sc-table th {
+  font-size: 0.7rem; color: var(--text-dim); text-transform: uppercase;
+  letter-spacing: 0.05em; padding: 0.1em 0; text-align: center; font-weight: normal; border: none;
+}
+.var-combined .sc-table td {
+  text-align: center; padding: 0.35em 0; font-size: 0.9rem;
+  width: 14.28%; border-radius: 2px; border: 1px solid var(--border-dim);
+}
+.var-combined .sc-table td.sc-day-num { color: var(--text-muted); }
+.var-combined .sc-table td.sc-filled { background: var(--purple); border-color: var(--purple); color: #fff; font-weight: bold; }
+.var-combined .sc-table td.sc-today { border-color: var(--yellow); box-shadow: inset 0 0 0 1px var(--yellow); color: var(--yellow); font-weight: bold; }
+.var-combined .sc-table td.sc-future { color: var(--text-dim); border-color: transparent; }
+.var-combined .sc-table td.sc-weekend.sc-day-num { opacity: 0.5; }
+.var-combined .sc-legend { display: flex; align-items: center; gap: 0.3em; font-size: 0.65rem; color: var(--text-dim); justify-content: center; margin-top: 0.15em; }
+.var-combined .sc-legend .sc-l-box { width: 0.6em; height: 0.6em; border: 1px solid var(--border-dim); }
+.var-combined .sc-legend .sc-l-box.light { background: var(--purple); opacity: 0.4; border-color: var(--purple); }
+.var-combined .sc-legend .sc-l-box.full { background: var(--purple); border-color: var(--purple); }
+
+.var-combined .help-content { display: flex; flex-direction: column; gap: 0.35em; padding: 0.3em 0; }
+.var-combined .help-row { display: flex; align-items: center; gap: 0.5em; font-size: 0.85rem; }
+.var-combined .help-row .hr-label { color: var(--text-muted); min-width: 14ch; }
+
+.var-combined .module-tabs {
+  display: flex; gap: 0; border-bottom: 1px solid var(--border-dim); flex-shrink: 0;
+}
+.var-combined .module-tab {
+  padding: 0.4em 1em; font-size: 0.85rem; color: var(--text-muted);
+  cursor: pointer; text-transform: uppercase; letter-spacing: 0.06em;
+  border-bottom: 2px solid transparent; display: flex; align-items: center; gap: 0.4em; user-select: none;
+}
+.var-combined .module-tab.active { color: var(--purple); border-bottom-color: var(--purple); font-weight: bold; }
+.var-combined .module-tab:hover { color: var(--text); background: #1a1d2e; }
+.var-combined .module-container { flex: 1; min-height: 0; overflow-y: auto; position: relative; }
+.var-combined .module-card { padding: 1em; animation: fadeSlide 0.2s ease; }
+
+.var-combined .module-loading { display: flex; flex-direction: column; gap: 0.8em; padding: 1.5em; }
+.var-combined .skel-line {
+  height: 0.8em; background: var(--surface-alt); border: 1px solid var(--border-dim);
+  animation: skelPulse 1.2s ease-in-out infinite;
+}
+.var-combined .skel-line.w60 { width: 60%; }
+.var-combined .skel-line.w80 { width: 80%; }
+.var-combined .skel-line.w40 { width: 40%; }
+.var-combined .skel-line.h2 { height: 1.5em; }
+.var-combined .skel-line.h4 { height: 4em; }
+@keyframes skelPulse { 0%,100% { opacity: 0.4; } 50% { opacity: 0.8; } }
+
+.var-combined .learn-section { padding: 0.3em 0; }
+.var-combined .learn-section + .learn-section { border-top: 1px solid var(--border-dim); padding-top: 0.6em; margin-top: 0.3em; }
+.var-combined .ls-label {
+  font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;
+  letter-spacing: 0.08em; margin-bottom: 0.4em;
+}
+.var-combined .ls-body { font-size: 0.9rem; line-height: 1.6; color: var(--text); }
+.var-combined .ls-mnemonic { font-size: 0.85rem; color: var(--text-muted); margin-top: 0.5em; }
+
+.var-combined .quiz-q { font-size: 0.95rem; font-weight: bold; margin-bottom: 0.6em; }
+.var-combined .quiz-opt {
+  display: flex; align-items: center; gap: 0.5em; padding: 0.4em 0.6em;
+  cursor: pointer; font-size: 0.85rem; border: 1px solid var(--border-dim);
+  margin-bottom: 0.3em; transition: border-color 0.15s;
+}
+.var-combined .quiz-opt:hover { border-color: var(--border); background: #1a1d2e; }
+.var-combined .quiz-opt .qo-letter { color: var(--text-muted); font-weight: bold; min-width: 1.5em; }
+.var-combined .quiz-opt.correct { border-color: var(--green); background: #0f2a1a; }
+.var-combined .quiz-opt.correct .qo-letter { color: var(--green); }
+.var-combined .quiz-opt.wrong { border-color: var(--red); background: #2a0f0f; }
+.var-combined .quiz-opt.wrong .qo-letter { color: var(--red); }
+.var-combined .quiz-counter { font-size: 0.75rem; color: var(--text-dim); margin-bottom: 0.3em; }
+.var-combined .quiz-result { font-size: 0.85rem; margin-top: 0.3em; }
+.var-combined .quiz-result.pass { color: var(--green); }
+.var-combined .quiz-result.fail { color: var(--red); }
+.var-combined .quiz-btn {
+  background: var(--purple); color: #fff; border: none;
+  font-family: var(--font-mono); font-size: 0.75rem; text-transform: uppercase;
+  letter-spacing: 0.06em; padding: 0.3em 0.7em; cursor: pointer; font-weight: bold;
+  margin-top: 0.5em;
+}
+.var-combined .quiz-btn:hover { opacity: 0.85; }
+.var-combined .quiz-btn.alt { background: var(--surface-alt); color: var(--text-muted); }
+
+.var-combined .code-prompt { font-weight: bold; font-size: 0.9rem; margin-bottom: 0.5em; }
+.var-combined .code-editor {
+  background: var(--surface); border: 1px solid var(--border-dim);
+  padding: 0.6em; font-size: 0.85rem; font-family: var(--font-mono);
+  min-height: 5em; white-space: pre-wrap; color: var(--text-dim);
+  margin-bottom: 0.4em;
+}
+.var-combined .code-out {
+  background: var(--surface-alt); border: 1px solid var(--border-dim);
+  padding: 0.5em; font-size: 0.85rem; margin-top: 0.3em; min-height: 2em;
+  color: var(--text-muted); white-space: pre-wrap;
+}
+.var-combined .code-out.solution { border-color: var(--purple); color: var(--cyan); }
+
+.var-combined .fc-card {
+  border: 2px solid var(--border); padding: 2em 1.5em;
+  min-height: 8em; cursor: pointer; display: flex;
+  align-items: center; justify-content: center; text-align: center;
+  font-size: 1.1rem; user-select: none; background: var(--surface);
+  transition: border-color 0.2s;
+}
+.var-combined .fc-card:hover { border-color: var(--purple); }
+.var-combined .fc-card .fc-front { color: var(--text); }
+.var-combined .fc-card .fc-back { color: var(--cyan); }
+.var-combined .fc-card.flipped { border-color: var(--cyan); }
+.var-combined .fc-counter { font-size: 0.75rem; color: var(--text-dim); text-align: center; margin-top: 0.4em; }
+.var-combined .fc-hint { font-size: 0.7rem; color: var(--text-dim); text-align: center; margin-top: 0.2em; }
+.var-combined .fc-nav { display: flex; gap: 0.5em; justify-content: center; margin-top: 0.6em; }
+.var-combined .fc-btn {
+  background: var(--surface-alt); color: var(--text); border: 1px solid var(--border-dim);
+  font-family: var(--font-mono); font-size: 0.75rem; text-transform: uppercase;
+  letter-spacing: 0.06em; padding: 0.3em 0.7em; cursor: pointer;
+}
+.var-combined .fc-btn:hover { border-color: var(--purple); color: var(--purple); }
+.var-combined .fc-btn:disabled { opacity: 0.3; cursor: default; border-color: var(--border-dim); color: var(--text-dim); }
+.var-combined .fc-empty { color: var(--text-dim); padding: 1em; text-align: center; font-size: 0.9rem; }
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="title-bar">
+    <span class="tb-brand">BF Learning</span>
+    <span class="tb-sub">All Prototypes</span>
+    <span class="tb-variant" id="variantLabel">Dashboard</span>
+  </div>
+
+  <div class="main-area" id="mainArea">
+    <div id="content" style="flex:1;display:flex;flex-direction:column;min-height:0"></div>
+  </div>
+
+  <div class="keybind-bar">
+    <span class="kb-key">←</span><span class="kb-action">/</span><span class="kb-key">→</span><span class="kb-action"> switch variant</span>
+  </div>
+  <div class="status-bar">
+    <span class="prefix">›</span> <span id="statusLabel">Dashboard — stats, progress, topics</span>
+  </div>
+</div>
+
+<div class="proto-switcher" id="protoSwitcher"></div>
+
+<script>
+// =====================================================================
+// VARIANTS
+// =====================================================================
+const VARIANTS = [
+  { id: 'dashboard', label: 'Dashboard', desc: 'Dashboard — stats, progress, topics' },
+  { id: 'admin', label: 'Admin V7', desc: 'Admin — table + wizard editor' },
+  { id: 'combined', label: 'Combined', desc: 'Combined — tree + module workspace' },
+];
+
+// =====================================================================
+// DATA (shared)
+// =====================================================================
+const TREE_ADMIN = [
+  { id: 'react', name: 'React', type: 'course',
+    children: [
+      { id: 'js-basics', name: 'JS Basics', type: 'course',
+        children: [
+          { id: 'vars-types', name: 'Variables & Types', type: 'lesson', status: 'done', notes: 'Variables store data. JS has let, const, var.', mnemonic: 'SNOB NUN', quiz: 3, coding: 1, flashcards: 2 },
+          { id: 'functions-scope', name: 'Functions & Scope', type: 'lesson', status: 'done', notes: 'Functions are reusable blocks.', mnemonic: 'GLB', quiz: 2, coding: 1, flashcards: 1 },
+          { id: 'arrays-objects', name: 'Arrays & Objects', type: 'lesson', status: 'in_progress', notes: 'Arrays store ordered collections.', mnemonic: '', quiz: 1, coding: 1, flashcards: 0 },
+          { id: 'closures', name: 'Closures', type: 'lesson', status: 'available', notes: 'Function remembers outer variables.', mnemonic: 'Backpack', quiz: 1, coding: 1, flashcards: 1 },
+        ] },
+      { id: 'usestate', name: 'useState', type: 'course',
+        children: [
+          { id: 'what-is-state', name: 'What is state?', type: 'lesson', status: 'locked', notes: '', mnemonic: '', quiz: 0, coding: 0, flashcards: 1 },
+          { id: 'counter', name: 'Counter exercise', type: 'coding', status: 'locked', notes: '', mnemonic: '', quiz: 0, coding: 1, flashcards: 0 },
+        ] },
+    ] },
+  { id: 'js', name: 'JavaScript', type: 'course',
+    children: [
+      { id: 'js-vars', name: 'Variables & Types', type: 'lesson', status: 'done', notes: '', mnemonic: '', quiz: 1, coding: 0, flashcards: 1 },
+      { id: 'js-funcs', name: 'Functions & Scope', type: 'lesson', status: 'done', notes: '', mnemonic: '', quiz: 1, coding: 1, flashcards: 0 },
+      { id: 'js-closures', name: 'Closures', type: 'lesson', status: 'in_progress', notes: '', mnemonic: '', quiz: 1, coding: 1, flashcards: 1 },
+    ] },
+];
+const TREE_COMBINED = [
+  { id: 'react', name: 'React', expanded: true,
+    children: [
+      { id: 'js-basics', name: 'JS Basics', status: 'in_progress', progress: 65, expanded: true,
+        children: [
+          { id: 'vars-types', name: 'Variables & Types', type: 'lesson', status: 'done', progress: 100 },
+          { id: 'functions-scope', name: 'Functions & Scope', type: 'lesson', status: 'done', progress: 100 },
+          { id: 'arrays-objects', name: 'Arrays & Objects', type: 'lesson', status: 'in_progress', progress: 60 },
+          { id: 'closures', name: 'Closures', type: 'lesson', status: 'available', progress: 0 },
+        ] },
+      { id: 'usestate', name: 'useState', status: 'locked', progress: 0, expanded: false,
+        children: [
+          { id: 'what-is-state', name: 'What is state?', type: 'lesson', status: 'locked', progress: 0 },
+          { id: 'counter', name: 'Counter exercise', type: 'coding', status: 'locked', progress: 0 },
+        ] },
+      { id: 'useeffect', name: 'useEffect', status: 'locked', progress: 0, expanded: false,
+        children: [
+          { id: 'what-are-effects', name: 'What are effects?', type: 'lesson', status: 'locked', progress: 0 },
+          { id: 'data-fetching', name: 'Data fetching', type: 'coding', status: 'locked', progress: 0 },
+        ] },
+    ] },
+  { id: 'js', name: 'JavaScript', status: 'available', progress: 40, expanded: false,
+    children: [
+      { id: 'js-vars', name: 'Variables & Types', type: 'lesson', status: 'done', progress: 100 },
+      { id: 'js-funcs', name: 'Functions & Scope', type: 'lesson', status: 'done', progress: 100 },
+      { id: 'js-arrays', name: 'Arrays & Objects', type: 'lesson', status: 'done', progress: 100 },
+      { id: 'js-closures', name: 'Closures', type: 'lesson', status: 'in_progress', progress: 30 },
+      { id: 'js-promises', name: 'Promises & Async', type: 'lesson', status: 'locked', progress: 0 },
+    ] },
+  { id: 'git', name: 'Git', status: 'locked', progress: 0, expanded: false,
+    children: [
+      { id: 'git-basics', name: 'Git Basics', type: 'lesson', status: 'locked', progress: 0 },
+      { id: 'git-branching', name: 'Branching & Merging', type: 'lesson', status: 'locked', progress: 0 },
+    ] },
+  { id: 'node', name: 'Node.js', status: 'locked', progress: 0, expanded: false,
+    children: [
+      { id: 'node-intro', name: 'Node.js Intro', type: 'lesson', status: 'locked', progress: 0 },
+    ] },
+];
+
+// =====================================================================
+// VARIANT A: Dashboard (static)
+// =====================================================================
+function renderDashboard() {
+  return `<div class="var-dashboard active mount-anim">
+    <div class="header-bar">
+      <div class="h-stat"><span class="h-l">rating</span> <span class="h-y">1847</span></div>
+      <div class="h-stat"><span class="h-l">solved</span> <span class="h-g">31</span><span class="h-s">/</span><span class="h-l">48</span></div>
+      <div class="h-stat"><span class="h-l">streak</span> <span class="h-y">10d</span></div>
+      <div class="h-stat"><span class="h-l">xp</span> <span class="h-p">450</span><span class="h-s">/</span><span class="h-l">600</span></div>
+    </div>
+    <div class="screen-tabs">
+      <div class="screen-tab active">Dashboard</div>
+      <div class="screen-tab">Problems</div>
+      <div class="screen-tab">Contests</div>
+      <div class="screen-tab">Analytics</div>
+      <div class="screen-tab">Recommend</div>
+    </div>
+    <div class="screen-content">
+      <div class="dash-unified">
+        <div class="stat-4up">
+          <div class="stat-card"><div class="stat-card-num" style="color:var(--yellow)">48</div><div class="stat-card-label">Problems</div></div>
+          <div class="stat-card"><div class="stat-card-num" style="color:var(--purple)">10d</div><div class="stat-card-label">Streak</div></div>
+          <div class="stat-card"><div class="stat-card-num" style="color:var(--cyan)">73%</div><div class="stat-card-label">Mastery</div></div>
+          <div class="stat-card"><div class="stat-card-num" style="color:var(--green)">31</div><div class="stat-card-label">Solved</div></div>
+        </div>
+        <div class="dash-u-split">
+          <div class="dash-u-left">
+            <div class="panel" style="flex:1;display:flex;flex-direction:column;min-height:0">
+              <div class="panel-title">Progress</div>
+              <div class="panel-body" style="padding:0.15em 0;flex:1">
+                <div class="pb-row"><span class="pb-label">data structures</span><div class="pb-track">████████████████████████████████<span class="pb-fill-text" style="width:0%;color:var(--red)"></span></div><span class="pb-pct c0">0%</span></div>
+                <div class="pb-row"><span class="pb-label">graphs</span><div class="pb-track">████████████████████████████████<span class="pb-fill-text" style="width:40%;color:var(--cyan)">████████████</span></div><span class="pb-pct c1">40%</span></div>
+                <div class="pb-row"><span class="pb-label">dynamic programming</span><div class="pb-track">████████████████████████████████<span class="pb-fill-text" style="width:65%;color:var(--yellow)">████████████████████</span></div><span class="pb-pct c1">65%</span></div>
+                <div class="pb-row"><span class="pb-label">math</span><div class="pb-track">████████████████████████████████<span class="pb-fill-text" style="width:90%;color:var(--green)">████████████████████████████</span></div><span class="pb-pct c2">90%</span></div>
+              </div>
+            </div>
+            <div class="panel" style="flex-shrink:0">
+              <div class="panel-title">Topics</div>
+              <div class="panel-body tag-row" style="padding:0.4em">
+                <span class="tag critical"><span>data structures</span> <span class="tag-pct">0%</span></span>
+                <span class="tag critical"><span>graphs</span> <span class="tag-pct">40%</span></span>
+                <span class="tag warning"><span>dynamic programming</span> <span class="tag-pct">65%</span></span>
+                <span class="tag ok"><span>math</span> <span class="tag-pct">90%</span></span>
+                <span class="tag critical"><span>sortings</span> <span class="tag-pct">25%</span></span>
+                <span class="tag warning"><span>bfs</span> <span class="tag-pct">50%</span></span>
+              </div>
+            </div>
+          </div>
+          <div class="dash-u-right">
+            <div class="panel">
+              <div class="panel-title">Continue</div>
+              <div class="panel-body" style="padding:0.3em 0.4em">
+                <div style="display:flex;align-items:center;gap:0.4em;margin-bottom:0.3em">
+                  <span class="selected-dot">►</span>
+                  <span style="color:var(--purple);font-weight:bold">graphs → dijkstra</span>
+                </div>
+                <div style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.4em">Shortest Path — 65% complete</div>
+                <div style="display:flex;align-items:center;gap:0.4em">
+                  <span style="font-size:0.85rem;color:var(--text-muted)">65%</span>
+                  <div style="flex:1;height:0.5em;background:var(--surface-alt);border:1px solid var(--border-dim)"><div style="width:65%;height:100%;background:var(--purple)"></div></div>
+                </div>
+              </div>
+            </div>
+            <div class="panel" style="flex:1;min-height:0">
+              <div class="panel-title">Recent Solves</div>
+              <div class="panel-body mini-feed" style="padding:0.3em 0.4em">
+                <div class="mini-feed-item"><span class="mf-dot">●</span> <span>Sum of Two Values</span> <span class="mf-rating">1100</span></div>
+                <div class="mini-feed-item"><span class="mf-dot">●</span> <span>Message Route</span> <span class="mf-rating">1400</span></div>
+                <div class="mini-feed-item"><span class="mf-dot">●</span> <span>Counting Rooms</span> <span class="mf-rating">1300</span></div>
+                <div class="mini-feed-item"><span class="mf-dot">●</span> <span>Book Shop</span> <span class="mf-rating">1500</span></div>
+                <div class="mini-feed-item" style="margin-top:0.3em;color:var(--text-muted);font-size:0.85rem">› 4 solves this week</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+// =====================================================================
+// VARIANT B: Admin V7 — Table + Wizard
+// =====================================================================
+let adminId = 100;
+function adminGenId() { return 'node-' + (adminId++); }
+
+function adminGetAll(nodes) {
+  let list = [];
+  for (const n of nodes) { list.push(n); if (n.children) list = list.concat(adminGetAll(n.children)); }
+  return list;
+}
+function adminFind(id, nodes) {
+  if (!nodes) nodes = TREE_ADMIN;
+  for (const n of nodes) { if (n.id === id) return n; if (n.children) { const f = adminFind(id, n.children); if (f) return f; } }
+  return null;
+}
+function adminParent(id, nodes, parent) {
+  if (!nodes) nodes = TREE_ADMIN;
+  for (const n of nodes) { if (n.id === id) return parent; if (n.children) { const f = adminParent(id, n.children, n); if (f) return f; } }
+  return null;
+}
+function adminLeaf(n) { return !n.children || !n.children.length; }
+function adminBadge(s) {
+  if (!s) return '';
+  const cls = s === 'locked' ? 'sb-locked' : s === 'available' ? 'sb-avail' : s === 'in_progress' ? 'sb-prog' : s === 'done' ? 'sb-done' : 'sb-locked';
+  return '<span class="status-badge ' + cls + '">' + s.replace('_',' ') + '</span>';
+}
+
+let adminSel = 'vars-types';
+let adminStep = 1;
+
+function renderAdmin() {
+  const all = adminGetAll(TREE_ADMIN);
+  let html = '<div class="var-admin active mount-anim"><div class="v1-split v7-split">';
+  html += '<div class="v1-table-panel"><div class="v1-box">';
+  html += '<div class="v1-header"><span>All Items</span><div><button class="btn btn-sm" onclick="adminAdd()">+ Add</button></div></div>';
+  html += '<div class="v1-body"><table class="v1-table">';
+  html += '<tr><th>Name</th><th>Type</th><th>Status</th></tr>';
+  for (const n of all) {
+    const depth = n.children ? 1 : 2;
+    const sel = n.id === adminSel ? ' sel' : '';
+    html += '<tr class="' + sel + '" onclick="adminSelect(\'' + n.id + '\')">';
+    const d = 'v1-depth' + Math.min(depth, 2);
+    html += '<td class="' + d + '">' + n.name + '</td>';
+    html += '<td>' + (n.type || '—') + '</td>';
+    html += '<td>' + adminBadge(n.status) + '</td>';
+    html += '</tr>';
+  }
+  html += '</table></div></div></div>';
+
+  html += '<div class="v1-editor-panel"><div class="v1-box">';
+  const node = adminFind(adminSel);
+  if (node) {
+    html += '<div class="v1-header"><span class="v1-ename" style="margin:0;font-size:0.8rem">' + node.name + '</span><div class="btn-grp">';
+    html += '<button class="btn btn-sm btn-green" onclick="adminSave()">Save</button>';
+    html += '<button class="btn btn-sm btn-red" onclick="adminDelete(\'' + node.id + '\')">✕</button>';
+    html += '</div></div>';
+
+    if (adminLeaf(node)) {
+      const steps = ['Info', 'Notes', 'Quiz', 'Coding', 'Flashcards'];
+      html += '<div style="padding:0.4em 0.5em;border-bottom:1px solid var(--border-dim);flex-shrink:0">';
+      html += '<div class="v6-steps" style="padding:0">';
+      for (let i = 0; i < steps.length; i++) {
+        const num = i + 1;
+        const cls = num === adminStep ? 'active' : num < adminStep ? 'done' : '';
+        html += '<div class="v6-step ' + cls + '">';
+        html += '<span class="v6-s-num">' + (num < adminStep ? '✓' : num) + '</span>';
+        html += '<span class="v6-s-label">' + steps[i] + '</span>';
+        if (i < steps.length - 1) html += '<span class="v6-s-line"></span>';
+        html += '</div>';
+      }
+      html += '</div></div>';
+
+      html += '<div class="v1-editor-scroll">';
+      if (adminStep === 1) {
+        html += '<div class="v1-ename" style="font-size:0.85rem">Step 1: Basic Info</div>';
+        html += '<div class="fld"><label class="fld-label">Lesson Name</label><input class="fld-input" id="adminName" value="' + node.name + '"></div>';
+        html += '<div style="display:flex;gap:0.5em">';
+        html += '<div class="fld" style="flex:1"><label class="fld-label">Type</label><select class="fld-input" id="adminType"><option value="lesson"' + (node.type==='lesson'?' selected':'') + '>Lesson</option><option value="coding"' + (node.type==='coding'?' selected':'') + '>Coding</option></select></div>';
+        html += '<div class="fld" style="flex:1"><label class="fld-label">Status</label><select class="fld-input" id="adminStatus"><option value="locked"' + (node.status==='locked'?' selected':'') + '>Locked</option><option value="available"' + (node.status==='available'?' selected':'') + '>Available</option><option value="in_progress"' + (node.status==='in_progress'?' selected':'') + '>In Progress</option><option value="done"' + (node.status==='done'?' selected':'') + '>Done</option></select></div>';
+        html += '</div>';
+        html += '<div class="fld"><label class="fld-label">Course</label><input class="fld-input" placeholder="Parent course" value="' + (adminParent(node.id) || {name:''}).name + '" disabled style="opacity:0.5"></div>';
+      } else if (adminStep === 2) {
+        html += '<div class="v1-ename" style="font-size:0.85rem">Step 2: Notes & Mnemonic</div>';
+        html += '<div class="fld"><label class="fld-label">Lesson Notes</label><textarea class="fld-textarea" id="adminNotes" style="min-height:8em">' + (node.notes || '') + '</textarea></div>';
+        html += '<div class="fld"><label class="fld-label">Memory Hook / Mnemonic</label><input class="fld-input" id="adminMnemonic" placeholder="e.g. SNOB NUN" value="' + (node.mnemonic || '') + '"></div>';
+        html += '<div style="color:var(--text-dim);font-size:0.7rem;padding:0.2em 0">Short, weird, visual — that is how mnemonics stick.</div>';
+      } else if (adminStep === 3) {
+        html += '<div class="v1-ename" style="font-size:0.85rem">Step 3: Quiz Questions <span style="color:var(--text-dim);font-weight:normal;font-size:0.75rem">(' + (node.quiz || 0) + ' questions)</span></div>';
+        for (let i = 0; i < (node.quiz || 2); i++) {
+          html += '<div class="a2-card" style="border:1px solid var(--border-dim);padding:0.4em;margin-bottom:0.3em">';
+          html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.2em">';
+          html += '<span style="font-size:0.75rem;color:var(--text-muted)">Q' + (i+1) + '</span>';
+          html += '<span class="btn-icon" onclick="adminRemoveQuiz(' + i + ')" style="font-size:0.7rem;color:var(--red)">✕</span>';
+          html += '</div>';
+          html += '<div class="fld" style="margin:0"><input class="fld-input" placeholder="Question" value="Sample question ' + (i+1) + '" id="adminq_q_' + i + '"></div>';
+          html += '<div style="display:flex;gap:0.2em;margin-top:0.2em">';
+          for (let j = 0; j < 4; j++) {
+            html += '<input class="fld-input" style="flex:1;font-size:0.7rem" placeholder="Opt ' + String.fromCharCode(65+j) + '" id="adminq_o' + j + '_' + i + '">';
+          }
+          html += '</div></div>';
+        }
+        html += '<button class="btn btn-sm btn-alt" onclick="adminAddQuiz()">+ Add Question</button>';
+      } else if (adminStep === 4) {
+        html += '<div class="v1-ename" style="font-size:0.85rem">Step 4: Coding Exercise</div>';
+        html += '<div class="fld"><label class="fld-label">Prompt / Description</label><textarea class="fld-textarea" id="adminCodingPrompt" style="min-height:3em"></textarea></div>';
+        html += '<div class="fld"><label class="fld-label">Starter Code</label><textarea class="fld-textarea" id="adminCodingStarter" style="min-height:4em;font-family:var(--font-mono)"></textarea></div>';
+        html += '<div class="fld"><label class="fld-label">Solution</label><textarea class="fld-textarea" id="adminCodingSolution" style="min-height:4em;font-family:var(--font-mono)"></textarea></div>';
+      } else if (adminStep === 5) {
+        html += '<div class="v1-ename" style="font-size:0.85rem">Step 5: Flashcards <span style="color:var(--text-dim);font-weight:normal;font-size:0.75rem">(' + (node.flashcards || 0) + ' cards)</span></div>';
+        for (let i = 0; i < (node.flashcards || 2); i++) {
+          html += '<div class="a2-card" style="border:1px solid var(--border-dim);padding:0.4em;margin-bottom:0.3em">';
+          html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.2em">';
+          html += '<span style="font-size:0.75rem;color:var(--text-muted)">Card ' + (i+1) + '</span>';
+          html += '<span class="btn-icon" onclick="adminRemoveFlashcard(' + i + ')" style="font-size:0.7rem;color:var(--red)">✕</span>';
+          html += '</div>';
+          html += '<div class="fld" style="margin:0"><input class="fld-input" placeholder="Front (question)" id="adminf_f_' + i + '"></div>';
+          html += '<div class="fld" style="margin:0;margin-top:0.15em"><textarea class="fld-textarea" placeholder="Back (answer)" id="adminf_b_' + i + '" style="min-height:2em"></textarea></div>';
+          html += '</div>';
+        }
+        html += '<button class="btn btn-sm btn-alt" onclick="adminAddFlashcard()">+ Add Card</button>';
+      }
+      html += '</div>';
+
+      html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:0.3em 0.5em;border-top:1px solid var(--border-dim);flex-shrink:0;background:var(--surface)">';
+      html += '<button class="btn btn-sm" onclick="adminPrev()"' + (adminStep <= 1 ? ' disabled style="opacity:0.3"' : '') + '>◀ Back</button>';
+      html += '<span style="font-size:0.75rem;color:var(--text-dim)">Step ' + adminStep + ' / 5</span>';
+      html += '<button class="btn btn-sm" onclick="adminNext()"' + (adminStep >= 5 ? ' disabled style="opacity:0.3"' : '') + '>Next ▶</button>';
+      html += '</div>';
+    } else {
+      html += '<div class="v1-header"><span class="v1-ename" style="margin:0;font-size:0.8rem">' + node.name + '</span></div>';
+      html += '<div class="v1-editor-scroll">';
+      html += '<div style="color:var(--text-dim);font-size:0.85rem;padding:0.5em">Course node — select a leaf lesson from the table to edit its content with the wizard.</div>';
+      html += '<div style="color:var(--text-muted);font-size:0.8rem">Children: ' + (node.children ? node.children.length : 0) + '</div>';
+      html += '</div>';
+    }
+  } else {
+    html += '<div class="v1-header"><span>Select an item</span></div>';
+    html += '<div class="v1-editor-scroll"><div class="empty-state"><div class="empty-icon">◈</div><div class="empty-text">Select a lesson from the table to edit</div></div></div>';
+  }
+  html += '</div></div></div></div>';
+  return html;
+}
+
+function adminSelect(id) { adminSel = id; adminStep = 1; render(); }
+function adminPrev() { if (adminStep > 1) { adminStep--; render(); } }
+function adminNext() { if (adminStep < 5) { adminStep++; render(); } }
+function adminAdd() {
+  const id = adminGenId();
+  TREE_ADMIN.push({ id, name: 'New Lesson', type: 'lesson', status: 'locked', notes: '', mnemonic: '', quiz: 0, coding: 0, flashcards: 0 });
+  adminSel = id; adminStep = 1; render();
+}
+function adminDelete(id) {
+  if (!confirm('Delete?')) return;
+  const p = adminParent(id); if (p) p.children = p.children.filter(c => c.id !== id); else TREE_ADMIN.splice(TREE_ADMIN.findIndex(c => c.id === id), 1);
+  adminSel = TREE_ADMIN[0] ? TREE_ADMIN[0].id : null; render();
+}
+function adminSave() {
+  const n = adminFind(adminSel); if (!n) return;
+  const name = document.getElementById('adminName'); if (name) n.name = name.value;
+  const type = document.getElementById('adminType'); if (type) n.type = type.value;
+  const status = document.getElementById('adminStatus'); if (status) n.status = status.value;
+  const notes = document.getElementById('adminNotes'); if (notes) n.notes = notes.value;
+  const mnemonic = document.getElementById('adminMnemonic'); if (mnemonic) n.mnemonic = mnemonic.value;
+}
+function adminAddQuiz() { const n = adminFind(adminSel); if (n) n.quiz = (n.quiz || 0) + 1; render(); }
+function adminRemoveQuiz(idx) { const n = adminFind(adminSel); if (n && n.quiz > 0) n.quiz--; render(); }
+function adminAddFlashcard() { const n = adminFind(adminSel); if (n) n.flashcards = (n.flashcards || 0) + 1; render(); }
+function adminRemoveFlashcard(idx) { const n = adminFind(adminSel); if (n && n.flashcards > 0) n.flashcards--; render(); }
+
+// =====================================================================
+// VARIANT C: Combined (E x Approach 2)
+// =====================================================================
+const STAT_ICONS = { locked: '◌', available: '○', in_progress: '▶', done: '●' };
+const STAT_CLS = { locked: 'si-locked', available: 'si-available', in_progress: 'si-progress', done: 'si-done' };
+const MODULE_META = {
+  learn: { label: 'Learn', icon: '📖' },
+  quiz: { label: 'Quiz', icon: '?' },
+  code: { label: 'Code', icon: '◈' },
+  flashcards: { label: 'Flashcards', icon: '▣' },
+};
+
+let combState = { selectedNodeId: 'react', activeModule: 'learn' };
+let combLoadingLesson = null;
+
+function combIcon(n) {
+  if (n.children) {
+    if (n.status === 'done') return '<span class="si-done">●</span>';
+    if (n.status === 'in_progress') return '<span class="si-progress">▶</span>';
+    return '<span class="si-locked">◌</span>';
+  }
+  return '<span class="' + STAT_CLS[n.status] + '">' + STAT_ICONS[n.status] + '</span>';
+}
+
+function combRenderTree(nodes, depth) {
+  let html = '<ul class="tree-list">';
+  for (const n of nodes) {
+    const hasChildren = n.children && n.children.length > 0;
+    const isSel = n.id === combState.selectedNodeId;
+    const selCls = isSel ? (hasChildren ? ' sel-course' : ' selected') : '';
+    html += '<li class="tree-item' + (!hasChildren ? ' tree-leaf' : '') + '">';
+    html += '<div class="tree-item-content' + selCls + '" data-id="' + n.id + '">';
+    if (hasChildren) {
+      html += '<span class="ti-expand" data-toggle="' + n.id + '">' + (n.expanded ? '▼' : '▶') + '</span>';
+    } else {
+      html += '<span class="ti-expand" style="visibility:hidden">▶</span>';
+    }
+    html += '<span class="ti-icon">' + combIcon(n) + '</span>';
+    html += '<span class="ti-name">' + n.name + '</span>';
+    html += '</div>';
+    if (hasChildren && n.expanded) {
+      html += '<div class="tree-children">' + combRenderTree(n.children, depth + 1) + '</div>';
+    }
+    html += '</li>';
+  }
+  html += '</ul>';
+  return html;
+}
+
+function combFindNode(id, nodes) {
+  nodes = nodes || TREE_COMBINED;
+  for (const n of nodes) {
+    if (n.id === id) return n;
+    if (n.children) { const f = combFindNode(id, n.children); if (f) return f; }
+  }
+  return null;
+}
+
+function combIsCourse(n) { return n && n.children && n.children.length > 0; }
+
+function combGetCourseParent(id, nodes) {
+  if (!nodes) nodes = TREE_COMBINED;
+  for (const n of nodes) {
+    if (n.children) {
+      if (n.children.some(c => c.id === id)) return n;
+      const f = combGetCourseParent(id, n.children); if (f) return f;
+    }
+  }
+  return null;
+}
+
+function combGetCurrentLesson(course) {
+  if (!course || !course.children) return null;
+  return course.children.find(c => c.status === 'in_progress') ||
+         course.children.find(c => c.status === 'available') ||
+         course.children[0] || null;
+}
+
+function combRenderStreak() {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const firstDay = new Date(year, month, 1).getDay();
+  const today = now.getDate();
+
+  let html = '<div class="streak-calendar">';
+  html += '<div class="sc-header">';
+  html += '<span class="sc-month">' + now.toLocaleString('en', { month: 'long' }) + '</span>';
+  html += '<span class="sc-year">' + year + '</span>';
+  html += '<span class="sc-streak">🔥 10d streak</span>';
+  html += '</div><table class="sc-table"><tr>';
+  for (const h of ['S','M','T','W','T','F','S']) html += '<th>' + h + '</th>';
+  html += '</tr>';
+  let day = 1;
+  for (let w = 0; w < 6; w++) {
+    html += '<tr>';
+    for (let d = 0; d < 7; d++) {
+      if ((w === 0 && d < firstDay) || day > daysInMonth) { html += '<td></td>'; }
+      else {
+        let cls = 'sc-day-num';
+        if (day === today) cls += ' sc-today';
+        else if (day < today) cls += ' sc-filled';
+        else cls += ' sc-future';
+        html += '<td class="' + cls + '">' + day + '</td>';
+        day++;
+      }
+    }
+    html += '</tr>';
+    if (day > daysInMonth) break;
+  }
+  html += '</table><div class="sc-legend">';
+  html += '<span class="sc-l-box light"></span><span>done</span>';
+  html += '<span class="sc-l-box full"></span><span>today</span>';
+  html += '</div></div>';
+  return html;
+}
+
+function combRenderHelp() {
+  return '<div class="help-content">' +
+    '<div class="help-row"><span class="hr-label">next review</span><span style="color:var(--yellow);font-weight:bold">closures — 30 min</span></div>' +
+    '<div class="help-row"><span class="hr-label">focus area</span><span style="color:var(--cyan);font-weight:bold">JS Basics (65%)</span></div>' +
+    '<div class="help-row"><span class="hr-label">weekly goal</span><span style="color:var(--text);font-weight:bold">5 lessons</span><span style="color:var(--text-muted);font-size:0.8rem">(3 done)</span></div>' +
+    '</div>';
+}
+
+function combRenderRoadmap(course) {
+  const children = course.children || [];
+  const done = children.filter(c => {
+    if (c.children) return c.children.every(cc => cc.status === 'done');
+    return c.status === 'done';
+  }).length;
+  const total = children.length;
+  const current = combGetCurrentLesson(course);
+
+  let html = '<div class="roadmap-outer">';
+  html += '<div class="rm-header">';
+  html += '<div class="rm-course">' + course.name + '</div>';
+  html += '<div class="rm-progress">' + done + '/' + total + ' lessons · ' + (total ? Math.round(done/total*100) : 0) + '%</div>';
+  html += '<div class="rm-progress-bar"><div class="rm-pb-fill" style="width:' + (total ? Math.round(done/total*100) : 0) + '%"></div></div>';
+  html += '</div>';
+  if (current) {
+    html += '<div class="rm-current">';
+    html += '<div class="rm-curr-label">Continue</div>';
+    html += '<div class="rm-curr-name">' + current.name + '</div>';
+    html += '<div class="rm-curr-desc">' + (current.type === 'lesson' ? 'Read notes and complete the quiz' : 'Write code to solve the challenge') + '</div>';
+    html += '<div class="rm-curr-actions">';
+    html += '<button class="rm-btn" data-action="open-lesson" data-id="' + current.id + '">Start</button>';
+    html += '<button class="rm-btn rm-btn-outline" data-action="open-lesson" data-id="' + current.id + '">Review Notes</button>';
+    html += '</div></div>';
+  }
+  html += '<div class="rmx-panels">';
+  html += '<div class="rmx-panel"><div class="rmx-plabel">Streak</div>' + combRenderStreak() + '</div>';
+  html += '<div class="rmx-panel"><div class="rmx-plabel">Helping Hand</div>' + combRenderHelp() + '</div>';
+  html += '</div></div>';
+  return html;
+}
+
+const combModules = {
+  _quiz: {}, _code: {}, _fc: {},
+  async loadLearn(id) {
+    await new Promise(r => setTimeout(r, 200));
+    const NOTES = {
+      'vars-types': 'Variables store data. JavaScript has <span style="color:var(--cyan)">let</span>, const, and var. Types: string, number, boolean, null, undefined, object.',
+      'functions-scope': 'Functions are reusable blocks of code. Declare with function keyword or arrow syntax.',
+      'arrays-objects': 'Arrays store ordered collections. Objects store key-value pairs.',
+      'closures': 'A closure is a function that remembers its outer variables even after the outer function returns.',
+    };
+    const MNEM = {
+      'vars-types': '"SNOB NUN" — String, Number, Object, Boolean, Null, Undefined.',
+      'closures': '"Backpack" — inner function carries a backpack of outer scope.',
+    };
+    return '<div class="module-card">' +
+      '<div class="learn-section"><div class="ls-label">Notes</div><div class="ls-body">' + (NOTES[id] || 'Content coming soon.') + '</div>' +
+      (MNEM[id] ? '<div class="ls-mnemonic">🧠 ' + MNEM[id] + '</div>' : '') + '</div>' +
+      '<div class="learn-section"><div class="ls-label">Review Schedule</div><div class="ls-body" style="color:var(--text-muted);font-size:0.85rem">Next review: <span style="color:var(--yellow)">in 3 days</span></div></div>' +
+      '</div>';
+  },
+  async loadQuiz(id) {
+    await new Promise(r => setTimeout(r, 350));
+    const DATA = {
+      'vars-types': [{ q: 'Which keyword is block-scoped?', opts: ['let', 'const', 'var'], correct: [0, 1] }],
+      'functions-scope': [{ q: 'Arrow functions inherit this from:', opts: ['their own scope', 'parent scope', 'global'], correct: [1] }],
+    };
+    const questions = DATA[id];
+    if (!questions) return '<div class="module-card fc-empty">No quiz questions.</div>';
+    if (!this._quiz[id]) this._quiz[id] = { current: 0, answers: {}, done: false };
+    const s = this._quiz[id];
+    const q = questions[s.current];
+    let html = '<div class="module-card"><div class="quiz-counter">Q' + (s.current + 1) + '/' + questions.length + '</div>';
+    html += '<div class="quiz-q">' + q.q + '</div>';
+    for (let i = 0; i < q.opts.length; i++) {
+      let cls = 'quiz-opt';
+      if (s.answers[s.current] !== undefined) {
+        if (q.correct.includes(i)) cls += ' correct';
+        else if (s.answers[s.current] === i) cls += ' wrong';
+      }
+      html += '<div class="' + cls + '" data-idx="' + i + '"><span class="qo-letter">' + String.fromCharCode(65 + i) + '</span><span class="qo-text">' + q.opts[i] + '</span></div>';
+    }
+    if (s.answers[s.current] === undefined) {
+      html += '<div style="font-size:0.75rem;color:var(--text-dim);margin-top:0.3em">Select an answer</div>';
+    } else {
+      const ok = q.correct.includes(s.answers[s.current]);
+      html += '<div class="quiz-result ' + (ok ? 'pass' : 'fail') + '">' + (ok ? '✓ Correct' : '✗ Answer: ' + q.correct.map(i => q.opts[i]).join(', ')) + '</div>';
+      html += '<button class="quiz-btn" data-action="quiz-next">Next →</button>';
+    }
+    html += '</div>';
+    return html;
+  },
+  async loadCode(id) {
+    await new Promise(r => setTimeout(r, 250));
+    if (!this._code[id]) this._code[id] = { output: '', showSolution: false };
+    const s = this._code[id];
+    return '<div class="module-card"><div class="code-prompt">Write a function that returns the sum of two numbers.</div>' +
+      '<div class="code-editor" contenteditable="true">const add = (a, b) => {<br>  <span style="caret-color:var(--purple)">_</span><br>}</div>' +
+      '<button class="quiz-btn" data-action="code-run">▶ Run</button>' +
+      '<button class="quiz-btn alt" data-action="code-reveal">' + (s.showSolution ? 'Hide' : 'Reveal') + '</button>' +
+      (s.output ? '<div class="code-out">' + s.output + '</div>' : '') +
+      (s.showSolution ? '<div class="code-out solution">// Solution<br>const add = (a, b) => a + b;</div>' : '') +
+      '</div>';
+  },
+  async loadFlashcards(id) {
+    await new Promise(r => setTimeout(r, 300));
+    const DATA = {
+      'vars-types': [{ front: 'What keyword declares a block-scoped variable?', back: 'let / const' }],
+      'closures': [{ front: 'What is a closure?', back: 'A function that remembers its outer scope' }],
+    };
+    const cards = DATA[id];
+    if (!cards) return '<div class="module-card fc-empty">No flashcards.</div>';
+    if (!this._fc[id]) this._fc[id] = { current: 0, flipped: false };
+    const s = this._fc[id];
+    const card = cards[s.current];
+    let html = '<div class="module-card"><div class="fc-counter">Card ' + (s.current + 1) + '/' + cards.length + '</div>';
+    html += '<div class="fc-card' + (s.flipped ? ' flipped' : '') + '" data-action="fc-flip">';
+    if (s.flipped) html += '<div class="fc-back">' + card.back + '</div>';
+    else html += '<div class="fc-front">' + card.front + '</div><div class="fc-hint">[ click to reveal ]</div>';
+    html += '</div><div class="fc-nav">';
+    html += '<button class="fc-btn" data-action="fc-prev"' + (s.current === 0 ? ' disabled' : '') + '>◀ Prev</button>';
+    html += '<button class="fc-btn" data-action="fc-next"' + (s.current === cards.length - 1 ? ' disabled' : '') + '>Next ▶</button>';
+    html += '</div></div>';
+    return html;
+  },
+  handleQuiz(id, action, payload) {
+    if (!this._quiz[id]) this._quiz[id] = { current: 0, answers: {}, done: false };
+    const s = this._quiz[id];
+    if (action === 'answer' && s.answers[s.current] === undefined) { s.answers[s.current] = payload; combRenderModule(); }
+    else if (action === 'next') { s.current++; combRenderModule(); }
+  },
+  handleCode(id, action) {
+    if (!this._code[id]) this._code[id] = { output: '', showSolution: false };
+    const s = this._code[id];
+    if (action === 'run') { s.output = '<span style="color:var(--green)">✓ Code runs (simulated)</span>'; combRenderModule(); }
+    else if (action === 'reveal') { s.showSolution = !s.showSolution; combRenderModule(); }
+  },
+  handleFlashcards(id, action) {
+    if (!this._fc[id]) this._fc[id] = { current: 0, flipped: false };
+    const s = this._fc[id];
+    if (action === 'flip') { s.flipped = !s.flipped; combRenderModule(); }
+    else if (action === 'next') { s.current++; s.flipped = false; combRenderModule(); }
+    else if (action === 'prev') { s.current = Math.max(0, s.current - 1); s.flipped = false; combRenderModule(); }
+  },
+};
+
+async function combRenderModule() {
+  const container = document.getElementById('combModule');
+  if (!container) return;
+  const node = combFindNode(combState.selectedNodeId);
+  const isCourse = combIsCourse(node);
+  const lessonId = isCourse ? (combGetCurrentLesson(node) || { id: null }).id : combState.selectedNodeId;
+  if (!lessonId) { container.innerHTML = '<div class="module-card fc-empty">Select a lesson</div>'; return; }
+  let html;
+  try {
+    switch (combState.activeModule) {
+      case 'learn': html = await combModules.loadLearn(lessonId); break;
+      case 'quiz': html = await combModules.loadQuiz(lessonId); break;
+      case 'code': html = await combModules.loadCode(lessonId); break;
+      case 'flashcards': html = await combModules.loadFlashcards(lessonId); break;
+      default: html = await combModules.loadLearn(lessonId);
+    }
+  } catch (e) { html = '<div class="module-card" style="color:var(--red)">Error loading.</div>'; }
+  container.innerHTML = html;
+  combBindActions();
+}
+
+function combBindActions() {
+  document.querySelectorAll('.var-combined .quiz-opt').forEach(el => {
+    el.addEventListener('click', () => {
+      const lessonId = combLoadingLesson;
+      if (lessonId) combModules.handleQuiz(lessonId, 'answer', parseInt(el.dataset.idx));
+    });
+  });
+  document.querySelectorAll('.var-combined [data-action]').forEach(el => {
+    el.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const action = el.dataset.action;
+      const lessonId = combLoadingLesson;
+      if (!lessonId) return;
+      if (action === 'quiz-next') combModules.handleQuiz(lessonId, 'next');
+      else if (action === 'code-run') combModules.handleCode(lessonId, 'run');
+      else if (action === 'code-reveal') combModules.handleCode(lessonId, 'reveal');
+    });
+  });
+  document.querySelectorAll('.var-combined .fc-card').forEach(el => {
+    el.addEventListener('click', () => { const id = combLoadingLesson; if (id) combModules.handleFlashcards(id, 'flip'); });
+  });
+  document.querySelectorAll('.var-combined .fc-btn').forEach(el => {
+    el.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const action = el.dataset.action;
+      const id = combLoadingLesson;
+      if (!id) return;
+      if (action === 'fc-next') combModules.handleFlashcards(id, 'next');
+      else if (action === 'fc-prev') combModules.handleFlashcards(id, 'prev');
+    });
+  });
+}
+
+function combCalcStatus(nodes) {
+  return nodes.map(n => {
+    if (n.children) {
+      const all = combCalcStatus(n.children);
+      const statuses = all.map(a => a.status);
+      if (statuses.every(s => s === 'done')) return { ...n, status: 'done', progress: 100 };
+      if (statuses.some(s => s === 'in_progress' || s === 'done')) return { ...n, status: 'in_progress', progress: Math.round(all.reduce((s, n) => s + n.progress, 0) / all.length) };
+      return { ...n, status: 'locked', progress: 0 };
+    }
+    return n;
+  });
+}
+
+function renderCombined() {
+  const DATA = combCalcStatus(TREE_COMBINED);
+  const node = combFindNode(combState.selectedNodeId, DATA);
+  const isCourse = combIsCourse(node);
+
+  let html = '<div class="var-combined active mount-anim">';
+  html += '<div class="header-bar">';
+  const courseName = (function find(nodes) {
+    for (const n of nodes) {
+      if (n.id === combState.selectedNodeId) return combIsCourse(n) ? n.name : null;
+      if (n.children) { const f = find(n.children); if (f) return f; }
+    }
+    return '—';
+  })(DATA);
+  html += '<div class="h-stat"><span class="h-l">course</span> <span class="h-y">' + courseName + '</span></div>';
+  html += '<div class="h-stat"><span class="h-l">xp today</span> <span class="h-p">120</span><span class="h-s">/</span><span class="h-l">200</span></div>';
+  html += '<div class="h-stat"><span class="h-l">streak</span> <span class="h-y">10d</span></div>';
+  html += '</div>';
+
+  html += '<div class="tree-split">';
+  html += '<div class="tree-panel-fixed"><div class="panel" style="height:100%;display:flex;flex-direction:column">';
+  html += '<div class="panel-title">Courses</div>';
+  html += '<div class="panel-body" style="overflow-y:auto;flex:1;min-height:0">';
+  html += combRenderTree(DATA, 0);
+  html += '</div></div></div>';
+
+  html += '<div class="panel" style="flex:1;display:flex;flex-direction:column;min-width:0">';
+  if (isCourse) {
+    html += '<div class="panel-body" style="overflow-y:auto;flex:1;min-height:0;padding:0.2em 0.4em">';
+    html += combRenderRoadmap(node);
+    html += '</div>';
+  } else {
+    html += '<div class="panel-body" style="overflow-y:auto;flex:1;min-height:0;padding:0.2em 0.4em">';
+    html += '<div class="module-tabs">';
+    for (const [id, meta] of Object.entries(MODULE_META)) {
+      html += '<div class="module-tab' + (id === combState.activeModule ? ' active' : '') + '" data-module="' + id + '">' + meta.icon + ' ' + meta.label + '</div>';
+    }
+    html += '</div>';
+    html += '<div class="module-container" id="combModule"><div class="module-loading"><div class="skel-line w60 h2"></div><div class="skel-line w80"></div><div class="skel-line h4"></div></div></div>';
+    html += '</div>';
+  }
+  html += '</div></div></div>';
+
+  document.getElementById('content').innerHTML = html;
+  document.getElementById('statusLabel').textContent = VARIANTS.find(v => v.id === 'combined').desc;
+
+  // Bind tree events
+  document.querySelectorAll('.var-combined .tree-item-content').forEach(el => {
+    el.addEventListener('click', (e) => {
+      const id = el.dataset.id;
+      if (e.target.classList.contains('ti-expand')) {
+        const node = combFindNode(e.target.dataset.toggle);
+        if (node) node.expanded = !node.expanded;
+        renderCombined();
+        return;
+      }
+      combState.selectedNodeId = id;
+      renderCombined();
+    });
+  });
+  document.querySelectorAll('.var-combined [data-action="open-lesson"]').forEach(el => {
+    el.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const id = el.dataset.id;
+      if (id) { combState.selectedNodeId = id; renderCombined(); }
+    });
+  });
+  document.querySelectorAll('.var-combined .module-tab').forEach(el => {
+    el.addEventListener('click', () => {
+      combState.activeModule = el.dataset.module;
+      renderCombined();
+    });
+  });
+
+  combLoadingLesson = isCourse ? null : combState.selectedNodeId;
+  if (!isCourse) {
+    combLoadingLesson = combState.selectedNodeId;
+    combRenderModule();
+  }
+}
+
+// =====================================================================
+// SWITCHER + RENDER
+// =====================================================================
+let activeVariant = 'dashboard';
+
+function getParam(k) { return new URLSearchParams(window.location.search).get(k); }
+function setParam(k, v) { const u = new URL(window.location); u.searchParams.set(k, v); window.history.replaceState({}, '', u); }
+
+function renderSwitcher() {
+  const bar = document.getElementById('protoSwitcher');
+  bar.innerHTML = `
+    <span class="ps-arrow" onclick="cycleVar(-1)">◀</span>
+    <span class="ps-dots">${VARIANTS.map(k => '<span class="ps-dot' + (k.id === activeVariant ? ' active' : '') + '"></span>').join('')}</span>
+    <span class="ps-label">${VARIANTS.find(v => v.id === activeVariant).label}</span>
+    <span class="ps-arrow" onclick="cycleVar(1)">▶</span>
+    <span class="ps-note">←/→</span>`;
+}
+
+function cycleVar(dir) {
+  const idx = VARIANTS.findIndex(v => v.id === activeVariant);
+  activeVariant = VARIANTS[(idx + dir + VARIANTS.length) % VARIANTS.length].id;
+  setParam('v', activeVariant);
+  render();
+}
+
+function render() {
+  document.getElementById('variantLabel').textContent = VARIANTS.find(v => v.id === activeVariant).label;
+  document.getElementById('statusLabel').textContent = VARIANTS.find(v => v.id === activeVariant).desc;
+
+  switch (activeVariant) {
+    case 'dashboard':
+      document.getElementById('content').innerHTML = renderDashboard();
+      break;
+    case 'admin':
+      document.getElementById('content').innerHTML = renderAdmin();
+      break;
+    case 'combined':
+      renderCombined();
+      break;
+  }
+  renderSwitcher();
+}
+
+// Keyboard
+document.addEventListener('keydown', (e) => {
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable) return;
+  if (e.key === 'ArrowLeft' && !e.altKey) cycleVar(-1);
+  if (e.key === 'ArrowRight' && !e.altKey) cycleVar(1);
+});
+
+// Init
+activeVariant = getParam('v') || 'dashboard';
+render();
+</script>
+</body>
+</html>

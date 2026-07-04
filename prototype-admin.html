@@ -1,0 +1,953 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BruteForce Learning — Admin Prototypes [3 approaches]</title>
+<style>
+:root {
+  --bg: #0d0d0f; --surface: #111318; --surface-alt: #161820;
+  --border: #2a2d3a; --border-dim: #1e2130;
+  --text: #c8ccd8; --text-muted: #5a5f72; --text-dim: #3f4252;
+  --purple: #9d7dea; --cyan: #4ec9b0; --yellow: #e5c07b;
+  --red: #e06c75; --green: #98c379; --blue: #61afef;
+  --font-mono: "JetBrains Mono","Fira Code","Cascadia Code","Hack","Courier New",monospace;
+}
+*::-webkit-scrollbar { display: none; }
+* { scrollbar-width: none; -ms-overflow-style: none; }
+html { font-size: clamp(12px, 1.6vh, 28px); }
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--text);
+  font-family: var(--font-mono); font-size: 1rem; line-height: 1.5;
+  height: 100vh; overflow: hidden;
+  display: flex; flex-direction: column;
+}
+#app { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+
+.title-bar {
+  background: #1a1d26; border-bottom: 1px solid var(--border);
+  padding: 0.55em 1em; display: flex; align-items: center;
+  font-size: 0.95rem; color: var(--text-muted); user-select: none; flex-shrink: 0;
+}
+.title-bar .tb-brand { color: var(--purple); font-weight: bold; }
+.title-bar .tb-sub { color: var(--text-dim); font-size: 0.85rem; margin-left: 0.5em; }
+.title-bar .tb-mode {
+  margin-left: auto; display: flex; gap: 0.3em;
+}
+.title-bar .tb-mode-btn {
+  background: transparent; color: var(--text-dim); border: 1px solid var(--border);
+  font-family: var(--font-mono); font-size: 0.75rem; padding: 0.25em 0.6em;
+  cursor: pointer; text-transform: uppercase; letter-spacing: 0.05em;
+}
+.title-bar .tb-mode-btn.active { color: var(--purple); border-color: var(--purple); font-weight: bold; }
+.title-bar .tb-mode-btn:hover { border-color: var(--text-muted); color: var(--text); }
+
+.main-area {
+  flex: 1; padding: 0.5em 1em; display: flex; flex-direction: column;
+  min-height: 0; overflow-y: auto;
+}
+
+/* ===== Shared form elements ===== */
+.fld { margin-bottom: 0.6em; }
+.fld-label {
+  font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;
+  letter-spacing: 0.08em; margin-bottom: 0.2em; display: block;
+}
+.fld-input {
+  width: 100%; background: var(--surface); border: 1px solid var(--border-dim);
+  color: var(--text); font-family: var(--font-mono); font-size: 0.85rem;
+  padding: 0.4em 0.5em; outline: none;
+}
+.fld-input:focus { border-color: var(--purple); }
+.fld-textarea {
+  width: 100%; background: var(--surface); border: 1px solid var(--border-dim);
+  color: var(--text); font-family: var(--font-mono); font-size: 0.85rem;
+  padding: 0.4em 0.5em; outline: none; min-height: 4em; resize: vertical;
+}
+.fld-textarea:focus { border-color: var(--purple); }
+.fld-hint { font-size: 0.7rem; color: var(--text-dim); margin-top: 0.15em; }
+
+.btn {
+  background: var(--purple); color: #fff; border: none;
+  font-family: var(--font-mono); font-size: 0.8rem; text-transform: uppercase;
+  letter-spacing: 0.06em; padding: 0.35em 0.7em; cursor: pointer; font-weight: bold;
+}
+.btn:hover { opacity: 0.85; }
+.btn-alt { background: transparent; color: var(--purple); border: 1px solid var(--purple); }
+.btn-sm { font-size: 0.7rem; padding: 0.2em 0.5em; }
+.btn-red { background: var(--red); border-color: var(--red); }
+.btn-green { background: var(--green); border-color: var(--green); color: #000; }
+.btn-grp { display: flex; gap: 0.4em; align-items: center; }
+
+.tag {
+  display: inline-flex; align-items: center; gap: 0.3em;
+  font-size: 0.7rem; padding: 0.1em 0.4em;
+  border: 1px solid var(--border-dim); color: var(--text-muted);
+}
+.tag .tag-x { cursor: pointer; color: var(--text-dim); }
+.tag .tag-x:hover { color: var(--red); }
+
+/* ===== Prototype Switcher ===== */
+.proto-switcher {
+  position: fixed; bottom: 3.5em; left: 50%; transform: translateX(-50%);
+  display: flex; align-items: center; gap: 1em;
+  background: #1a1d26; border: 1px solid var(--purple);
+  padding: 0.4em 1em; z-index: 999;
+  font-size: 0.9rem; user-select: none;
+}
+.proto-switcher .ps-arrow { cursor: pointer; color: var(--text-muted); font-size: 1.2rem; padding: 0.1em 0.3em; }
+.proto-switcher .ps-arrow:hover { color: var(--purple); }
+.proto-switcher .ps-label { color: var(--purple); font-weight: bold; letter-spacing: 0.06em; text-transform: uppercase; min-width: 24ch; text-align: center; }
+.proto-switcher .ps-note { color: var(--text-dim); font-size: 0.8rem; }
+.proto-switcher .ps-dots { display: flex; gap: 0.4em; }
+.proto-switcher .ps-dot { width: 0.5em; height: 0.5em; background: var(--text-dim); border: 1px solid var(--border); }
+.proto-switcher .ps-dot.active { background: var(--purple); border-color: var(--purple); }
+
+.keybind-bar {
+  border-top: 1px solid var(--border); padding: 0.45em 1em;
+  font-size: 0.85rem; display: flex; gap: 0.7em; flex-wrap: wrap; flex-shrink: 0;
+}
+.kb-key { color: var(--text); font-weight: bold; }
+.kb-action { color: var(--text-muted); }
+
+.status-bar {
+  border-top: 1px solid var(--border); padding: 0.3em 1em;
+  font-size: 0.85rem; color: var(--text-dim); display: flex; align-items: center; gap: 0.3em; flex-shrink: 0;
+}
+.status-bar .prefix { color: var(--text-muted); }
+
+@keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0; } }
+@keyframes fadeSlide { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+.mount-anim { animation: fadeSlide 0.25s ease; }
+
+/* ========================================================================
+   APPROACH 1: Tree + Detail Panel
+   ======================================================================== */
+.a1-split { display: flex; gap: 0.8em; flex: 1; min-height: 0; }
+.a1-tree { flex: 0 0 30%; min-width: 16em; display: flex; flex-direction: column; }
+.a1-detail { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+
+.a1-tree-box {
+  border: 1px solid var(--border); flex: 1; display: flex; flex-direction: column;
+  overflow-y: auto;
+}
+.a1-tree-box .a1-tb-header {
+  padding: 0.4em 0.6em; font-size: 0.75rem; text-transform: uppercase;
+  letter-spacing: 0.08em; color: var(--text-muted);
+  border-bottom: 1px solid var(--border-dim); display: flex; justify-content: space-between; align-items: center;
+  flex-shrink: 0;
+}
+.a1-tree-box .a1-tb-body { padding: 0.2em 0; flex: 1; overflow-y: auto; }
+
+.a1-node {
+  display: flex; align-items: center; gap: 0.3em; padding: 0.25em 0.4em;
+  font-size: 0.85rem; cursor: pointer; border-left: 2px solid transparent;
+  user-select: none;
+}
+.a1-node:hover { background: #1a1d2e; }
+.a1-node.active { background: #2a1f5a; border-left-color: var(--purple); }
+.a1-node.active-course { background: #2a2a1a; border-left-color: var(--yellow); }
+.a1-node .a1n-expand { width: 0.8em; color: var(--text-dim); flex-shrink: 0; font-size: 0.75rem; }
+.a1-node .a1n-icon { width: 1em; text-align: center; flex-shrink: 0; }
+.a1-node .a1n-name { color: var(--text); flex: 1; }
+.a1-node .a1n-actions { display: flex; gap: 0.2em; opacity: 0; transition: opacity 0.1s; }
+.a1-node:hover .a1n-actions { opacity: 1; }
+.a1-node .a1n-act { cursor: pointer; color: var(--text-dim); font-size: 0.7rem; padding: 0.1em; }
+.a1-node .a1n-act:hover { color: var(--text); }
+.a1-node .a1n-act.del:hover { color: var(--red); }
+.a1-children { padding-left: 1.2em; }
+
+.a1-detail-box {
+  border: 1px solid var(--border); flex: 1; display: flex; flex-direction: column;
+  overflow-y: auto;
+}
+.a1-detail-box .a1-db-header {
+  padding: 0.4em 0.6em; font-size: 0.8rem; color: var(--text-muted);
+  border-bottom: 1px solid var(--border-dim); display: flex; justify-content: space-between; align-items: center;
+  flex-shrink: 0; text-transform: uppercase; letter-spacing: 0.06em;
+}
+.a1-detail-box .a1-db-header .a1-db-title { color: var(--yellow); font-weight: bold; }
+.a1-detail-box .a1-db-body { padding: 0.6em; flex: 1; overflow-y: auto; }
+
+.a1-section { margin-bottom: 1em; }
+.a1-section-title {
+  font-size: 0.75rem; color: var(--purple); text-transform: uppercase;
+  letter-spacing: 0.08em; margin-bottom: 0.4em; font-weight: bold;
+}
+
+/* ========================================================================
+   APPROACH 2: Full-page Form
+   ======================================================================== */
+.a2-layout { display: flex; flex-direction: column; gap: 0.6em; flex: 1; min-height: 0; }
+
+.a2-breadcrumb {
+  display: flex; align-items: center; gap: 0.3em; font-size: 0.85rem;
+  padding: 0.3em 0; flex-shrink: 0;
+}
+.a2-breadcrumb .a2-bc-item { color: var(--text-muted); cursor: pointer; }
+.a2-breadcrumb .a2-bc-item:hover { color: var(--text); }
+.a2-breadcrumb .a2-bc-item.current { color: var(--yellow); font-weight: bold; }
+.a2-breadcrumb .a2-bc-sep { color: var(--text-dim); }
+
+.a2-course-bar {
+  display: flex; gap: 0.5em; align-items: center; flex-shrink: 0;
+  padding: 0.4em 0; border-bottom: 1px solid var(--border-dim);
+}
+.a2-course-bar .a2-cb-label { color: var(--text-muted); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.06em; }
+
+.a2-form-scroll {
+  flex: 1; overflow-y: auto; padding: 0.2em 0;
+}
+
+.a2-section {
+  border: 1px solid var(--border); padding: 0.8em; margin-bottom: 0.6em;
+}
+.a2-section-header {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 0.5em;
+}
+.a2-section-header .a2-sh-title {
+  font-size: 0.8rem; color: var(--purple); font-weight: bold;
+  text-transform: uppercase; letter-spacing: 0.08em;
+}
+.a2-section-header .a2-sh-count {
+  font-size: 0.7rem; color: var(--text-dim);
+}
+
+.a2-card {
+  border: 1px solid var(--border-dim); padding: 0.5em; margin-bottom: 0.4em;
+  animation: fadeSlide 0.2s ease;
+}
+.a2-card-header {
+  display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.3em;
+}
+.a2-card-header .a2-ch-title { color: var(--text); font-size: 0.85rem; font-weight: bold; }
+.a2-card-header .a2-ch-actions { display: flex; gap: 0.2em; }
+
+/* ========================================================================
+   APPROACH 3: Spreadsheet / Grid
+   ======================================================================== */
+.a3-layout { display: flex; flex-direction: column; gap: 0.4em; flex: 1; min-height: 0; }
+
+.a3-toolbar {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 0.3em 0; flex-shrink: 0;
+}
+.a3-toolbar .a3-tb-left { display: flex; gap: 0.4em; align-items: center; }
+.a3-toolbar .a3-tb-label { color: var(--text-muted); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.06em; }
+
+.a3-table-wrap { flex: 1; overflow-y: auto; border: 1px solid var(--border); }
+
+.a3-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+.a3-table th {
+  padding: 0.35em 0.5em; text-align: left; font-weight: normal;
+  color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em;
+  font-size: 0.7rem; border-bottom: 1px solid var(--border);
+  background: var(--surface); position: sticky; top: 0;
+}
+.a3-table td {
+  padding: 0.3em 0.5em; border-bottom: 1px solid var(--border-dim);
+  color: var(--text);
+}
+.a3-table tr:hover td { background: #1a1d2e; }
+.a3-table .a3-depth-0 { font-weight: bold; }
+.a3-table .a3-depth-1 { padding-left: 1.2em; }
+.a3-table .a3-depth-2 { padding-left: 2.4em; }
+.a3-table .a3-status {
+  font-size: 0.7rem; padding: 0.1em 0.35em; border: 1px solid var(--border-dim);
+  display: inline-block; text-transform: uppercase; letter-spacing: 0.05em;
+}
+.a3-table .a3-status.locked { color: var(--text-dim); border-color: var(--border-dim); }
+.a3-table .a3-status.avail { color: var(--text-muted); border-color: var(--border-dim); }
+.a3-table .a3-status.prog { color: var(--yellow); border-color: var(--yellow); }
+.a3-table .a3-status.done { color: var(--green); border-color: var(--green); }
+.a3-table .a3-count { color: var(--text-dim); font-size: 0.8rem; }
+.a3-table .a3-actions { display: flex; gap: 0.2em; opacity: 0; }
+.a3-table tr:hover .a3-actions { opacity: 1; }
+.a3-table .a3-act { cursor: pointer; color: var(--text-dim); font-size: 0.75rem; }
+.a3-table .a3-act:hover { color: var(--text); }
+.a3-table .a3-act.del:hover { color: var(--red); }
+
+.a3-inline-form {
+  background: var(--surface-alt); border: 1px solid var(--purple);
+  padding: 0.5em; animation: fadeSlide 0.2s ease;
+}
+
+/* ===== Empty state ===== */
+.empty-state {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 3em 1em; color: var(--text-dim); text-align: center;
+}
+.empty-state .empty-icon { font-size: 2rem; margin-bottom: 0.3em; }
+.empty-state .empty-text { font-size: 0.9rem; }
+
+/* ===== NODE ICONS ===== */
+.ni-course { color: var(--yellow); }
+.ni-lesson { color: var(--text-muted); }
+.ni-coding { color: var(--cyan); }
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="title-bar">
+    <span class="tb-brand">BF Learning</span>
+    <span class="tb-sub">Admin — Data Entry</span>
+    <div class="tb-mode" id="modeTabs"></div>
+  </div>
+
+  <div class="main-area" id="mainArea">
+    <div id="approachContent" style="flex:1;display:flex;flex-direction:column;min-height:0"></div>
+  </div>
+
+  <div class="keybind-bar">
+    <span class="kb-key">←</span><span class="kb-action">/</span><span class="kb-key">→</span><span class="kb-action"> switch</span>
+  </div>
+  <div class="status-bar">
+    <span class="prefix">›</span> ADMIN PROTOTYPE — <span id="statusLabel">Tree + Detail Panel</span>
+  </div>
+</div>
+
+<div class="proto-switcher" id="protoSwitcher"></div>
+
+<script>
+// =====================================================================
+// DATA
+// =====================================================================
+let TREE = [
+  { id: 'react', name: 'React', type: 'course', icon: 'ni-course', expanded: true,
+    children: [
+      { id: 'js-basics', name: 'JS Basics', type: 'course', expanded: true, internal: true,
+        children: [
+          { id: 'vars-types', name: 'Variables & Types', type: 'lesson', status: 'done', notes: 'Variables store data. JavaScript has let, const, and var.', mnemonic: '"SNOB NUN" — String, Number, Object, Boolean, Null, Undefined', quiz: 3, coding: 1, flashcards: 2 },
+          { id: 'functions-scope', name: 'Functions & Scope', type: 'lesson', status: 'done', notes: 'Functions are reusable blocks.', mnemonic: '"GLB" — Global, Local, Block', quiz: 2, coding: 1, flashcards: 1 },
+          { id: 'arrays-objects', name: 'Arrays & Objects', type: 'lesson', status: 'in_progress', notes: 'Arrays store ordered collections.', mnemonic: '', quiz: 1, coding: 1, flashcards: 1 },
+          { id: 'closures', name: 'Closures', type: 'lesson', status: 'available', notes: 'A closure remembers outer variables.', mnemonic: '"Backpack"', quiz: 1, coding: 1, flashcards: 1 },
+        ] },
+      { id: 'usestate', name: 'useState', type: 'course', expanded: false,
+        children: [
+          { id: 'what-is-state', name: 'What is state?', type: 'lesson', status: 'locked', notes: '', mnemonic: '', quiz: 0, coding: 0, flashcards: 1 },
+          { id: 'counter', name: 'Counter exercise', type: 'coding', status: 'locked', notes: '', mnemonic: '', quiz: 0, coding: 1, flashcards: 0 },
+        ] },
+    ] },
+  { id: 'js', name: 'JavaScript', type: 'course', expanded: false,
+    children: [
+      { id: 'js-vars', name: 'Variables & Types', type: 'lesson', status: 'done', notes: '', mnemonic: '', quiz: 1, coding: 0, flashcards: 1 },
+      { id: 'js-funcs', name: 'Functions & Scope', type: 'lesson', status: 'done', notes: '', mnemonic: '', quiz: 1, coding: 1, flashcards: 0 },
+      { id: 'js-closures', name: 'Closures', type: 'lesson', status: 'in_progress', notes: '', mnemonic: '', quiz: 1, coding: 1, flashcards: 1 },
+    ] },
+];
+let nextId = 100;
+function genId() { return 'node-' + (nextId++); }
+
+function getAllNodes(nodes) {
+  let list = [];
+  for (const n of nodes) {
+    list.push(n);
+    if (n.children) list = list.concat(getAllNodes(n.children));
+  }
+  return list;
+}
+
+function findNode(id, nodes) {
+  nodes = nodes || TREE;
+  for (const n of nodes) {
+    if (n.id === id) return n;
+    if (n.children) { const f = findNode(id, n.children); if (f) return f; }
+  }
+  return null;
+}
+
+function findParent(id, nodes, parent) {
+  if (!nodes) nodes = TREE;
+  for (const n of nodes) {
+    if (n.id === id) return parent;
+    if (n.children) { const f = findParent(id, n.children, n); if (f) return f; }
+  }
+  return null;
+}
+
+function isLeaf(n) { return !n.children || !n.children.length; }
+function countLeaf(n) {
+  if (!n.children) return 1;
+  return n.children.reduce((s, c) => s + countLeaf(c), 0);
+}
+
+// =====================================================================
+// RENDER
+// =====================================================================
+const APPROACHES = [
+  { id: 'a1', label: 'Tree + Detail', desc: 'Tree + Detail Panel' },
+  { id: 'a2', label: 'Full Form', desc: 'Full-page Form' },
+  { id: 'a3', label: 'Spreadsheet', desc: 'Spreadsheet / Grid' },
+];
+let activeApproach = 'a1';
+let selectedNodeId = 'vars-types';
+
+function getParam(k) { return new URLSearchParams(window.location.search).get(k); }
+function setParam(k,v) { const u=new URL(window.location); u.searchParams.set(k,v); window.history.replaceState({},'',u); }
+function getApproach() { return (getParam('a') || 'a1').toLowerCase(); }
+function setApproach(a) { setParam('a', a); activeApproach = a; render(); }
+
+// ===== Common helpers =====
+function nodeIcon(n) {
+  if (n.type === 'course') return '<span style="color:var(--yellow)">◈</span>';
+  if (n.type === 'coding') return '<span style="color:var(--cyan)">◈</span>';
+  return '<span style="color:var(--text-muted)">◌</span>';
+}
+function statusBadge(n) {
+  if (!n.status) return '';
+  const colors = { locked: 'var(--text-dim)', done: 'var(--green)', in_progress: 'var(--yellow)', available: 'var(--text-muted)' };
+  return '<span style="font-size:0.65rem;color:' + (colors[n.status] || 'var(--text-dim)') + ';text-transform:uppercase;letter-spacing:0.05em;border:1px solid ' + (colors[n.status] || 'var(--border-dim)') + ';padding:0.05em 0.3em;margin-left:0.3em">' + n.status + '</span>';
+}
+
+// =====================================================================
+// APPROACH 1: Tree + Detail Panel
+// =====================================================================
+function renderA1() {
+  let html = '<div class="a1-split mount-anim">';
+
+  // Tree
+  html += '<div class="a1-tree">';
+  html += '<div class="a1-tree-box">';
+  html += '<div class="a1-tb-header"><span>Skill Tree</span><button class="btn btn-sm" onclick="a1AddCourse()">+ Course</button></div>';
+  html += '<div class="a1-tb-body">' + a1RenderTree(TREE) + '</div>';
+  html += '</div></div>';
+
+  // Detail
+  const node = findNode(selectedNodeId);
+  html += '<div class="a1-detail">';
+  html += '<div class="a1-detail-box">';
+  if (node) {
+    const isL = isLeaf(node);
+    html += '<div class="a1-db-header"><span class="a1-db-title">' + node.name + '</span><span>' + (isL ? 'Lesson' : 'Course') + '</span></div>';
+    html += '<div class="a1-db-body">' + a1RenderDetail(node) + '</div>';
+  } else {
+    html += '<div class="a1-db-header"><span class="a1-db-title">Select a node</span></div>';
+    html += '<div class="a1-db-body"><div class="empty-state"><div class="empty-icon">◈</div><div class="empty-text">Select a course or lesson from the tree to edit</div></div></div>';
+  }
+  html += '</div></div>';
+
+  html += '</div>';
+  return html;
+}
+
+function a1RenderTree(nodes, depth) {
+  let html = '';
+  for (const n of nodes) {
+    const hasKids = n.children && n.children.length > 0;
+    const active = n.id === selectedNodeId;
+    const cls = hasKids ? (active ? ' active-course' : '') : (active ? ' active' : '');
+    html += '<div class="a1-node' + cls + '" onclick="a1Select(\'' + n.id + '\')">';
+    if (hasKids) {
+      html += '<span class="a1n-expand" onclick="event.stopPropagation();a1Toggle(\'' + n.id + '\')">' + (n.expanded ? '▼' : '▶') + '</span>';
+    } else {
+      html += '<span class="a1n-expand" style="visibility:hidden">▶</span>';
+    }
+    html += '<span class="a1n-icon">' + nodeIcon(n) + '</span>';
+    html += '<span class="a1n-name">' + n.name + '</span>';
+    html += '<span class="a1n-actions">';
+    html += '<span class="a1n-act" onclick="event.stopPropagation();a1AddChild(\'' + n.id + '\')" title="Add child">+</span>';
+    html += '<span class="a1n-act del" onclick="event.stopPropagation();a1Delete(\'' + n.id + '\')" title="Delete">✕</span>';
+    html += '</span></div>';
+    if (hasKids && n.expanded) {
+      html += '<div class="a1-children">' + a1RenderTree(n.children, depth + 1) + '</div>';
+    }
+  }
+  return html;
+}
+
+function a1RenderDetail(node) {
+  let html = '';
+
+  // Name field
+  html += '<div class="a1-section">';
+  html += '<div class="a1-section-title">Basic Info</div>';
+  html += '<div class="fld"><label class="fld-label">Name</label><input class="fld-input" value="' + node.name + '" onchange="a1UpdateField(\'' + node.id + '\',\'name\',this.value)"></div>';
+  if (isLeaf(node)) {
+    html += '<div class="fld"><label class="fld-label">Type</label><select class="fld-input" onchange="a1UpdateField(\'' + node.id + '\',\'type\',this.value)"><option value="lesson"' + (node.type==='lesson'?' selected':'') + '>Lesson</option><option value="coding"' + (node.type==='coding'?' selected':'') + '>Coding</option></select></div>';
+    html += '<div class="fld"><label class="fld-label">Status</label><select class="fld-input" onchange="a1UpdateField(\'' + node.id + '\',\'status\',this.value)"><option value="locked"' + (node.status==='locked'?' selected':'') + '>Locked</option><option value="available"' + (node.status==='available'?' selected':'') + '>Available</option><option value="in_progress"' + (node.status==='in_progress'?' selected':'') + '>In Progress</option><option value="done"' + (node.status==='done'?' selected':'') + '>Done</option></select></div>';
+  }
+  html += '</div>';
+
+  if (isLeaf(node)) {
+    // Notes
+    html += '<div class="a1-section">';
+    html += '<div class="a1-section-title">Notes</div>';
+    html += '<div class="fld"><textarea class="fld-textarea" placeholder="Write lesson notes here..." onchange="a1UpdateField(\'' + node.id + '\',\'notes\',this.value)">' + (node.notes || '') + '</textarea></div>';
+    html += '<div class="fld"><label class="fld-label">Mnemonic</label><input class="fld-input" placeholder="e.g. SNOB NUN" value="' + (node.mnemonic || '') + '" onchange="a1UpdateField(\'' + node.id + '\',\'mnemonic\',this.value)"></div>';
+    html += '</div>';
+
+    // Quiz
+    html += '<div class="a1-section">';
+    html += '<div class="a1-section-title">Quiz <span style="color:var(--text-dim);font-weight:normal;font-size:0.7rem">(' + (node.quiz || 0) + ' questions)</span></div>';
+    html += '<div class="btn-grp">';
+    html += '<button class="btn btn-sm" onclick="a1AddQuiz(\'' + node.id + '\')">+ Add Question</button>';
+    html += '</div>';
+    const quizQ = a1GetQuiz(node.id);
+    for (let i = 0; i < (quizQ.length || node.quiz || 0); i++) {
+      html += '<div class="a2-card" style="margin-top:0.4em">';
+      html += '<div class="fld"><input class="fld-input" placeholder="Question text" value="Sample question ' + (i+1) + '"></div>';
+      html += '<div class="fld" style="display:flex;gap:0.3em"><input class="fld-input" placeholder="Option A"><input class="fld-input" placeholder="Option B"></div>';
+      html += '</div>';
+    }
+    if (!node.quiz && (!quizQ || !quizQ.length)) {
+      html += '<div style="color:var(--text-dim);font-size:0.8rem;font-style:italic">No quiz questions yet.</div>';
+    }
+    html += '</div>';
+
+    // Coding
+    html += '<div class="a1-section">';
+    html += '<div class="a1-section-title">Coding Exercise</div>';
+    if (node.type === 'coding' || node.coding) {
+      html += '<div class="fld"><textarea class="fld-textarea" placeholder="Exercise prompt/starter code..." style="min-height:3em"></textarea></div>';
+      html += '<div class="fld"><textarea class="fld-textarea" placeholder="Solution code..." style="min-height:3em"></textarea></div>';
+    } else {
+      html += '<div style="color:var(--text-dim);font-size:0.8rem;font-style:italic">No coding exercise. Change type to "Coding" to add one.</div>';
+    }
+    html += '</div>';
+
+    // Flashcards
+    html += '<div class="a1-section">';
+    html += '<div class="a1-section-title">Flashcards <span style="color:var(--text-dim);font-weight:normal;font-size:0.7rem">(' + (node.flashcards || 0) + ' cards)</span></div>';
+    html += '<button class="btn btn-sm" onclick="a1AddFlashcard(\'' + node.id + '\')">+ Add Card</button>';
+    for (let i = 0; i < (node.flashcards || 0); i++) {
+      html += '<div class="a2-card" style="margin-top:0.4em">';
+      html += '<div class="fld"><input class="fld-input" placeholder="Front (question)" value="Sample front ' + (i+1) + '"></div>';
+      html += '<div class="fld"><input class="fld-input" placeholder="Back (answer)" value="Sample back ' + (i+1) + '"></div>';
+      html += '</div>';
+    }
+    if (!node.flashcards) {
+      html += '<div style="color:var(--text-dim);font-size:0.8rem;font-style:italic">No flashcards yet.</div>';
+    }
+    html += '</div>';
+  }
+
+  return html;
+}
+
+function a1Select(id) { selectedNodeId = id; render(); }
+function a1Toggle(id) {
+  const n = findNode(id);
+  if (n) n.expanded = !n.expanded;
+  render();
+}
+function a1AddCourse() {
+  const id = genId();
+  TREE.push({ id, name: 'New Course', type: 'course', expanded: false, children: [] });
+  selectedNodeId = id;
+  render();
+}
+function a1AddChild(parentId) {
+  const p = findNode(parentId);
+  if (!p) return;
+  if (!p.children) p.children = [];
+  const id = genId();
+  p.children.push({ id, name: 'New Lesson', type: 'lesson', status: 'locked', notes: '', mnemonic: '', quiz: 0, coding: 0, flashcards: 0 });
+  if (!p.expanded) p.expanded = true;
+  selectedNodeId = id;
+  render();
+}
+function a1Delete(id) {
+  if (!confirm('Delete "' + (findNode(id) || {}).name + '"?')) return;
+  const p = findParent(id);
+  if (p) { p.children = p.children.filter(c => c.id !== id); }
+  else { TREE = TREE.filter(c => c.id !== id); }
+  selectedNodeId = TREE[0] ? TREE[0].id : null;
+  render();
+}
+function a1UpdateField(id, field, value) {
+  const n = findNode(id);
+  if (n) n[field] = value;
+}
+function a1GetQuiz(id) { return []; }
+function a1AddQuiz(id) { const n = findNode(id); if (n) n.quiz = (n.quiz || 0) + 1; render(); }
+function a1AddFlashcard(id) { const n = findNode(id); if (n) n.flashcards = (n.flashcards || 0) + 1; render(); }
+
+// =====================================================================
+// APPROACH 2: Full-page Form
+// =====================================================================
+function a2GetBreadcrumb() {
+  const node = findNode(selectedNodeId);
+  if (!node) return [{ id: null, name: 'Root' }];
+  const crumbs = [{ id: null, name: 'Root' }];
+  function walk(nodes, target) {
+    for (const n of nodes) {
+      if (n.id === target) { crumbs.push(n); return true; }
+      if (n.children) { crumbs.push(n); if (walk(n.children, target)) return true; crumbs.pop(); }
+    }
+    return false;
+  }
+  walk(TREE, selectedNodeId);
+  return crumbs;
+}
+
+function renderA2() {
+  let html = '<div class="a2-layout mount-anim">';
+
+  // Breadcrumb + course selector
+  const crumbs = a2GetBreadcrumb();
+  html += '<div class="a2-breadcrumb">';
+  for (let i = 0; i < crumbs.length; i++) {
+    if (i > 0) html += '<span class="a2-bc-sep">/</span>';
+    html += '<span class="a2-bc-item' + (i === crumbs.length - 1 ? ' current' : '') + '" onclick="a2GoTo(\'' + (crumbs[i].id || '') + '\')">' + crumbs[i].name + '</span>';
+  }
+  html += '</div>';
+
+  // Course selector dropdown
+  html += '<div class="a2-course-bar">';
+  html += '<span class="a2-cb-label">Course:</span>';
+  html += '<select class="fld-input" style="width:auto" onchange="a2GoTo(this.value)">';
+  for (const c of TREE) {
+    html += '<option value="' + c.id + '"' + (crumbs.some(cr => cr.id === c.id) || false ? ' selected' : '') + '>' + c.name + '</option>';
+    if (c.children) {
+      for (const ch of c.children) {
+        if (ch.children) {
+          html += '<option value="' + ch.id + '"' + (crumbs.some(cr => cr.id === ch.id) ? ' selected' : '') + '>  └ ' + ch.name + '</option>';
+        }
+      }
+    }
+  }
+  html += '</select>';
+  html += '<button class="btn btn-sm btn-alt" onclick="a2AddLesson()">+ New Lesson</button>';
+  html += '</div>';
+
+  // Form scroll area
+  html += '<div class="a2-form-scroll">';
+
+  const node = findNode(selectedNodeId);
+  if (!node || isLeaf(node)) {
+    // Lesson Editor
+    const n = node || { name: 'New Lesson', notes: '', mnemonic: '', quiz: 0, coding: 0, flashcards: 0, status: 'locked', type: 'lesson' };
+    html += '<div class="a2-section">';
+    html += '<div class="a2-section-header"><span class="a2-sh-title">Lesson Info</span></div>';
+    html += '<div class="fld"><label class="fld-label">Lesson Name</label><input class="fld-input" value="' + n.name + '"></div>';
+    html += '<div style="display:flex;gap:0.5em">';
+    html += '<div class="fld" style="flex:1"><label class="fld-label">Type</label><select class="fld-input"><option>Lesson</option><option>Coding</option></select></div>';
+    html += '<div class="fld" style="flex:1"><label class="fld-label">Status</label><select class="fld-input"><option>Locked</option><option>Available</option><option selected>In Progress</option><option>Done</option></select></div>';
+    html += '</div>';
+    html += '<div class="fld"><label class="fld-label">Prerequisites</label><input class="fld-input" placeholder="e.g. JS Basics 80%"></div>';
+    html += '</div>';
+
+    html += '<div class="a2-section">';
+    html += '<div class="a2-section-header"><span class="a2-sh-title">Notes</span></div>';
+    html += '<div class="fld"><textarea class="fld-textarea" placeholder="Write lesson notes in simple language..." style="min-height:5em">' + (n.notes || '') + '</textarea></div>';
+    html += '<div class="fld"><label class="fld-label">Memory Hook / Mnemonic</label><input class="fld-input" placeholder="e.g. SNOB NUN" value="' + (n.mnemonic || '') + '"></div>';
+    html += '</div>';
+
+    html += '<div class="a2-section">';
+    html += '<div class="a2-section-header"><span class="a2-sh-title">Quiz Questions</span><span class="a2-sh-count">' + (n.quiz || 0) + ' questions</span></div>';
+    for (let i = 0; i < (n.quiz || 2); i++) {
+      html += '<div class="a2-card">';
+      html += '<div class="a2-card-header"><span class="a2-ch-title">Q' + (i+1) + '</span><div class="a2-ch-actions"><span class="a1n-act del" style="font-size:0.7rem">✕</span></div></div>';
+      html += '<div class="fld"><textarea class="fld-textarea" placeholder="Question" style="min-height:2em">Sample question ' + (i+1) + '</textarea></div>';
+      html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:0.3em">';
+      html += '<div class="fld"><input class="fld-input" placeholder="Option A"></div>';
+      html += '<div class="fld"><input class="fld-input" placeholder="Option B"></div>';
+      html += '<div class="fld"><input class="fld-input" placeholder="Option C"></div>';
+      html += '<div class="fld"><input class="fld-input" placeholder="Option D"></div>';
+      html += '</div>';
+      html += '<div class="fld" style="margin-top:0.2em"><label class="fld-label" style="display:inline">Correct:</label> <select class="fld-input" style="width:auto;display:inline"><option>A</option><option>B</option><option>C</option><option>D</option></select></div>';
+      html += '</div>';
+    }
+    html += '<button class="btn btn-sm btn-alt" onclick="a2AddQuizQ()">+ Add Question</button>';
+    html += '</div>';
+
+    html += '<div class="a2-section">';
+    html += '<div class="a2-section-header"><span class="a2-sh-title">Coding Exercise</span></div>';
+    html += '<div class="fld"><label class="fld-label">Prompt</label><textarea class="fld-textarea" placeholder="Describe the coding challenge..." style="min-height:3em"></textarea></div>';
+    html += '<div class="fld"><label class="fld-label">Starter Code</label><textarea class="fld-textarea" placeholder="// starter code..." style="min-height:4em;font-family:var(--font-mono)"></textarea></div>';
+    html += '<div class="fld"><label class="fld-label">Solution</label><textarea class="fld-textarea" placeholder="// solution..." style="min-height:4em;font-family:var(--font-mono)"></textarea></div>';
+    html += '</div>';
+
+    html += '<div class="a2-section">';
+    html += '<div class="a2-section-header"><span class="a2-sh-title">Flashcards</span><span class="a2-sh-count">' + (n.flashcards || 2) + ' cards</span></div>';
+    for (let i = 0; i < (n.flashcards || 2); i++) {
+      html += '<div class="a2-card">';
+      html += '<div class="a2-card-header"><span class="a2-ch-title">Card ' + (i+1) + '</span><div class="a2-ch-actions"><span class="a1n-act del" style="font-size:0.7rem">✕</span></div></div>';
+      html += '<div class="fld"><input class="fld-input" placeholder="Front (question)" value="Sample front Q' + (i+1) + '"></div>';
+      html += '<div class="fld"><textarea class="fld-textarea" placeholder="Back (answer)" style="min-height:2em">Sample answer ' + (i+1) + '</textarea></div>';
+      html += '</div>';
+    }
+    html += '<button class="btn btn-sm btn-alt" onclick="a2AddFlashcard()">+ Add Card</button>';
+    html += '</div>';
+
+  } else {
+    // Course Editor
+    const kids = node.children || [];
+    html += '<div class="a2-section">';
+    html += '<div class="a2-section-header"><span class="a2-sh-title">Course: ' + node.name + '</span><span class="a2-sh-count">' + kids.length + ' lessons</span></div>';
+    html += '<div class="fld"><label class="fld-label">Course Name</label><input class="fld-input" value="' + node.name + '"></div>';
+    html += '<div class="fld"><label class="fld-label">Prerequisite / Unlock Condition</label><input class="fld-input" placeholder="e.g. JS: 80%"></div>';
+    html += '</div>';
+
+    html += '<div class="a2-section">';
+    html += '<div class="a2-section-header"><span class="a2-sh-title">Lessons</span><button class="btn btn-sm btn-alt" onclick="a2AddLesson()">+ Add Lesson</button></div>';
+    for (const kid of kids) {
+      html += '<div class="a2-card" onclick="a2GoTo(\'' + kid.id + '\')" style="cursor:pointer">';
+      html += '<div class="a2-card-header"><span class="a2-ch-title">' + kid.name + '</span><div class="a2-ch-actions">' + statusBadge(kid) + '</div></div>';
+      html += '<div style="display:flex;gap:0.5em;font-size:0.75rem;color:var(--text-dim)">';
+      html += '<span>Quiz: ' + (kid.quiz || 0) + '</span>';
+      html += '<span>Coding: ' + (kid.coding || 0) + '</span>';
+      html += '<span>Flashcards: ' + (kid.flashcards || 0) + '</span>';
+      html += '</div></div>';
+    }
+    html += '</div>';
+  }
+
+  // Save bar
+  html += '<div style="display:flex;gap:0.5em;padding:0.5em 0;flex-shrink:0;border-top:1px solid var(--border-dim);margin-top:0.5em">';
+  html += '<button class="btn" onclick="a2Save()">💾 Save Changes</button>';
+  html += '<button class="btn btn-alt" onclick="a2Import()">📥 Import JSON</button>';
+  html += '<button class="btn btn-alt" onclick="a2Export()">📤 Export JSON</button>';
+  html += '</div>';
+
+  html += '</div></div>';
+  return html;
+}
+
+function a2GoTo(id) { if (id) { selectedNodeId = id; render(); } }
+function a2AddLesson() {
+  const p = findNode(selectedNodeId);
+  if (!p || isLeaf(p)) { selectedNodeId = TREE[0].id; render(); return; }
+  const id = genId();
+  p.children.push({ id, name: 'New Lesson', type: 'lesson', status: 'locked', notes: '', mnemonic: '', quiz: 0, coding: 0, flashcards: 0 });
+  selectedNodeId = id;
+  render();
+}
+function a2AddQuizQ() { const n = findNode(selectedNodeId); if (n) n.quiz = (n.quiz || 0) + 1; render(); }
+function a2AddFlashcard() { const n = findNode(selectedNodeId); if (n) n.flashcards = (n.flashcards || 0) + 1; render(); }
+function a2Save() { /* stub - would persist */ alert('Changes saved (simulated)'); }
+function a2Import() { alert('Import dialog opens (simulated)'); }
+function a2Export() { alert('Export triggered (simulated)'); }
+
+// =====================================================================
+// APPROACH 3: Spreadsheet / Grid
+// =====================================================================
+let a3Editing = null; // id of row being edited, or null
+let a3Filter = 'all';
+
+function renderA3() {
+  let html = '<div class="a3-layout mount-anim">';
+
+  // Toolbar
+  html += '<div class="a3-toolbar">';
+  html += '<div class="a3-tb-left">';
+  html += '<span class="a3-tb-label">Filter:</span>';
+  html += '<select class="fld-input" style="width:auto;font-size:0.75rem" onchange="a3SetFilter(this.value)">';
+  html += '<option value="all"' + (a3Filter==='all'?' selected':'') + '>All</option>';
+  html += '<option value="course"' + (a3Filter==='course'?' selected':'') + '>Courses</option>';
+  html += '<option value="lesson"' + (a3Filter==='lesson'?' selected':'') + '>Lessons</option>';
+  html += '<option value="done"' + (a3Filter==='done'?' selected':'') + '>Done</option>';
+  html += '<option value="in_progress"' + (a3Filter==='in_progress'?' selected':'') + '>In Progress</option>';
+  html += '<option value="locked"' + (a3Filter==='locked'?' selected':'') + '>Locked</option>';
+  html += '</select>';
+  html += '</div>';
+  html += '<div style="display:flex;gap:0.3em">';
+  html += '<button class="btn btn-sm" onclick="a3AddRow()">+ Add</button>';
+  html += '<button class="btn btn-sm btn-alt" onclick="a3ExportTable()">Export</button>';
+  html += '</div>';
+  html += '</div>';
+
+  // Table
+  html += '<div class="a3-table-wrap">';
+  html += '<table class="a3-table">';
+  html += '<thead><tr>';
+  html += '<th style="width:40%">Name</th>';
+  html += '<th style="width:10%">Type</th>';
+  html += '<th style="width:12%">Status</th>';
+  html += '<th style="width:8%">Quiz</th>';
+  html += '<th style="width:8%">Coding</th>';
+  html += '<th style="width:8%">Cards</th>';
+  html += '<th style="width:14%">Actions</th>';
+  html += '</tr></thead>';
+  html += '<tbody>';
+  html += a3RenderRows(TREE, 0);
+  html += '</tbody></table>';
+  html += '</div>';
+
+  // Inline editor (when a row is being edited)
+  if (a3Editing) {
+    const n = findNode(a3Editing);
+    if (n) {
+      html += '<div class="a3-inline-form">';
+      html += '<div style="display:flex;gap:0.5em;flex-wrap:wrap;align-items:end">';
+      html += '<div class="fld" style="flex:2;margin:0"><label class="fld-label">Name</label><input class="fld-input" id="a3EditName" value="' + n.name + '"></div>';
+      html += '<div class="fld" style="flex:1;margin:0"><label class="fld-label">Type</label><select class="fld-input" id="a3EditType"><option value="course"' + (n.type==='course'?' selected':'') + '>Course</option><option value="lesson"' + (n.type==='lesson'?' selected':'') + '>Lesson</option><option value="coding"' + (n.type==='coding'?' selected':'') + '>Coding</option></select></div>';
+      html += '<div class="fld" style="flex:1;margin:0"><label class="fld-label">Status</label><select class="fld-input" id="a3EditStatus"><option value="locked"' + (n.status==='locked'?' selected':'') + '>Locked</option><option value="available"' + (n.status==='available'?' selected':'') + '>Available</option><option value="in_progress"' + (n.status==='in_progress'?' selected':'') + '>In Progress</option><option value="done"' + (n.status==='done'?' selected':'') + '>Done</option></select></div>';
+      html += '<div class="btn-grp"><button class="btn btn-sm btn-green" onclick="a3EditSave(\'' + n.id + '\')">Save</button><button class="btn btn-sm" onclick="a3EditCancel()">Cancel</button></div>';
+      html += '</div>';
+      if (isLeaf(n)) {
+        html += '<div style="display:flex;gap:0.5em;margin-top:0.3em">';
+        html += '<div class="fld" style="flex:1;margin:0"><label class="fld-label">Notes</label><textarea class="fld-textarea" id="a3EditNotes" style="min-height:2em">' + (n.notes || '') + '</textarea></div>';
+        html += '<div class="fld" style="flex:1;margin:0"><label class="fld-label">Mnemonic</label><input class="fld-input" id="a3EditMnemonic" value="' + (n.mnemonic || '') + '"></div>';
+        html += '</div>';
+      }
+      html += '</div>';
+    }
+  }
+
+  html += '</div>';
+  return html;
+}
+
+function a3RenderRows(nodes, depth) {
+  let html = '';
+  for (const n of nodes) {
+    const isL = isLeaf(n);
+    if (a3Filter !== 'all') {
+      if (a3Filter === 'course' && isL) continue;
+      if (a3Filter === 'lesson' && !isL) continue;
+      if (a3Filter === 'done' && n.status !== 'done') continue;
+      if (a3Filter === 'in_progress' && n.status !== 'in_progress') continue;
+      if (a3Filter === 'locked' && n.status !== 'locked') continue;
+    }
+    const depthCls = 'a3-depth-' + Math.min(depth, 2);
+    html += '<tr onclick="a3Edit(\'' + n.id + '\')" style="cursor:pointer">';
+    html += '<td class="' + depthCls + '">' + n.name + '</td>';
+    html += '<td>' + (n.type || '—') + '</td>';
+    html += '<td>' + (n.status ? '<span class="a3-status ' + (n.status === 'locked' ? 'locked' : n.status === 'available' ? 'avail' : n.status === 'in_progress' ? 'prog' : 'done') + '">' + n.status.replace('_',' ') + '</span>' : '—') + '</td>';
+    html += '<td class="a3-count">' + (isL ? (n.quiz || 0) : countLeaf(n)) + '</td>';
+    html += '<td class="a3-count">' + (isL ? (n.coding || 0) : '—') + '</td>';
+    html += '<td class="a3-count">' + (isL ? (n.flashcards || 0) : '—') + '</td>';
+    html += '<td><div class="a3-actions">';
+    html += '<span class="a3-act" onclick="event.stopPropagation();a3AddChild(\'' + n.id + '\')" title="Add child">+</span>';
+    html += '<span class="a3-act del" onclick="event.stopPropagation();a3RowDelete(\'' + n.id + '\')" title="Delete">✕</span>';
+    html += '<span class="a3-act" onclick="event.stopPropagation();a3MoveUp(\'' + n.id + '\');return false" title="Move up">↑</span>';
+    html += '<span class="a3-act" onclick="event.stopPropagation();a3MoveDown(\'' + n.id + '\');return false" title="Move down">↓</span>';
+    html += '</div></td>';
+    html += '</tr>';
+    if (n.children && n.children.length > 0) {
+      html += a3RenderRows(n.children, depth + 1);
+    }
+  }
+  return html;
+}
+
+function a3SetFilter(v) { a3Filter = v; render(); }
+function a3Edit(id) { a3Editing = id; render(); }
+function a3EditCancel() { a3Editing = null; render(); }
+function a3EditSave(id) {
+  const n = findNode(id);
+  if (!n) return;
+  const nameEl = document.getElementById('a3EditName');
+  const typeEl = document.getElementById('a3EditType');
+  const statusEl = document.getElementById('a3EditStatus');
+  const notesEl = document.getElementById('a3EditNotes');
+  const mnemonicEl = document.getElementById('a3EditMnemonic');
+  if (nameEl) n.name = nameEl.value;
+  if (typeEl) n.type = typeEl.value;
+  if (statusEl) n.status = statusEl.value;
+  if (notesEl) n.notes = notesEl.value;
+  if (mnemonicEl) n.mnemonic = mnemonicEl.value;
+  a3Editing = null;
+  render();
+}
+function a3AddRow() {
+  const id = genId();
+  TREE.push({ id, name: 'New Item', type: 'lesson', status: 'locked', notes: '', mnemonic: '', quiz: 0, coding: 0, flashcards: 0 });
+  a3Editing = id;
+  render();
+}
+function a3AddChild(parentId) {
+  const p = findNode(parentId);
+  if (!p) return;
+  if (!p.children) p.children = [];
+  const id = genId();
+  p.children.push({ id, name: 'New Child', type: 'lesson', status: 'locked', notes: '', mnemonic: '', quiz: 0, coding: 0, flashcards: 0 });
+  a3Editing = id;
+  render();
+}
+function a3RowDelete(id) {
+  if (!confirm('Delete this item?')) return;
+  const p = findParent(id);
+  if (p) { p.children = p.children.filter(c => c.id !== id); }
+  else { TREE = TREE.filter(c => c.id !== id); }
+  a3Editing = null;
+  render();
+}
+function a3MoveUp(id) {
+  const p = findParent(id);
+  const list = p ? p.children : TREE;
+  const idx = list.findIndex(c => c.id === id);
+  if (idx > 0) { const tmp = list[idx-1]; list[idx-1] = list[idx]; list[idx] = tmp; }
+  render();
+}
+function a3MoveDown(id) {
+  const p = findParent(id);
+  const list = p ? p.children : TREE;
+  const idx = list.findIndex(c => c.id === id);
+  if (idx < list.length - 1) { const tmp = list[idx+1]; list[idx+1] = list[idx]; list[idx] = tmp; }
+  render();
+}
+function a3ExportTable() { alert('Export CSV/JSON (simulated)'); }
+
+// =====================================================================
+// MAIN RENDER
+// =====================================================================
+function render() {
+  const content = document.getElementById('approachContent');
+  if (activeApproach === 'a1') content.innerHTML = renderA1();
+  else if (activeApproach === 'a2') content.innerHTML = renderA2();
+  else if (activeApproach === 'a3') content.innerHTML = renderA3();
+  renderSwitcher();
+  document.getElementById('statusLabel').textContent = APPROACHES.find(a => a.id === activeApproach).desc;
+}
+
+function renderSwitcher() {
+  const bar = document.getElementById('protoSwitcher');
+  const keys = APPROACHES;
+  bar.innerHTML = `
+    <span class="ps-arrow" onclick="cycleApproach(-1)">◀</span>
+    <span class="ps-dots">${keys.map(k => `<span class="ps-dot${k.id === activeApproach ? ' active' : ''}"></span>`).join('')}</span>
+    <span class="ps-label">${keys.find(k => k.id === activeApproach).label}</span>
+    <span class="ps-arrow" onclick="cycleApproach(1)">▶</span>
+    <span class="ps-note">←/→</span>`;
+}
+
+window.cycleApproach = function(dir) {
+  const keys = APPROACHES;
+  const idx = keys.findIndex(k => k.id === activeApproach);
+  const next = keys[(idx + dir + keys.length) % keys.length].id;
+  setApproach(next);
+};
+
+window.a1Select = a1Select;
+window.a1Toggle = a1Toggle;
+window.a1AddCourse = a1AddCourse;
+window.a1AddChild = a1AddChild;
+window.a1Delete = a1Delete;
+window.a1UpdateField = a1UpdateField;
+window.a1AddQuiz = a1AddQuiz;
+window.a1AddFlashcard = a1AddFlashcard;
+window.a2GoTo = a2GoTo;
+window.a2AddLesson = a2AddLesson;
+window.a2AddQuizQ = a2AddQuizQ;
+window.a2AddFlashcard = a2AddFlashcard;
+window.a2Save = a2Save;
+window.a2Import = a2Import;
+window.a2Export = a2Export;
+window.a3SetFilter = a3SetFilter;
+window.a3Edit = a3Edit;
+window.a3EditCancel = a3EditCancel;
+window.a3EditSave = a3EditSave;
+window.a3AddRow = a3AddRow;
+window.a3AddChild = a3AddChild;
+window.a3RowDelete = a3RowDelete;
+window.a3MoveUp = a3MoveUp;
+window.a3MoveDown = a3MoveDown;
+window.a3ExportTable = a3ExportTable;
+
+// Keyboard
+document.addEventListener('keydown', (e) => {
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable) return;
+  if (e.key === 'ArrowLeft') cycleApproach(-1);
+  if (e.key === 'ArrowRight') cycleApproach(1);
+});
+
+// Init
+activeApproach = getApproach();
+render();
+</script>
+</body>
+</html>

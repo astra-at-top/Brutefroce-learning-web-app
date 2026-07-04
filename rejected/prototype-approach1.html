@@ -1,0 +1,830 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BruteForce Learning — Approach 1 (Monolithic Tabs)</title>
+<style>
+:root {
+  --bg: #0d0d0f; --surface: #111318; --surface-alt: #161820;
+  --border: #2a2d3a; --border-dim: #1e2130;
+  --text: #c8ccd8; --text-muted: #5a5f72; --text-dim: #3f4252;
+  --purple: #9d7dea; --cyan: #4ec9b0; --yellow: #e5c07b;
+  --red: #e06c75; --green: #98c379; --blue: #61afef;
+  --font-mono: "JetBrains Mono","Fira Code","Cascadia Code","Hack","Courier New",monospace;
+}
+*::-webkit-scrollbar { display: none; }
+* { scrollbar-width: none; -ms-overflow-style: none; }
+html { font-size: clamp(12px, 1.6vh, 28px); }
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--text);
+  font-family: var(--font-mono); font-size: 1rem; line-height: 1.5;
+  height: 100vh; overflow: hidden;
+  display: flex; flex-direction: column;
+}
+#app { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+#app.layout-wide { max-width: none; }
+#app.layout-narrow { max-width: min(86rem, 1100px); margin: 0 auto; }
+
+.title-bar {
+  background: #1a1d26; border-bottom: 1px solid var(--border);
+  padding: 0.55em 1em; display: flex; align-items: center; justify-content: center;
+  font-size: 0.95rem; color: var(--text-muted); user-select: none; flex-shrink: 0;
+  position: relative;
+}
+.title-bar .tb-center { margin: 0 auto; }
+.title-bar .tb-toggle {
+  position: absolute; right: 1em; top: 50%; transform: translateY(-50%);
+  cursor: pointer; font-size: 0.8rem; letter-spacing: 0.08em;
+  background: var(--purple); color: #fff; border: none; padding: 0.35em 0.7em;
+  font-family: var(--font-mono); text-transform: uppercase; font-weight: bold; line-height: 1;
+}
+
+.header-bar {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 0.5em 1.2em; border: 1px solid var(--purple);
+  margin: 0.7em 1em 0; flex-shrink: 0;
+}
+.h-l { color: var(--text-muted); font-size: 0.95rem; }
+.h-y { color: var(--yellow); font-weight: bold; }
+.h-g { color: var(--green); }
+.h-p { color: var(--purple); font-weight: bold; }
+.h-s { color: var(--text-dim); }
+.h-stat { display: flex; align-items: baseline; gap: 0.3em; font-size: 0.95rem; }
+
+.main-area {
+  flex: 1; display: flex; flex-direction: column;
+  padding: 0.5em 1em; gap: 0.8em; overflow-y: auto; min-height: 0;
+}
+
+.split { display: flex; gap: 0.8em; flex: 1; min-height: 0; }
+.tree-panel { flex: 1; display: flex; flex-direction: column; min-width: 0; overflow-y: auto; }
+.content-panel { flex: 1.5; display: flex; flex-direction: column; min-width: 0; }
+
+.panel {
+  border: 1px solid var(--border); position: relative;
+  padding: 0.8em; display: flex; flex-direction: column;
+}
+.panel-title {
+  position: absolute; top: -0.9em; left: 0.8em; background: var(--bg);
+  padding: 0 0.6em; color: var(--purple); font-weight: bold;
+  font-size: 0.9rem; letter-spacing: 0.08em; text-transform: uppercase; line-height: 1.3;
+}
+.panel-body { flex: 1; min-height: 0; overflow-y: auto; padding: 0.2em 0; }
+
+.tree-list { list-style: none; padding: 0.2em 0; }
+.tree-item { user-select: none; }
+.tree-item-content {
+  display: flex; align-items: center; gap: 0.4em;
+  padding: 0.2em 0.3em; cursor: pointer; font-size: 0.9rem;
+  border-left: 2px solid transparent;
+}
+.tree-item-content:hover { background: #1a1d2e; }
+.tree-item-content.selected { background: #2a1f5a; border-left-color: var(--purple); }
+.tree-item-content .ti-icon { width: 1.2em; text-align: center; flex-shrink: 0; }
+.tree-item-content .ti-name { color: var(--text); }
+.tree-item-content .ti-expand { color: var(--text-dim); width: 1em; cursor: pointer; flex-shrink: 0; }
+.tree-children { padding-left: 1.2em; }
+.tree-leaf .ti-icon { font-size: 0.85rem; }
+
+.si-locked { color: var(--text-dim); }
+.si-available { color: var(--text-muted); }
+.si-progress { color: var(--yellow); }
+.si-done { color: var(--green); }
+
+/* ===== Content Tabs ===== */
+.content-tabs {
+  display: flex; gap: 0; border-bottom: 1px solid var(--border-dim);
+  flex-shrink: 0; margin-bottom: 0.5em;
+}
+.content-tab {
+  padding: 0.35em 1em; font-size: 0.9rem; color: var(--text-muted);
+  cursor: pointer; user-select: none; text-transform: uppercase;
+  letter-spacing: 0.06em; border-bottom: 2px solid transparent;
+}
+.content-tab.active { color: var(--purple); border-bottom-color: var(--purple); font-weight: bold; }
+.content-tab:hover { color: var(--text); background: #1a1d2e; }
+.content-tab .ct-count {
+  font-size: 0.7rem; color: var(--text-dim); margin-left: 0.3em;
+}
+
+/* ===== Quiz ===== */
+.quiz-option {
+  display: flex; align-items: center; gap: 0.4em; padding: 0.4em 0.5em;
+  cursor: pointer; font-size: 0.9rem; border: 1px solid var(--border-dim);
+  margin-bottom: 0.3em;
+}
+.quiz-option:hover { background: #1a1d2e; border-color: var(--border); }
+.quiz-option .qo-letter {
+  color: var(--text-muted); font-weight: bold; min-width: 1.5em;
+}
+.quiz-option .qo-text { color: var(--text); }
+.quiz-option.correct { border-color: var(--green); background: #0f2a1a; }
+.quiz-option.correct .qo-letter { color: var(--green); }
+.quiz-option.wrong { border-color: var(--red); background: #2a0f0f; }
+.quiz-option.wrong .qo-letter { color: var(--red); }
+.quiz-q { font-size: 0.95rem; color: var(--text); margin-bottom: 0.5em; font-weight: bold; }
+.quiz-counter { font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.3em; }
+.quiz-result { font-size: 0.85rem; margin-top: 0.5em; }
+.quiz-result.pass { color: var(--green); }
+.quiz-result.fail { color: var(--red); }
+
+/* ===== Coding ===== */
+.code-editor {
+  background: var(--surface); border: 1px solid var(--border-dim);
+  padding: 0.6em; font-size: 0.85rem; font-family: var(--font-mono);
+  min-height: 6em; white-space: pre-wrap; color: var(--text-dim);
+  margin-bottom: 0.5em;
+}
+.code-editor .ce-prompt { color: var(--purple); }
+.code-editor .ce-keyword { color: var(--cyan); }
+.code-editor .ce-string { color: var(--yellow); }
+.code-editor .ce-comment { color: var(--text-dim); }
+.code-run {
+  background: var(--purple); color: #fff; border: none;
+  font-family: var(--font-mono); font-size: 0.8rem; text-transform: uppercase;
+  letter-spacing: 0.06em; padding: 0.3em 0.7em; cursor: pointer; font-weight: bold;
+}
+.code-run:hover { opacity: 0.85; }
+.code-output {
+  background: var(--surface-alt); border: 1px solid var(--border-dim);
+  padding: 0.5em; font-size: 0.85rem; margin-top: 0.4em; min-height: 2em;
+  color: var(--text-muted); white-space: pre-wrap;
+}
+
+/* ===== Flashcards ===== */
+.flashcard {
+  border: 2px solid var(--border); padding: 2em 1.5em;
+  min-height: 8em; cursor: pointer; display: flex;
+  align-items: center; justify-content: center; text-align: center;
+  font-size: 1.1rem; user-select: none; background: var(--surface);
+  transition: border-color 0.2s;
+}
+.flashcard:hover { border-color: var(--purple); }
+.flashcard .fc-front { color: var(--text); }
+.flashcard .fc-back { color: var(--cyan); }
+.flashcard .fc-hint { font-size: 0.8rem; color: var(--text-dim); margin-top: 0.5em; }
+.flashcard.flipped { border-color: var(--cyan); }
+.fc-counter {
+  font-size: 0.8rem; color: var(--text-muted); text-align: center;
+  margin-top: 0.5em;
+}
+.fc-flip-hint {
+  font-size: 0.75rem; color: var(--text-dim); text-align: center;
+  margin-top: 0.3em;
+}
+.fc-nav {
+  display: flex; gap: 0.5em; justify-content: center; margin-top: 0.8em;
+}
+.fc-btn {
+  background: var(--surface-alt); color: var(--text); border: 1px solid var(--border-dim);
+  font-family: var(--font-mono); font-size: 0.8rem; text-transform: uppercase;
+  letter-spacing: 0.06em; padding: 0.3em 0.7em; cursor: pointer;
+}
+.fc-btn:hover { border-color: var(--purple); color: var(--purple); }
+
+.keybind-bar {
+  border-top: 1px solid var(--border); padding: 0.45em 1em;
+  font-size: 0.85rem; display: flex; gap: 0.7em; flex-wrap: wrap; flex-shrink: 0;
+}
+.kb-key { color: var(--text); font-weight: bold; }
+.kb-action { color: var(--text-muted); }
+.kb-pos { color: var(--text-muted); margin-right: auto; }
+
+.status-bar {
+  border-top: 1px solid var(--border); padding: 0.3em 1em;
+  font-size: 0.85rem; color: var(--text-dim); display: flex; align-items: center; gap: 0.3em;
+  flex-shrink: 0;
+}
+.status-bar .prefix { color: var(--text-muted); }
+
+@keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0; } }
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="title-bar">
+    <span class="tb-center">BruteForce Learning — <span style="color:var(--purple);font-weight:bold">Approach 1: Monolithic Tabs</span></span>
+    <button class="tb-toggle" id="widthToggle">[––]</button>
+  </div>
+
+  <div class="header-bar">
+    <div class="h-stat"><span class="h-l">course</span> <span class="h-y">React</span></div>
+    <div class="h-stat"><span class="h-l">lessons</span> <span class="h-g">6</span><span class="h-s">/</span><span class="h-l">12</span></div>
+    <div class="h-stat"><span class="h-l">xp today</span> <span class="h-p">120</span><span class="h-s">/</span><span class="h-l">200</span></div>
+    <div class="h-stat"><span class="h-l">streak</span> <span class="h-y">10d</span></div>
+  </div>
+
+  <div class="main-area" id="mainArea">
+    <div class="split" id="splitArea" style="flex:1;min-height:0"></div>
+  </div>
+
+  <div class="keybind-bar" id="keybindBar">
+    <span class="kb-pos">—</span>
+    <span class="kb-key">j</span><span class="kb-action">/</span><span class="kb-key">k</span><span class="kb-action"> navigate</span>
+    <span class="kb-key">h</span><span class="kb-action">/</span><span class="kb-key">l</span><span class="kb-action"> switch tab</span>
+  </div>
+  <div class="status-bar" id="statusBar">
+    <span class="prefix">›</span> PROTOTYPE — Approach 1 (monolithic)
+  </div>
+</div>
+
+<script>
+// ===== Data =====
+const TREE = [
+  { id: 'react', name: 'React', expanded: true,
+    children: [
+      { id: 'js-basics', name: 'JS Basics', status: 'in_progress', progress: 65, expanded: true, note: 'JavaScript fundamentals',
+        children: [
+          { id: 'vars-types', name: 'Variables & Types', type: 'lesson', status: 'done', progress: 100 },
+          { id: 'functions-scope', name: 'Functions & Scope', type: 'lesson', status: 'done', progress: 100 },
+          { id: 'arrays-objects', name: 'Arrays & Objects', type: 'lesson', status: 'in_progress', progress: 60 },
+          { id: 'closures', name: 'Closures', type: 'lesson', status: 'available', progress: 0 },
+        ] },
+      { id: 'usestate', name: 'useState', status: 'locked', progress: 0, note: 'React state — locked until JS Basics 80%',
+        children: [
+          { id: 'what-is-state', name: 'What is state?', type: 'lesson', status: 'locked', progress: 0 },
+          { id: 'counter', name: 'Counter exercise', type: 'coding', status: 'locked', progress: 0 },
+        ] },
+    ] },
+  { id: 'js', name: 'JavaScript', status: 'available', progress: 40, expanded: false, note: 'Core JS concepts',
+    children: [
+      { id: 'js-vars', name: 'Variables & Types', type: 'lesson', status: 'done', progress: 100 },
+      { id: 'js-funcs', name: 'Functions & Scope', type: 'lesson', status: 'done', progress: 100 },
+    ] },
+];
+
+const STAT_ICONS = { locked: '◌', available: '○', in_progress: '▶', done: '●' };
+const STAT_CLS = { locked: 'si-locked', available: 'si-available', in_progress: 'si-progress', done: 'si-done' };
+
+// ===== Quiz Data =====
+const QUIZ_DATA = {
+  'vars-types': [
+    { q: 'Which keyword is block-scoped?', opts: ['let', 'const', 'var'], correct: [0, 1] },
+    { q: 'Which JS type is NOT primitive?', opts: ['string', 'number', 'object'], correct: [2] },
+    { q: 'What does typeof null return?', opts: ['null', 'undefined', 'object'], correct: [2] },
+  ],
+  'functions-scope': [
+    { q: 'Arrow functions inherit `this` from:', opts: ['their own scope', 'parent scope', 'global'], correct: [1] },
+    { q: 'What does `let` allow?', opts: ['reassignment', 'redeclaration', 'both'], correct: [0] },
+    { q: 'What is a closure?', opts: ['a runtime error', 'function that remembers outer scope', 'a built-in method'], correct: [1] },
+  ],
+  'arrays-objects': [
+    { q: 'Which method adds an element to the end of an array?', opts: ['push()', 'pop()', 'shift()'], correct: [0] },
+    { q: 'How do you access object property `name`?', opts: ['obj(name)', 'obj.name', 'obj->name'], correct: [1] },
+  ],
+  'closures': [
+    { q: 'A closure has access to:', opts: ['local scope only', 'outer function scope + global', 'global only'], correct: [1] },
+  ],
+  'what-is-state': [
+    { q: 'Which React hook adds state?', opts: ['useEffect', 'useState', 'useContext'], correct: [1] },
+  ],
+  'counter': [
+    { q: 'What pattern updates state based on previous?', opts: ['setCount(count+1)', 'setCount(prev => prev+1)', 'both work'], correct: [2] },
+  ],
+  'js-vars': [
+    { q: 'Difference between const and let?', opts: ['const cannot be reassigned', 'let cannot be reassigned', 'no difference'], correct: [0] },
+  ],
+  'js-funcs': [
+    { q: 'What does IIFE stand for?', opts: ['Immediately Invoked Function Expression', 'Inline Function Execution', 'Internal Function Error'], correct: [0] },
+  ],
+};
+
+// ===== Flashcard Data =====
+const FLASHCARD_DATA = {
+  'vars-types': [
+    { front: 'What keyword declares a block-scoped variable?', back: 'let / const' },
+    { front: 'How many primitive types in JS?', back: '7 (string, number, boolean, null, undefined, symbol, bigint)' },
+    { front: 'What does typeof [] return?', back: '"object"' },
+  ],
+  'functions-scope': [
+    { front: 'What is a closure?', back: 'A function that remembers its outer scope even after the outer function returns' },
+    { front: 'Difference between let and var?', back: 'let is block-scoped, var is function-scoped' },
+    { front: 'What is hoisting?', back: 'Variable/function declarations are moved to the top of their scope before execution' },
+  ],
+  'arrays-objects': [
+    { front: 'What does .push() do?', back: 'Adds element(s) to the end of an array and returns new length' },
+    { front: 'How to check if a key exists in an object?', back: '"key" in obj  or  obj.hasOwnProperty("key")' },
+  ],
+  'closures': [
+    { front: 'What 3 scopes does a closure access?', back: 'Local, outer function, and global scope' },
+  ],
+  'what-is-state': [
+    { front: 'What is state in React?', back: 'Data that changes over time and triggers re-render when updated' },
+    { front: 'What does useState return?', back: 'An array: [currentValue, setterFunction]' },
+  ],
+  'counter': [
+    { front: 'What is the correct way to update state based on previous?', back: 'setCount(prev => prev + 1) — using the functional updater' },
+  ],
+  'js-vars': [
+    { front: 'Can you reassign a const variable?', back: 'No — const cannot be reassigned, but object properties can be mutated' },
+  ],
+  'js-funcs': [
+    { front: 'What is an arrow function?', back: 'A shorter function syntax: () => {}, inherits this from parent scope' },
+  ],
+};
+
+// ===== Coding Exercise Data =====
+const CODE_DATA = {
+  'vars-types': {
+    prompt: 'Declare a variable `name` with value "Alice". Then reassign it to "Bob".',
+    starter: '// declare name\n// reassign name',
+    solution: 'let name = "Alice";\nname = "Bob";',
+  },
+  'functions-scope': {
+    prompt: 'Write an arrow function `add` that returns the sum of two numbers.',
+    starter: '// write your arrow function',
+    solution: 'const add = (a, b) => a + b;',
+  },
+  'arrays-objects': {
+    prompt: 'Create an array `nums` with values 1, 2, 3. Add 4 to the end.',
+    starter: '// create array\n// add 4',
+    solution: 'let nums = [1, 2, 3];\nnums.push(4);',
+  },
+  'closures': {
+    prompt: 'Write a function `makeCounter` that returns a function counting up from 0.',
+    starter: '// write makeCounter',
+    solution: 'function makeCounter() {\n  let count = 0;\n  return () => ++count;\n}',
+  },
+  'what-is-state': {
+    prompt: 'Write a React useState call for a `count` variable starting at 0.',
+    starter: '// import and call useState',
+    solution: 'const [count, setCount] = useState(0);',
+  },
+  'counter': {
+    prompt: 'Write a button onClick handler that increments count by 1 using functional update.',
+    starter: '// onClick handler',
+    solution: 'onClick={() => setCount(prev => prev + 1)}',
+  },
+  'js-vars': [
+    { prompt: 'Declare a const PI with value 3.14.', starter: 'const PI = 3.14;', solution: 'const PI = 3.14;' },
+  ],
+  'js-funcs': [
+    { prompt: 'Write an arrow function `double` that returns a number times 2.', starter: 'const double = ', solution: 'const double = x => x * 2;' },
+  ],
+};
+
+// Normalize code data
+for (const k in CODE_DATA) {
+  if (!Array.isArray(CODE_DATA[k])) CODE_DATA[k] = [CODE_DATA[k]];
+}
+
+// ===== State =====
+let selectedLeaf = 'vars-types';
+let activeTab = 'learn';
+let quizStates = {};
+let flashcardStates = {};
+
+// ===== Helpers =====
+function findLeaf(id, nodes) {
+  for (const n of nodes) {
+    if (n.id === id) return n;
+    if (n.children) { const f = findLeaf(id, n.children); if (f) return f; }
+  }
+  return null;
+}
+
+function getAllLeafIds(nodes) {
+  let ids = [];
+  for (const n of nodes) {
+    if (n.children) ids = ids.concat(getAllLeafIds(n.children));
+    else ids.push(n.id);
+  }
+  return ids;
+}
+const ALL_LEAF_IDS = getAllLeafIds(TREE);
+
+function icon(n) {
+  if (n.children) {
+    if (n.status === 'done') return '<span class="si-done">●</span>';
+    if (n.status === 'in_progress') return '<span class="si-progress">▶</span>';
+    return '<span class="si-locked">◌</span>';
+  }
+  return `<span class="${STAT_CLS[n.status]}">${STAT_ICONS[n.status]}</span>`;
+}
+
+function getTabCount(tab) {
+  const leaf = findLeaf(selectedLeaf, TREE);
+  if (!leaf) return 0;
+  if (tab === 'quiz') return (QUIZ_DATA[leaf.id] || []).length;
+  if (tab === 'code') return (CODE_DATA[leaf.id] || []).length;
+  if (tab === 'flashcards') return (FLASHCARD_DATA[leaf.id] || []).length;
+  return 0;
+}
+
+// ===== Tree Renderer =====
+function renderTree(nodes, depth) {
+  let html = '<ul class="tree-list">';
+  for (const n of nodes) {
+    const isSelected = !n.children && n.id === selectedLeaf;
+    const hasChildren = n.children && n.children.length > 0;
+    html += '<li class="tree-item' + (!hasChildren ? ' tree-leaf' : '') + '">';
+    html += '<div class="tree-item-content' + (isSelected ? ' selected' : '') + '" data-id="' + n.id + '">';
+    if (hasChildren) {
+      html += '<span class="ti-expand" data-toggle="' + n.id + '">' + (n.expanded ? '▼' : '▶') + '</span>';
+    } else {
+      html += '<span class="ti-expand" style="visibility:hidden">▶</span>';
+    }
+    html += '<span class="ti-icon">' + icon(n) + '</span>';
+    html += '<span class="ti-name">' + n.name + '</span>';
+    if (!hasChildren && n.type) {
+      html += '<span style="margin-left:auto;font-size:0.75rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.05em">' + n.type + '</span>';
+    }
+    html += '</div>';
+    if (hasChildren && n.expanded) {
+      html += '<div class="tree-children">' + renderTree(n.children, depth + 1) + '</div>';
+    }
+    html += '</li>';
+  }
+  html += '</ul>';
+  return html;
+}
+
+// ===== Tab Content Renderers =====
+function renderLearnTab(leaf) {
+  const NOTES = {
+    'vars-types': 'Variables store data. JavaScript has <span style="color:var(--cyan)">let</span>, <span style="color:var(--cyan)">const</span>, and <span style="color:var(--text-dim)">var</span>. Types: <span style="color:var(--yellow)">string</span>, <span style="color:var(--yellow)">number</span>, <span style="color:var(--yellow)">boolean</span>, <span style="color:var(--yellow)">null</span>, <span style="color:var(--yellow)">undefined</span>, <span style="color:var(--yellow)">object</span>.',
+    'functions-scope': 'Functions are reusable blocks of code. Declare with <span style="color:var(--cyan)">function</span> keyword or arrow syntax. Scope determines where variables are accessible — global vs local vs block scope.',
+    'arrays-objects': 'Arrays store ordered collections. Objects store key-value pairs. Both are reference types in JavaScript.',
+    'closures': 'A closure is a function that remembers its outer variables even after the outer function returns.',
+    'what-is-state': 'State is data that changes over time. In React, <span style="color:var(--cyan)">useState</span> lets you add state to function components.',
+    'counter': 'Build a counter using React state. Use the functional updater pattern to update state based on previous value.',
+    'js-vars': 'Variables are containers for data. Use <span style="color:var(--cyan)">let</span> for reassignable values, <span style="color:var(--cyan)">const</span> for constants.',
+    'js-funcs': 'Functions are first-class citizens in JavaScript. They can be assigned, passed, and returned.',
+  };
+  const MNEMONICS = {
+    'vars-types': '🧠 <span style="color:var(--text-muted)">"SNOB NUN" — String, Number, Object, Boolean, Null, Undefined, aNd more.</span>',
+    'functions-scope': '🧠 <span style="color:var(--text-muted)">"GLB" — Global, Local, Block scope.</span>',
+    'closures': '🧠 <span style="color:var(--text-muted)">"Backpack" — inner function carries a backpack of outer scope.</span>',
+    'what-is-state': '🧠 <span style="color:var(--text-muted)">Think of state as a sticky note React watches for changes.</span>',
+  };
+  const notes = NOTES[leaf.id] || 'Notes content coming soon.';
+  const mnemonic = MNEMONICS[leaf.id] || '';
+
+  let html = '<div class="content-section" style="padding:0.3em 0">';
+  html += '<div style="color:var(--text-muted);font-size:0.8rem;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:0.3em">Notes</div>';
+  html += '<div style="font-size:0.9rem;line-height:1.6">' + notes + '</div>';
+  if (mnemonic) html += '<div style="margin-top:0.5em;font-size:0.85rem">' + mnemonic + '</div>';
+  html += '</div>';
+  html += '<div class="content-section" style="padding:0.3em 0;border-top:1px solid var(--border-dim);margin-top:0.3em">';
+  html += '<div style="color:var(--text-muted);font-size:0.8rem;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:0.3em">Review Schedule</div>';
+  html += '<div style="font-size:0.85rem;color:var(--text-muted)">Next review: <span style="color:var(--yellow)">in 3 days</span> · SM-2 ease: <span style="color:var(--cyan)">2.5</span></div>';
+  html += '</div>';
+  return html;
+}
+
+function renderQuizTab(leaf) {
+  const questions = QUIZ_DATA[leaf.id];
+  if (!questions || questions.length === 0) {
+    return '<div style="color:var(--text-muted);font-size:0.9rem;padding:1em">No quiz questions for this lesson yet.</div>';
+  }
+
+  const stateKey = leaf.id;
+  if (!quizStates[stateKey]) {
+    quizStates[stateKey] = { current: 0, answered: {}, showResult: false, score: 0 };
+  }
+  const qs = quizStates[stateKey];
+  const q = questions[qs.current];
+
+  let html = '<div class="quiz-counter">Question ' + (qs.current + 1) + ' of ' + questions.length + '</div>';
+  html += '<div class="quiz-q">' + q.q + '</div>';
+
+  const letters = ['A', 'B', 'C', 'D'];
+  for (let i = 0; i < q.opts.length; i++) {
+    let cls = 'quiz-option';
+    if (qs.answered[qs.current] !== undefined) {
+      const selected = qs.answered[qs.current];
+      if (q.correct.includes(i)) cls += ' correct';
+      else if (selected === i) cls += ' wrong';
+    }
+    html += '<div class="' + cls + '" data-qi="' + i + '">';
+    html += '<span class="qo-letter">' + letters[i] + '</span>';
+    html += '<span class="qo-text">' + q.opts[i] + '</span>';
+    html += '</div>';
+  }
+
+  if (qs.answered[qs.current] === undefined) {
+    html += '<div style="margin-top:0.5em;font-size:0.8rem;color:var(--text-dim)">Click an option to answer</div>';
+  } else {
+    const isCorrect = q.correct.includes(qs.answered[qs.current]);
+    html += '<div class="quiz-result ' + (isCorrect ? 'pass' : 'fail') + '">' + (isCorrect ? '✓ Correct!' : '✗ Wrong. Correct: ' + q.correct.map(i => q.opts[i]).join(', ')) + '</div>';
+    if (qs.current < questions.length - 1) {
+      html += '<button class="code-run" id="quizNextBtn" style="margin-top:0.5em">Next →</button>';
+    } else {
+      html += '<button class="code-run" id="quizDoneBtn" style="margin-top:0.5em">Show Score</button>';
+    }
+  }
+
+  if (qs.showResult) {
+    const total = questions.length;
+    const correct = questions.filter((q, i) => q.correct.includes(qs.answered[i])).length;
+    html += '<div style="margin-top:1em;padding:0.8em;border:1px solid var(--border);text-align:center">';
+    html += '<div style="font-size:1.5rem;font-weight:bold;color:' + (correct/total >= 0.7 ? 'var(--green)' : 'var(--red)') + '">' + correct + '/' + total + '</div>';
+    html += '<div style="color:var(--text-muted);font-size:0.85rem">' + (correct/total >= 0.7 ? '🎉 Passed!' : 'Keep practicing!') + '</div>';
+    html += '<button class="code-run" id="quizRetryBtn" style="margin-top:0.5em">Retry</button>';
+    html += '</div>';
+  }
+
+  return html;
+}
+
+function renderCodeTab(leaf) {
+  const exercises = CODE_DATA[leaf.id];
+  if (!exercises || exercises.length === 0) {
+    return '<div style="color:var(--text-muted);font-size:0.9rem;padding:1em">No coding exercises for this lesson yet.</div>';
+  }
+
+  const stateKey = leaf.id;
+  if (!quizStates[stateKey + '_code']) {
+    quizStates[stateKey + '_code'] = { current: 0, output: '' };
+  }
+  const cs = quizStates[stateKey + '_code'];
+  const ex = exercises[cs.current];
+
+  let html = '<div style="font-size:0.8rem;color:var(--text-muted);margin-bottom:0.3em">Exercise ' + (cs.current + 1) + ' of ' + exercises.length + '</div>';
+  html += '<div style="font-weight:bold;font-size:0.95rem;margin-bottom:0.5em">' + ex.prompt + '</div>';
+  html += '<div class="code-editor" contenteditable="true" id="codeEditor">' + ex.starter + '\n<span class="cursor-blink" style="animation:blink 1s step-end infinite">_</span></div>';
+  html += '<button class="code-run" id="codeRunBtn">▶ Run</button>';
+  html += '<button class="code-run" id="codeRevealBtn" style="background:var(--surface-alt);color:var(--text-muted);margin-left:0.3em">Reveal Solution</button>';
+
+  if (cs.output) {
+    html += '<div class="code-output">' + cs.output + '</div>';
+  }
+
+  if (cs.revealed) {
+    html += '<div class="code-output" style="border-color:var(--purple);color:var(--cyan)">// Solution:<br>' + ex.solution.replace(/\n/g, '<br>') + '</div>';
+  }
+
+  return html;
+}
+
+function renderFlashcardsTab(leaf) {
+  const cards = FLASHCARD_DATA[leaf.id];
+  if (!cards || cards.length === 0) {
+    return '<div style="color:var(--text-muted);font-size:0.9rem;padding:1em">No flashcards for this lesson yet.</div>';
+  }
+
+  const stateKey = leaf.id;
+  if (!flashcardStates[stateKey]) {
+    flashcardStates[stateKey] = { current: 0, flipped: false };
+  }
+  const fs = flashcardStates[stateKey];
+  const card = cards[fs.current];
+
+  let html = '<div class="fc-counter">Card ' + (fs.current + 1) + ' of ' + cards.length + '</div>';
+  html += '<div class="flashcard' + (fs.flipped ? ' flipped' : '') + '" id="flashcard">';
+  if (!fs.flipped) {
+    html += '<div class="fc-front">' + card.front + '</div>';
+    html += '<div class="fc-flip-hint" style="margin-top:0.5em">[ click to reveal ]</div>';
+  } else {
+    html += '<div class="fc-back">' + card.back + '</div>';
+  }
+  html += '</div>';
+
+  html += '<div class="fc-nav">';
+  if (fs.current > 0) html += '<button class="fc-btn" id="fcPrev">◀ Prev</button>';
+  else html += '<button class="fc-btn" style="visibility:hidden">◀ Prev</button>';
+  if (fs.current < cards.length - 1) html += '<button class="fc-btn" id="fcNext">Next ▶</button>';
+  else html += '<button class="fc-btn" style="visibility:hidden">Next ▶</button>';
+  html += '</div>';
+
+  return html;
+}
+
+// ===== Main Render =====
+function render() {
+  const sa = document.getElementById('splitArea');
+  const leaf = findLeaf(selectedLeaf, TREE);
+
+  let html = '';
+
+  // Tree panel
+  html += '<div class="panel tree-panel" style="flex:0 0 30%;min-width:14em"><div class="panel-title">Skill Tree</div><div class="panel-body">';
+  html += renderTree(TREE, 0);
+  html += '</div></div>';
+
+  // Content panel
+  html += '<div class="panel content-panel">';
+  const tabs = [
+    { id: 'learn', label: 'Learn' },
+    { id: 'quiz', label: 'Quiz', count: getTabCount('quiz') },
+    { id: 'code', label: 'Code', count: getTabCount('code') },
+    { id: 'flashcards', label: 'Flashcards', count: getTabCount('flashcards') },
+  ];
+
+  html += '<div class="panel-title">' + (leaf ? leaf.name : 'Select a lesson') + ' <span style="color:var(--text-muted);font-style:italic;font-weight:normal;text-transform:none;letter-spacing:0;font-size:0.85rem">— ' + (leaf ? leaf.type : '') + '</span></div>';
+  html += '<div class="content-tabs">';
+  for (const t of tabs) {
+    const active = t.id === activeTab ? ' active' : '';
+    html += '<div class="content-tab' + active + '" data-tab="' + t.id + '">' + t.label;
+    if (t.count > 0) html += '<span class="ct-count">' + t.count + '</span>';
+    html += '</div>';
+  }
+  html += '</div>';
+
+  html += '<div class="panel-body" id="tabContent">';
+  if (leaf) {
+    if (activeTab === 'learn') html += renderLearnTab(leaf);
+    else if (activeTab === 'quiz') html += renderQuizTab(leaf);
+    else if (activeTab === 'code') html += renderCodeTab(leaf);
+    else if (activeTab === 'flashcards') html += renderFlashcardsTab(leaf);
+  } else {
+    html += '<div style="color:var(--text-muted);padding:1em">Select a lesson from the tree</div>';
+  }
+  html += '</div></div></div>';
+
+  sa.innerHTML = html;
+  updateKeybinds();
+  bindEvents();
+}
+
+function bindEvents() {
+  // Tree click
+  document.querySelectorAll('.tree-item-content').forEach(el => {
+    el.addEventListener('click', (e) => {
+      const id = el.dataset.id;
+      if (e.target.classList.contains('ti-expand')) {
+        const toggleId = e.target.dataset.toggle;
+        const node = findNode(toggleId, TREE);
+        if (node) node.expanded = !node.expanded;
+        render();
+        return;
+      }
+      const leaf = findLeaf(id, TREE);
+      if (leaf) { selectedLeaf = id; render(); }
+    });
+  });
+
+  // Tab click
+  document.querySelectorAll('.content-tab').forEach(el => {
+    el.addEventListener('click', () => {
+      activeTab = el.dataset.tab;
+      render();
+    });
+  });
+
+  // Quiz interactions
+  document.querySelectorAll('.quiz-option').forEach(el => {
+    el.addEventListener('click', () => {
+      const leaf = findLeaf(selectedLeaf, TREE);
+      if (!leaf) return;
+      const stateKey = leaf.id;
+      if (!quizStates[stateKey]) quizStates[stateKey] = { current: 0, answered: {}, showResult: false, score: 0 };
+      const qs = quizStates[stateKey];
+      const q = QUIZ_DATA[leaf.id][qs.current];
+      if (qs.answered[qs.current] !== undefined) return;
+      qs.answered[qs.current] = parseInt(el.dataset.qi);
+      qs.showResult = false;
+      render();
+    });
+  });
+
+  const quizNext = document.getElementById('quizNextBtn');
+  if (quizNext) {
+    quizNext.addEventListener('click', () => {
+      const leaf = findLeaf(selectedLeaf, TREE);
+      if (!leaf) return;
+      quizStates[leaf.id].current++;
+      render();
+    });
+  }
+
+  const quizDone = document.getElementById('quizDoneBtn');
+  if (quizDone) {
+    quizDone.addEventListener('click', () => {
+      const leaf = findLeaf(selectedLeaf, TREE);
+      if (!leaf) return;
+      quizStates[leaf.id].showResult = true;
+      render();
+    });
+  }
+
+  const quizRetry = document.getElementById('quizRetryBtn');
+  if (quizRetry) {
+    quizRetry.addEventListener('click', () => {
+      const leaf = findLeaf(selectedLeaf, TREE);
+      if (!leaf) return;
+      quizStates[leaf.id] = { current: 0, answered: {}, showResult: false, score: 0 };
+      render();
+    });
+  }
+
+  // Code interactions
+  const codeRun = document.getElementById('codeRunBtn');
+  if (codeRun) {
+    codeRun.addEventListener('click', () => {
+      const editor = document.getElementById('codeEditor');
+      const leaf = findLeaf(selectedLeaf, TREE);
+      if (!leaf || !editor) return;
+      const text = editor.textContent.replace(/_$/, '').trim();
+      const exs = CODE_DATA[leaf.id] || [];
+      const cs = quizStates[leaf.id + '_code'] || { current: 0, output: '' };
+      const ex = exs[cs.current];
+      const passing = ex && text.includes(ex.solution.replace(/\n/g, '').trim().substring(0, 10));
+      const output = passing
+        ? '<span style="color:var(--green)">✓ Output: runs successfully!</span>'
+        : '<span style="color:var(--text-dim)">No output — check your code and try again.</span>';
+      if (!quizStates[leaf.id + '_code']) quizStates[leaf.id + '_code'] = { current: 0, output: '' };
+      quizStates[leaf.id + '_code'].output = output;
+      render();
+    });
+  }
+
+  const codeReveal = document.getElementById('codeRevealBtn');
+  if (codeReveal) {
+    codeReveal.addEventListener('click', () => {
+      const leaf = findLeaf(selectedLeaf, TREE);
+      if (!leaf) return;
+      if (!quizStates[leaf.id + '_code']) quizStates[leaf.id + '_code'] = { current: 0, output: '', revealed: false };
+      quizStates[leaf.id + '_code'].revealed = !quizStates[leaf.id + '_code'].revealed;
+      render();
+    });
+  }
+
+  // Flashcard interactions
+  const flashcard = document.getElementById('flashcard');
+  if (flashcard) {
+    flashcard.addEventListener('click', () => {
+      const leaf = findLeaf(selectedLeaf, TREE);
+      if (!leaf) return;
+      if (!flashcardStates[leaf.id]) flashcardStates[leaf.id] = { current: 0, flipped: false };
+      flashcardStates[leaf.id].flipped = !flashcardStates[leaf.id].flipped;
+      render();
+    });
+  }
+
+  const fcNext = document.getElementById('fcNext');
+  if (fcNext) {
+    fcNext.addEventListener('click', () => {
+      const leaf = findLeaf(selectedLeaf, TREE);
+      if (!leaf) return;
+      if (!flashcardStates[leaf.id]) flashcardStates[leaf.id] = { current: 0, flipped: false };
+      flashcardStates[leaf.id].current++;
+      flashcardStates[leaf.id].flipped = false;
+      render();
+    });
+  }
+
+  const fcPrev = document.getElementById('fcPrev');
+  if (fcPrev) {
+    fcPrev.addEventListener('click', () => {
+      const leaf = findLeaf(selectedLeaf, TREE);
+      if (!leaf) return;
+      if (!flashcardStates[leaf.id]) flashcardStates[leaf.id] = { current: 0, flipped: false };
+      flashcardStates[leaf.id].current--;
+      flashcardStates[leaf.id].flipped = false;
+      render();
+    });
+  }
+}
+
+function findNode(id, nodes) {
+  for (const n of nodes) {
+    if (n.id === id) return n;
+    if (n.children) { const f = findNode(id, n.children); if (f) return f; }
+  }
+  return null;
+}
+
+function updateKeybinds() {
+  const kb = document.getElementById('keybindBar');
+  const sb = document.getElementById('statusBar');
+  const leaf = findLeaf(selectedLeaf, TREE);
+  const idx = ALL_LEAF_IDS.indexOf(selectedLeaf);
+  kb.innerHTML = '<span class="kb-pos">' + (idx + 1) + '/' + ALL_LEAF_IDS.length + '</span><span class="kb-key">j</span><span class="kb-action">/</span><span class="kb-key">k</span><span class="kb-action"> navigate</span> <span class="kb-key">h</span><span class="kb-action">/</span><span class="kb-key">l</span><span class="kb-action"> switch tab</span>';
+  sb.innerHTML = '<span class="prefix">›</span> ' + (leaf ? leaf.name : '—') + ' <span style="color:var(--purple);font-weight:bold">[' + activeTab + ']</span> <span style="margin-left:auto;color:var(--text-muted)">PROTOTYPE — Approach 1 (monolithic)</span>';
+}
+
+function init() {
+  const app = document.getElementById('app');
+  const toggle = document.getElementById('widthToggle');
+  let wide = localStorage.getItem('tui-wide') === 'true';
+  function applyWidth(w) {
+    wide = w;
+    app.classList.toggle('layout-wide', wide);
+    app.classList.toggle('layout-narrow', !wide);
+    toggle.textContent = wide ? '[==]' : '[––]';
+    localStorage.setItem('tui-wide', wide);
+  }
+  applyWidth(wide);
+  toggle.addEventListener('click', () => applyWidth(!wide));
+
+  document.addEventListener('keydown', (e) => {
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable) return;
+    const all = ALL_LEAF_IDS;
+    const cur = all.indexOf(selectedLeaf);
+    const tabs = ['learn', 'quiz', 'code', 'flashcards'];
+    const tabIdx = tabs.indexOf(activeTab);
+    if (e.key === 'j' || e.key === 'ArrowDown') { e.preventDefault(); selectedLeaf = all[Math.min(cur + 1, all.length - 1)]; render(); }
+    if (e.key === 'k' || e.key === 'ArrowUp') { e.preventDefault(); selectedLeaf = all[Math.max(cur - 1, 0)]; render(); }
+    if (e.key === 'h' || e.key === 'ArrowLeft') { e.preventDefault(); activeTab = tabs[Math.max(tabIdx - 1, 0)]; render(); }
+    if (e.key === 'l' || e.key === 'ArrowRight') { e.preventDefault(); activeTab = tabs[Math.min(tabIdx + 1, tabs.length - 1)]; render(); }
+  });
+
+  render();
+}
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>

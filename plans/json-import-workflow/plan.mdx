@@ -1,0 +1,154 @@
+# JSON Import/Export — How To Use
+
+## Workflow Overview
+
+```
+                ┌──────────────────────────────────┐
+                │         Admin Tab                 │
+                │  ┌──────────────────────────────┐ │
+                │  │ Content Tree  │ Editor Header │ │
+                │  │               │ [📤 Export]   │ │
+                │  │   Course A    │ [📥 Import]   │ │
+                │  │    Lesson 1   │               │ │
+                │  │    Lesson 2   │  (Wizard)     │ │
+                │  └──────────────────────────────┘ │
+                │  Sync: [📤 Export] [____] [📥]   │
+                └──────────────────────────────────┘
+```
+
+## Workflow 1: Export → Modify → Reimport
+
+Use this when you want to take existing data, modify it with an AI, and bring it back.
+
+```
+┌─────────┐     ┌──────────┐     ┌───────────┐     ┌──────────┐
+│  Admin   │     │  Export  │     │    AI     │     │  Import  │
+│  Tab     │ ──▶ │  Modal   │ ──▶ │  (ChatGPT │ ──▶ │  Modal   │
+│          │     │          │     │  /Claude) │     │          │
+│  Click   │     │  Click   │     │           │     │  Click   │
+│  📤Btn   │     │  "Export"│     │  Modify   │     │ "Import" │
+└─────────┘     └──────────┘     └───────────┘     └──────────┘
+```
+
+### Step-by-step:
+
+**Step 1 — Export current data:**
+1. Go to **Admin** tab
+2. Click **📤 Export JSON** button in the editor header (right side)
+3. A modal opens — click **▶ Export as JSON**
+4. The textarea fills with all courses, lessons, quizzes, coding exercises, and flashcards
+5. Click **📋 Copy** to copy the JSON to clipboard
+
+**Step 2 — Modify with AI:**
+1. Paste the JSON into ChatGPT, Claude, or any AI
+2. Tell the AI what to change — e.g.:
+   - "Add a new lesson about closures to the JavaScript course"
+   - "Update the quiz for vars-types with harder questions"
+   - "Add flashcards to the arrays-objects lesson"
+3. AI returns modified JSON — copy it
+
+**Step 3 — Import back:**
+1. Back in Admin tab, click **📥 Import JSON** button
+2. Paste the modified JSON into the textarea
+3. Select mode:
+   - **Import Courses (merge)** — for full course+lesson imports
+   - **Import Single Lesson** — for just one lesson (enter Course ID)
+4. Click **▶ Import JSON**
+5. Modal closes automatically on success
+6. Admin tree refreshes with new/updated data
+
+## Workflow 2: Create Fresh Content from AI
+
+When you have AI generate brand-new content (no export needed):
+
+```
+┌───────────┐     ┌──────────┐     ┌──────────┐
+│    AI     │     │  Import  │     │  Admin   │
+│  (ChatGPT │ ──▶ │  Modal   │ ──▶ │  Tree    │
+│  /Claude) │     │          │     │  Updates │
+│           │     │  Paste & │     │          │
+│  Generate │     │  Import  │     │  See new │
+│  JSON     │     │          │     │  content │
+└───────────┘     └──────────┘     └──────────┘
+```
+
+### Step-by-step:
+
+1. Ask the AI: *"Generate JSON for a JavaScript course with 3 lessons including quizzes and flashcards. Use this format:"*
+2. Copy the JSON format from the placeholder in the import modal (it's pre-filled)
+3. Paste AI's output into the **📥 Import JSON** modal
+4. Click **▶ Import JSON**
+5. New courses/lessons appear in the Content Tree
+
+## JSON Format
+
+### Full Course Import
+
+```json
+{
+  "courses": [
+    {
+      "id": "course-id",
+      "name": "Course Name",
+      "lessons": [
+        {
+          "id": "lesson-id",
+          "title": "Lesson Title",
+          "status": "available",
+          "type": "lesson",
+          "notes": "Lesson notes here...",
+          "mnemonic": "A memory trick",
+          "quiz": [
+            {
+              "question": "What is X?",
+              "options": ["A", "B", "C", "D"],
+              "correct_index": 0
+            }
+          ],
+          "coding": {
+            "prompt": "Write a function...",
+            "starter": "// your code here",
+            "solution": "function solve() { return 42; }"
+          },
+          "flashcards": [
+            { "front": "Term", "back": "Definition" }
+          ]
+        }
+      ]
+    }
+  ]
+}
+```
+
+### Single Lesson Import
+
+```json
+{
+  "lesson": {
+    "id": "my-lesson",
+    "title": "My Lesson",
+    "status": "available",
+    "type": "lesson",
+    "notes": "...",
+    "quiz": [...],
+    "flashcards": [...]
+  },
+  "course_id": "target-course-id"
+}
+```
+
+## Important Notes
+
+- **Merge mode** — always on. Existing courses/lessons with matching IDs get updated; new ones are added; anything not in the JSON stays untouched
+- **Progress preserved** — user progress on lessons is NOT overwritten
+- **Flashcard reviews preserved** — spaced-repetition data stays intact
+- **IDs matter** — to update an existing lesson, use the same `id` as the current one
+- **Course must exist** — for single lesson import, the target course must already exist
+
+## Tips for AI
+
+When asking an AI to generate content, include the expected format in your prompt:
+
+> *"Generate learning content in this JSON format for import into a learning app: [paste the format above]. Create 3 lessons about [topic] with 2 quiz questions each and 2 flashcards each."*
+
+The AI will follow the structure and you can import directly.

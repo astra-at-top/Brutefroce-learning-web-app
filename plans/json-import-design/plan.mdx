@@ -1,0 +1,144 @@
+---
+title: "JSON Import/Export — Admin Design"
+created: "2026-06-23"
+status: draft
+---
+
+<RichText id="intro">
+
+### Goal
+
+Allow the user to **export** current learning data as JSON, modify it in an external AI tool, and **import (merge)** it back — no full wipe.
+
+</RichText>
+
+<RichText id="workflow">
+
+### Workflow
+
+1. Click "Export as JSON" → textarea fills with current data
+2. Click "Copy" → clipboard
+3. Paste into ChatGPT/Claude, modify
+4. Copy modified JSON
+5. Paste into "JSON Import" textarea
+6. Click "Import (Merge)" → upserts courses/lessons, keeps items not in JSON, preserves progress/flashcard reviews
+
+</RichText>
+
+<RichText id="approach-1">
+
+### Approach 1 (Recommended): Stacked panel in existing admin
+
+One collapsible "JSON Data" section at the bottom of the admin page. Top half = Export, Bottom half = Import (Merge). Follows existing pattern of collapsible sections.
+
+</RichText>
+
+<WireframeBlock id="approach1-wireframe">
+  <Screen surface="desktop" caption="Admin page — bottom section after the existing content tree editor.">
+    <Row>
+      <Sidebar>
+        <NavItem label="Content Tree" />
+        <NavItem label="Editor" />
+      </Sidebar>
+      <Main>
+        <Title text="Admin Panel" />
+        <Box>
+          <Pill label="📤 EXPORT AS JSON" />
+          <Btn label="▶ Export" />
+          <Lines n={4} />
+        </Box>
+        <Box>
+          <Pill label="📥 JSON IMPORT (MERGE)" />
+          <Dropdown label="Courses" />
+          <Input placeholder="Course ID..." />
+          <Text>Paste JSON here...</Text>
+          <Lines n={6} />
+          <Btn label="▶ Import (Merge)" />
+        </Box>
+      </Main>
+    </Row>
+  </Screen>
+</WireframeBlock>
+
+<RichText id="approach-2">
+
+### Approach 2: Separate "Data" tab
+
+New 5th admin tab alongside Learn/Code/Progress/Admin → "Data". Full-page panel dedicated to import/export. More room but more navigation.
+
+</RichText>
+
+<RichText id="approach-3">
+
+### Approach 3: Modal overlay
+
+"Import/Export" button in admin toolbar opens a modal. Stays in context but worse for large JSON editing.
+
+</RichText>
+
+<RichText id="merge-logic">
+
+### Merge Logic (Backend)
+
+```
+POST /api/admin/import { mode: "merge", courses: [...] }
+
+For each course in JSON:
+  - If id exists in DB → UPDATE title, parent_id, sort_order only
+  - If id is new → INSERT
+
+For each lesson in JSON:
+  - If id exists in DB → UPDATE title, notes, mnemonic, status, type,
+    quiz_data, coding_data. Preserve progress, flashcard_reviews.
+  - If id is new → INSERT
+
+Items in DB but NOT in JSON → keep untouched
+```
+
+</RichText>
+
+<RichText id="backend-changes">
+
+### Backend Changes
+
+| File | Change |
+|------|--------|
+| `main.go` | Add `GET /api/admin/export` — returns all data as JSON in import format |
+| `main.go` | Modify `handleAdminImport` — add `mode: "merge"` branch that upserts instead of wiping |
+
+</RichText>
+
+<RichText id="frontend-changes">
+
+### Frontend Changes
+
+| File | Change |
+|------|--------|
+| `web/index.html` | Add "Export as JSON" section with textarea + copy button |
+| `web/index.html` | Update existing JSON import to support merge mode |
+
+</RichText>
+
+<QuestionForm
+  id="approach-select"
+  questions={[
+    {
+      id: "chosen-approach",
+      title: "Which visual approach do you prefer?",
+      mode: "single",
+      options: [
+        { id: "stacked", label: "Approach 1 — Stacked panel (Recommended)" },
+        { id: "tab", label: "Approach 2 — Separate Data tab" },
+        { id: "modal", label: "Approach 3 — Modal overlay" },
+      ],
+      required: true,
+    },
+    {
+      id: "notes",
+      title: "Any additional requirements?",
+      mode: "freeform",
+      placeholder: "Size constraints, labels, behavior...",
+    },
+  ]}
+  submitLabel="Send"
+/>

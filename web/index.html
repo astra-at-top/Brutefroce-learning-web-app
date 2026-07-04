@@ -147,7 +147,9 @@ body {
 .si-done { color: var(--green); }
 
 .tree-split { display: flex; gap: 0.8em; flex: 1; min-height: 0; }
-.tree-panel { flex: 0 0 28%; min-width: 16em; display: flex; flex-direction: column; overflow-y: auto; }
+.tree-panel { flex: 0 0 28%; min-width: 16em; display: flex; flex-direction: column; overflow: hidden; min-height: 0; }
+.tree-panel .panel { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+.tree-panel .panel-body { flex: 1; overflow-y: auto; min-height: 0; }
 .content-panel { flex: 1; display: flex; flex-direction: column; min-width: 0; }
 
 .tree-list { list-style: none; padding: 0.2em 0; }
@@ -207,8 +209,8 @@ body {
 .module-tab { padding: 0.4em 1em; font-size: 0.85rem; color: var(--text-muted); cursor: pointer; user-select: none; text-transform: uppercase; letter-spacing: 0.06em; border-bottom: 2px solid transparent; display: flex; align-items: center; gap: 0.4em; }
 .module-tab.active { color: var(--purple); border-bottom-color: var(--purple); font-weight: bold; }
 .module-tab:hover { color: var(--text); background: #1a1d2e; }
-.module-container { flex: 1; min-height: 0; overflow-y: auto; position: relative; }
-.module-card { padding: 1em; animation: fadeSlide 0.2s ease; }
+.module-container { flex: 1; min-height: 0; overflow-y: auto; position: relative; display: flex; flex-direction: column; }
+.module-card { padding: 1em; animation: fadeSlide 0.2s ease; flex: 1; display: flex; flex-direction: column; min-height: 0; }
 .module-loading { display: flex; flex-direction: column; gap: 0.8em; padding: 1.5em; }
 .skel-line { height: 0.8em; background: var(--surface-alt); border: 1px solid var(--border-dim); animation: skelPulse 1.2s ease-in-out infinite; }
 .skel-line.w60 { width: 60%; }
@@ -220,9 +222,29 @@ body {
 
 .learn-section { padding: 0.3em 0; }
 .learn-section + .learn-section { border-top: 1px solid var(--border-dim); padding-top: 0.6em; margin-top: 0.3em; }
-.ls-label { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.4em; }
+.ls-label { font-size: 0.8rem; color: var(--purple); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.4em; }
 .ls-body { font-size: 0.9rem; line-height: 1.6; color: var(--text); }
 .ls-mnemonic { font-size: 0.85rem; color: var(--text-muted); margin-top: 0.5em; }
+
+/* Split layout: Notes left, Mnemonics right */
+.learn-split { display: flex; gap: 0.8em; min-height: 0; flex: 1; }
+.learn-split-left { flex: 3; min-width: 0; overflow-y: auto; padding-right: 0.4em; }
+.learn-split-right { flex: 2; min-width: 200px; display: flex; flex-direction: column; gap: 0.4em; }
+.mnemonic-card { border: 1px solid var(--border); background: var(--surface-alt); padding: 0.6em; flex: 1; display: flex; flex-direction: column; }
+.mnemonic-card .mc-trick { font-size: 1rem; color: var(--yellow); font-weight: bold; line-height: 1.4; padding: 0.3em 0; }
+.mnemonic-card .mc-summary { font-size: 0.85rem; color: var(--text); padding: 0.3em 0; border-top: 1px solid var(--border-dim); }
+.mnemonic-card .mc-keypoints { font-size: 0.8rem; color: var(--text-muted); padding: 0.3em 0 0 0; flex: 1; }
+.mnemonic-card .mc-kp-item { padding: 0.15em 0 0.15em 1em; position: relative; }
+.mnemonic-card .mc-kp-item::before { content: '▸'; position: absolute; left: 0; color: var(--purple); }
+.ls-body h1, .ls-body h2, .ls-body h3 { color: var(--yellow); margin: 0.6em 0 0.3em; font-weight: bold; font-size: 0.95rem; text-transform: uppercase; letter-spacing: 0.05em; }
+.ls-body h1 { font-size: 1.05rem; }
+.ls-body p { margin: 0.4em 0; }
+.ls-body code { background: var(--surface-alt); color: var(--cyan); padding: 0.1em 0.3em; border-radius: 3px; font-size: 0.85em; }
+.ls-body pre { background: var(--surface-alt); border: 1px solid var(--border-dim); padding: 0.6em; overflow-x: auto; margin: 0.5em 0; }
+.ls-body pre code { background: none; padding: 0; }
+.ls-body ul, .ls-body ol { margin: 0.3em 0; padding-left: 1.5em; }
+.ls-body li { margin: 0.15em 0; }
+.ls-body strong { color: var(--text); font-weight: bold; }
 
 .quiz-q { font-size: 0.95rem; font-weight: bold; margin-bottom: 0.6em; }
 .quiz-opt { display: flex; align-items: center; gap: 0.5em; padding: 0.4em 0.6em; cursor: pointer; font-size: 0.85rem; border: 1px solid var(--border-dim); margin-bottom: 0.3em; transition: border-color 0.15s; }
@@ -241,7 +263,7 @@ body {
 .quiz-btn.alt { background: var(--surface-alt); color: var(--text-muted); }
 
 .code-prompt { font-weight: bold; font-size: 0.9rem; margin-bottom: 0.5em; }
-.code-editor { background: var(--surface); border: 1px solid var(--border-dim); padding: 0.6em; font-size: 0.85rem; font-family: var(--font-mono); min-height: 5em; white-space: pre-wrap; color: var(--text-dim); margin-bottom: 0.4em; }
+.code-editor { background: var(--surface); border: 1px solid var(--border-dim); padding: 0.6em; font-size: 0.85rem; font-family: var(--font-mono); min-height: 8em; white-space: pre-wrap; color: var(--text-dim); margin-bottom: 0.4em; outline: none; flex: 1; }
 .code-out { background: var(--surface-alt); border: 1px solid var(--border-dim); padding: 0.5em; font-size: 0.85rem; margin-top: 0.3em; min-height: 2em; color: var(--text-muted); white-space: pre-wrap; }
 
 .code-out.solution { border-color: var(--purple); color: var(--cyan); }
@@ -280,11 +302,12 @@ body {
 .habit-cell.today { border-color: var(--yellow); }
 
 .admin-split { display: flex; gap: 0.6em; flex: 1; min-height: 0; }
-.admin-table-panel { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+.admin-table-panel { flex: 1; display: flex; flex-direction: column; min-width: 0; min-height: 0; overflow: hidden; }
 .admin-editor-panel { flex: 2; display: flex; flex-direction: column; min-width: 0; }
-.admin-box { border: 1px solid var(--border); display: flex; flex-direction: column; height: 100%; }
-.admin-box .ad-header { padding: 0.3em 0.5em; background: #1a1d26; border-bottom: 1px solid var(--border); font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; }
-.admin-box .ad-body { flex: 1; overflow-y: auto; padding: 0; }
+.admin-box { border: 1px solid var(--border); display: flex; flex-direction: column; flex: 1; min-height: 0; }
+.admin-box .ad-header { padding: 0.3em 0.5em; background: #1a1d26; border-bottom: 1px solid var(--border); font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; flex-shrink: 0; }
+.admin-box .ad-body { flex: 1; display: flex; flex-direction: column; padding: 0; min-height: 0; overflow: hidden; }
+.admin-box .ad-body .ad-form-scroll { flex: 1; display: flex; flex-direction: column; overflow-y: auto; padding: 0.5em; }
 .admin-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
 .admin-table th { padding: 0.25em 0.4em; border-bottom: 1px solid var(--border); color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; font-weight: normal; font-size: 0.7rem; text-align: left; }
 .admin-table td { padding: 0.2em 0.4em; border-bottom: 1px solid var(--border-dim); color: var(--text); }
@@ -313,11 +336,50 @@ body {
 .btn:hover { opacity: 0.85; }
 .btn-alt { background: transparent; color: var(--purple); border: 1px solid var(--purple); }
 .btn-sm { font-size: 0.65rem; padding: 0.2em 0.4em; }
-.btn-red { background: var(--red); }
+.btn-red { background: var(--red-dim) !important; color: white !important; }
 .btn-green { background: var(--green); color: #000; }
 .btn-grp { display: flex; gap: 0.3em; align-items: center; }
 .btn-icon { background: none; border: none; color: var(--text-dim); cursor: pointer; font-size: 0.9rem; padding: 0.1em; }
 .btn-icon:hover { color: var(--text); }
+
+/* ===== Admin Modal (task manager style) ===== */
+.admin-modal-overlay {
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(0,0,0,0.6); z-index: 200; display: none;
+}
+.admin-modal-overlay.active { display: block; }
+.admin-modal {
+  position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+  background: var(--surface); border: 1px solid var(--border); z-index: 201;
+  width: 38rem; max-width: 90vw; max-height: 80vh; overflow-y: auto;
+}
+.admin-modal-header {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 0.7em; border-bottom: 1px solid var(--border);
+}
+.admin-modal-header h3 { color: var(--purple); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.06em; margin: 0; }
+.admin-modal-close { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 1.1rem; font-family: var(--font); }
+.admin-modal-body { padding: 0.7em; }
+.admin-modal-body label { display: block; margin-bottom: 0.5em; font-size: 0.72rem; color: var(--text-muted); }
+.admin-modal-body input, .admin-modal-body textarea { display: block; width: 100%; margin-top: 3px; background: var(--bg); border: 1px solid var(--border); color: var(--text); font-family: var(--font); font-size: 0.78rem; padding: 0.35em; }
+.admin-modal-body textarea { resize: vertical; min-height: 3em; }
+.admin-modal-footer { display: flex; gap: 0.4em; justify-content: flex-end; padding: 0.7em; border-top: 1px solid var(--border); }
+.admin-modal .option-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.admin-modal .option-row input[type="radio"] { accent-color: var(--purple); }
+.admin-modal .option-row input[type="text"] { flex: 1; }
+.admin-modal .option-label { color: var(--text-dim); font-size: 0.8rem; width: 20px; }
+.admin-modal .form-group { margin-bottom: 12px; }
+.admin-modal .form-group label { color: var(--purple); font-size: 0.72rem; text-transform: uppercase; }
+.admin-item-card {
+  display: flex; justify-content: space-between; align-items: flex-start;
+  background: var(--bg); border: 1px solid var(--border); border-radius: 6px;
+  padding: 10px 12px; margin-bottom: 8px;
+}
+.admin-item-content { flex: 1; min-width: 0; }
+.admin-item-num { color: var(--purple); font-size: 0.7rem; font-weight: bold; margin-bottom: 2px; }
+.admin-item-text { color: var(--text); font-size: 0.85rem; margin-bottom: 4px; }
+.admin-item-meta { color: var(--text-dim); font-size: 0.7rem; }
+.admin-item-actions { display: flex; gap: 4px; flex-shrink: 0; }
 
 .v6-steps { display: flex; align-items: center; gap: 0; margin-bottom: 0.6em; }
 .v6-step { display: flex; align-items: center; gap: 0.3em; flex: 1; }
@@ -372,6 +434,29 @@ body {
 .dm-reward .dmr-value { font-size: 0.9rem; color: var(--text); font-weight: bold; }
 .dopamine-box .dm-claim { margin-top: 0.5em; }
 .dopamine-box .dm-skip { margin-top: 0.3em; font-size: 0.75rem; color: var(--text-dim); cursor: pointer; text-decoration: underline; }
+
+/* ===== Modal (reuse overlay pattern) ===== */
+.modal-overlay {
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center;
+  z-index: 100; animation: fadeSlide 0.3s ease;
+}
+.modal-box {
+  background: var(--surface); border: 2px solid var(--border); padding: 0;
+  max-width: 52em; width: 92%; max-height: 85vh; display: flex; flex-direction: column;
+}
+.modal-header {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 0.5em 0.8em; background: var(--bg2); border-bottom: 1px solid var(--border-dim);
+  font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); flex-shrink: 0;
+}
+.modal-close {
+  cursor: pointer; font-size: 1.1rem; color: var(--text-dim); padding: 0 0.3em; user-select: none;
+}
+.modal-close:hover { color: var(--red); }
+.modal-body {
+  padding: 0.8em; overflow-y: auto; flex: 1;
+}
 
 /* ===== Leaderboard ===== */
 .leaderboard { padding: 0.3em 0; }
@@ -435,7 +520,48 @@ body {
 .fc-rbtn.hard { color: var(--red); } .fc-rbtn.hard:hover { border-color: var(--red); }
 .fc-rbtn.easy { color: var(--green); } .fc-rbtn.easy:hover { border-color: var(--green); }
 .fc-rbtn.good { color: var(--cyan); } .fc-rbtn.good:hover { border-color: var(--cyan); }
+
+/* ============ ADDICTION ENGINE ============ */
+#confettiCanvas { position:fixed; top:0; left:0; width:100vw; height:100vh; pointer-events:none; z-index:99999; }
+.lvl-badge { display:inline-flex; align-items:center; gap:0.3em; font-size:0.75rem; color:var(--yellow); font-weight:bold; }
+.lvl-badge .lvl-num { background:var(--yellow); color:#000; border-radius:50%; width:1.4em; height:1.4em; display:inline-flex; align-items:center; justify-content:center; font-size:0.75rem; font-weight:bold; }
+@keyframes lvlUpPulse { 0%{transform:scale(1)} 50%{transform:scale(1.3)} 100%{transform:scale(1)} }
+.lvl-up-flash { animation:lvlUpPulse .5s ease-in-out 3; }
+.combo-display { font-family:var(--font-display); font-size:1.5rem; font-weight:bold; text-align:center; padding:0.2em 0; transition:all .15s; }
+.combo-fire { color:var(--red); text-shadow:0 0 20px #f44,0 0 40px #f44; animation:comboShake .2s ease infinite; }
+@keyframes comboShake { 0%,100%{transform:rotate(0deg)} 25%{transform:rotate(-2deg)} 75%{transform:rotate(2deg)} }
+.spin-overlay { position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,.85); display:none; align-items:center; justify-content:center; z-index:10000; flex-direction:column; }
+.spin-wheel { width:280px; height:280px; border-radius:50%; border:3px solid var(--purple); position:relative; overflow:hidden; transition:transform 3s cubic-bezier(.17,.67,.12,.99); }
+.spin-segment { position:absolute; width:50%; height:50%; transform-origin:100% 100%; left:50%; top:50%; display:flex; align-items:center; justify-content:center; font-size:0.7rem; font-weight:bold; color:#fff; text-shadow:0 0 4px rgba(0,0,0,.5); clip-path:polygon(0 0,100% 0,0 100%); }
+.spin-segment span { position:absolute; left:-10%; transform:rotate(-45deg); white-space:nowrap; }
+.spin-pointer { position:absolute; top:-12px; left:50%; transform:translateX(-50%); font-size:2rem; filter:drop-shadow(0 2px 4px rgba(0,0,0,.5)); z-index:2; }
+.spin-result { font-size:1.5rem; color:var(--yellow); font-weight:bold; margin-top:1em; text-align:center; min-height:2em; }
+.spin-btn { background:var(--purple); color:#fff; border:none; font-family:var(--font-mono); font-size:1rem; padding:0.5em 1.5em; cursor:pointer; font-weight:bold; text-transform:uppercase; letter-spacing:0.06em; margin-top:1em; }
+.spin-btn:hover { opacity:.85; }
+.spin-btn:disabled { opacity:.4; cursor:not-allowed; }
+@keyframes urgentPulse { 0%,100%{color:var(--red);opacity:1} 50%{opacity:.5} }
+.urgency-timer { display:inline-flex; align-items:center; gap:0.3em; font-size:0.8rem; animation:urgentPulse 1.5s ease infinite; }
+.urgency-timer.safe { animation:none; color:var(--text-muted); }
+.overTakePop { position:fixed; top:60px; right:20px; background:var(--surface); border:2px solid var(--yellow); padding:0.8em 1.2em; z-index:9999; animation:slideInRight .4s ease, fadeOut 2s ease 3s forwards; }
+@keyframes slideInRight { from{transform:translateX(120%);opacity:0} to{transform:translateX(0);opacity:1} }
+@keyframes fadeOut { to{opacity:0;transform:translateY(-20px)} }
+.ach-popup { position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); background:var(--surface); border:3px solid var(--yellow); padding:1.5em 2em; z-index:9998; text-align:center; animation:achReveal .5s ease; }
+@keyframes achReveal { 0%{transform:translate(-50%,-50%) scale(0) rotate(-10deg);opacity:0} 60%{transform:translate(-50%,-50%) scale(1.05) rotate(2deg)} 100%{transform:translate(-50%,-50%) scale(1) rotate(0deg);opacity:1} }
+.ach-popup .ach-icon { font-size:3rem; display:block; margin-bottom:0.3em; }
+.ach-popup .ach-title { font-size:1.2rem; color:var(--yellow); font-weight:bold; }
+.ach-popup .ach-desc { font-size:0.85rem; color:var(--text-muted); margin-top:0.3em; }
+.counter-anim { display:inline-block; transition:all .3s ease; }
+.counter-anim.bump { transform:scale(1.2); }
+.xp-float { position:fixed; pointer-events:none; font-weight:bold; font-size:1.2rem; z-index:9997; animation:xpFloat 1.2s ease forwards; }
+@keyframes xpFloat { 0%{opacity:1;transform:translateY(0) scale(1)} 100%{opacity:0;transform:translateY(-80px) scale(1.5)} }
+.streak-fire { display:inline-block; }
+.streak-fire.f0 { filter:none; }
+.streak-fire.f1 { filter:drop-shadow(0 0 4px #f80); }
+.streak-fire.f2 { filter:drop-shadow(0 0 8px #f44) drop-shadow(0 0 16px #f80); animation:fireDance .5s ease infinite; }
+.streak-fire.f3 { filter:drop-shadow(0 0 12px #f22) drop-shadow(0 0 24px #f60) drop-shadow(0 0 36px #f80); animation:fireDance .3s ease infinite; }
+@keyframes fireDance { 0%,100%{transform:scale(1) rotate(0deg)} 25%{transform:scale(1.05) rotate(-3deg)} 75%{transform:scale(1.05) rotate(3deg)} }
 </style>
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 </head>
 <body>
 <div id="app">
@@ -480,6 +606,133 @@ body {
   </div>
 </div>
 
+<!-- JSON Export Modal -->
+<div id="jsonExportOverlay" class="modal-overlay" style="display:none">
+  <div class="modal-box">
+    <div class="modal-header">
+      <span>📤 Export as JSON</span>
+      <span class="modal-close" data-modal-close="jsonExportOverlay">✕</span>
+    </div>
+    <div class="modal-body">
+      <div class="btn-grp" style="margin-bottom:0.5em">
+        <button class="btn" id="jsonExportBtn">▶ Export as JSON</button>
+        <button class="btn btn-alt" id="jsonExportCopyBtn" style="display:none">📋 Copy</button>
+        <span id="jsonExportStatus" style="font-size:0.75rem;color:var(--text-dim)"></span>
+      </div>
+      <textarea id="jsonExportTextarea" readonly placeholder="Click 'Export as JSON' to load current data..." style="width:100%;min-height:250px;font-family:'Courier New',monospace;font-size:0.75rem;padding:0.5em;background:var(--surface-alt);border:1px solid var(--border-dim);border-radius:4px;color:var(--text);resize:vertical;box-sizing:border-box"></textarea>
+      <div style="font-size:0.65rem;color:var(--text-dim);margin-top:0.4em;line-height:1.6">
+        <strong>Usage:</strong> Export → Copy → Modify in AI → Paste into <strong>JSON Import</strong> → Import
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- JSON Import Modal -->
+<div id="jsonImportOverlay" class="modal-overlay" style="display:none">
+  <div class="modal-box">
+    <div class="modal-header">
+      <span>📥 JSON Import (Merge)</span>
+      <span class="modal-close" data-modal-close="jsonImportOverlay">✕</span>
+    </div>
+    <div class="modal-body">
+      <div style="display:flex;gap:0.5em;margin-bottom:0.5em">
+        <select id="jsonImportMode" class="fld-select" style="font-size:0.8rem;width:auto">
+          <option value="courses">Import Courses (merge)</option>
+          <option value="lesson">Import Single Lesson</option>
+        </select>
+        <input class="fld-input" id="jsonImportCourseId" placeholder="Course ID (for lesson import)" style="width:14em;font-size:0.8rem;display:none">
+      </div>
+      <textarea id="jsonImportTextarea" placeholder='Paste your JSON here...' style="width:100%;min-height:250px;font-family:'Courier New',monospace;font-size:0.75rem;padding:0.5em;background:var(--surface-alt);border:1px solid var(--border-dim);border-radius:4px;color:var(--text);resize:vertical;box-sizing:border-box">{
+  "courses": [
+    {
+      "id": "javascript",
+      "name": "JavaScript",
+      "lessons": [
+        {
+          "id": "vars-types",
+          "title": "Variables & Types",
+          "status": "done",
+          "notes": "...",
+          "quiz": [{"question":"...","options":["a","b","c","d"],"correct_index":0}],
+          "flashcards": [{"front":"...","back":"..."}]
+        }
+      ]
+    }
+  ]
+}</textarea>
+      <div class="btn-grp" style="margin-top:0.5em">
+        <button class="btn btn-alt" id="jsonImportCopyFormatBtn">📋 Copy Format</button>
+        <button class="btn btn-green" id="jsonImportBtn">▶ Import JSON</button>
+        <span id="jsonImportStatus" style="font-size:0.75rem;color:var(--text-dim)"></span>
+      </div>
+      <div style="font-size:0.65rem;color:var(--text-dim);margin-top:0.4em;line-height:1.6">
+        <strong>Format:</strong> Course import → <code>{"courses":[...]}</code> with nested lessons (quiz, coding, flashcards).
+        Lesson import → <code>{"lesson":{...}}</code> with <code>course_id</code>.
+        Uses <strong>merge mode</strong> — updates existing, adds new, preserves progress.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Confirm Standalone Import Modal -->
+<div id="confirmStandaloneOverlay" class="modal-overlay" style="display:none">
+  <div class="modal-box" style="max-width:30em">
+    <div class="modal-header">
+      <span>❓ No Course ID</span>
+      <span class="modal-close" data-modal-close="confirmStandaloneOverlay">✕</span>
+    </div>
+    <div class="modal-body" style="text-align:center">
+      <div style="font-size:1rem;margin:1em 0">This lesson has no course ID.</div>
+      <div style="font-size:0.85rem;color:var(--text-dim);margin-bottom:1.5em">Import it as a standalone lesson (not attached to any course)?<br>You can assign it to a course later from the editor.</div>
+      <div class="btn-grp" style="justify-content:center;gap:0.8em">
+        <button class="btn btn-green" id="confirmStandaloneYes">✅ Yes, import standalone</button>
+        <button class="btn" id="confirmStandaloneNo">✕ No, go back</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Admin Modal Overlay -->
+<div class="admin-modal-overlay" id="adminModalOverlay">
+  <div class="admin-modal" id="adminModal">
+    <div class="admin-modal-header">
+      <h3 id="adminModalTitle">Edit Item</h3>
+      <button class="admin-modal-close" onclick="adminModal.close()">×</button>
+    </div>
+    <div class="admin-modal-body" id="adminModalBody"></div>
+    <div class="admin-modal-footer" id="adminModalFooter"></div>
+  </div>
+</div>
+
+<!-- Generic Confirm/Alert/Prompt Modal -->
+<div id="genericModalOverlay" class="modal-overlay" style="display:none">
+  <div class="modal-box" style="max-width:30em">
+    <div class="modal-header">
+      <span id="genericModalTitle">Confirm</span>
+      <span class="modal-close" data-modal-close="genericModalOverlay">✕</span>
+    </div>
+    <div class="modal-body" style="text-align:center">
+      <div id="genericModalMessage" style="font-size:0.95rem;margin:1em 0;white-space:pre-wrap"></div>
+      <div id="genericModalInputWrap" style="display:none;margin:0.5em 0">
+        <input id="genericModalInput" class="fld-input" style="width:80%;font-size:0.85rem" autofocus>
+      </div>
+      <div class="btn-grp" id="genericModalButtons" style="justify-content:center;gap:0.8em"></div>
+    </div>
+  </div>
+</div>
+
+<canvas id="confettiCanvas"></canvas>
+
+<div class="spin-overlay" id="spinOverlay">
+  <div class="spin-pointer">▼</div>
+  <div class="spin-wheel" id="spinWheel"></div>
+  <div class="spin-result" id="spinResult"></div>
+  <button class="spin-btn" id="spinBtn">SPIN!</button>
+  <button class="spin-btn" id="spinClose" style="background:transparent;border:1px solid var(--border);color:var(--text-muted);font-size:0.8rem">Skip</button>
+</div>
+
+<div id="overtakeContainer"></div>
+
 <script>
 const LS_PREFIX = 'bfl_';
 
@@ -490,13 +743,98 @@ function restore(key, def) {
   try { const v = localStorage.getItem(LS_PREFIX + key); return v !== null ? JSON.parse(v) : def; } catch { return def; }
 }
 
+// ============ GENERIC MODAL (alert/confirm/prompt) ============
+let _modalCallback = null;
+
+function openModal(type, title, message, callback, defaultValue) {
+  _modalCallback = callback;
+  const overlay = document.getElementById('genericModalOverlay');
+  document.getElementById('genericModalTitle').textContent = title;
+  document.getElementById('genericModalMessage').textContent = message;
+
+  const inputWrap = document.getElementById('genericModalInputWrap');
+  const input = document.getElementById('genericModalInput');
+  if (type === 'prompt') {
+    inputWrap.style.display = 'block';
+    input.value = defaultValue || '';
+    setTimeout(() => input.focus(), 100);
+  } else {
+    inputWrap.style.display = 'none';
+  }
+
+  const btnContainer = document.getElementById('genericModalButtons');
+  const closeBtn = overlay.querySelector('.modal-close');
+
+  function cleanup() {
+    overlay.style.display = 'none';
+    closeBtn.removeEventListener('click', onCancel);
+    overlay.removeEventListener('click', onOverlayClick);
+  }
+
+  function onCancel() { cleanup(); if (callback) callback(null); }
+
+  function onOverlayClick(e) {
+    if (e.target === overlay) onCancel();
+  }
+
+  if (type === 'alert') {
+    btnContainer.innerHTML = '<button class="btn" id="genericModalOkBtn">OK</button>';
+    document.getElementById('genericModalOkBtn').onclick = () => { cleanup(); if (callback) callback(true); };
+  } else if (type === 'confirm') {
+    btnContainer.innerHTML = `
+      <button class="btn btn-alt" id="genericModalCancelBtn">Cancel</button>
+      <button class="btn" id="genericModalOkBtn">OK</button>`;
+    document.getElementById('genericModalCancelBtn').onclick = onCancel;
+    document.getElementById('genericModalOkBtn').onclick = () => { cleanup(); if (callback) callback(true); };
+  } else if (type === 'prompt') {
+    btnContainer.innerHTML = `
+      <button class="btn btn-alt" id="genericModalCancelBtn">Cancel</button>
+      <button class="btn" id="genericModalOkBtn">OK</button>`;
+    document.getElementById('genericModalCancelBtn').onclick = onCancel;
+    document.getElementById('genericModalOkBtn').onclick = () => { cleanup(); if (callback) callback(input.value); };
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') { document.getElementById('genericModalOkBtn').click(); }
+    });
+  }
+
+  closeBtn.addEventListener('click', onCancel);
+  overlay.addEventListener('click', onOverlayClick);
+  overlay.style.display = 'flex';
+}
+
+function showAlert(msg, callback) { openModal('alert', 'Alert', msg, callback); }
+function showConfirm(msg, callback) { openModal('confirm', 'Confirm', msg, callback); }
+function showPrompt(msg, callback, defaultVal) { openModal('prompt', 'Input Required', msg, callback, defaultVal); }
+
 const TABS = ['learn', 'code', 'progress', 'admin'];
 let activeTab = restore('activeTab', 'learn');
+let GLOBAL_STATS = null;
 
 // ============ API ============
 async function api(path) {
   const res = await fetch(path);
   return res.json();
+}
+
+let statsLoading = null;
+async function updateHeaderStats() {
+  if (statsLoading) return statsLoading;
+  statsLoading = (async () => {
+    const [stats, ps] = await Promise.all([
+      api('/api/progress').catch(() => ({ problems: 18, streak: 5, mastery: 42, solved: 18, xp: 320, xpMax: 500 })),
+      api('/api/powerscore').catch(() => ({ power_score: 0 })),
+    ]);
+    GLOBAL_STATS = stats;
+    document.getElementById('headerStreak').textContent = stats.streak + 'd';
+    document.getElementById('headerXp').textContent = stats.xp;
+    document.getElementById('headerXpMax').textContent = stats.xpMax;
+    document.getElementById('headerMastery').textContent = stats.mastery + '%';
+    document.getElementById('headerPower').textContent = ps.power_score;
+    updateStreakWarning();
+    return stats;
+  })();
+  statsLoading.finally(() => { statsLoading = null; });
+  return statsLoading;
 }
 
 // ============ TABS ============
@@ -643,6 +981,42 @@ function getCurrentLesson(course) {
          course.children[0] || null;
 }
 
+function getFocusCourse() {
+  if (!TREE_DATA) return null;
+  for (const course of TREE_DATA) {
+    if (!course.children) continue;
+    const active = course.children.find(c => c.status === 'in_progress');
+    if (active) return { course, lesson: active };
+  }
+  return null;
+}
+
+function getCompletedLessons() {
+  const done = [];
+  function walk(nodes) {
+    for (const n of nodes) {
+      if (n.children) {
+        for (const c of n.children) {
+          if (!c.children && c.status === 'done') done.push({ courseName: n.name, lesson: c });
+          else if (c.children) walk(c.children);
+        }
+      }
+    }
+  }
+  walk(TREE_DATA);
+  return done;
+}
+
+function expandPathToNode(id) {
+  if (!TREE_DATA || !id) return;
+  for (const course of TREE_DATA) {
+    if (!course.children) continue;
+    const found = course.children.some(c => c.id === id) ||
+      course.children.some(c => c.children && c.children.some(cc => cc.id === id));
+    if (found) course.expanded = true;
+  }
+}
+
 function renderTree(nodes, depth, selId) {
   let html = '<ul class="tree-list">';
   for (const n of nodes) {
@@ -670,7 +1044,7 @@ function renderTree(nodes, depth, selId) {
   return html;
 }
 
-function renderStreakCalendar() {
+function renderStreakCalendar(streak) {
   const now = new Date();
   const year = now.getFullYear();
   const month = now.getMonth();
@@ -681,7 +1055,7 @@ function renderStreakCalendar() {
   html += '<div class="sc-header">';
   html += '<span class="sc-month">' + now.toLocaleString('en', { month: 'long' }) + '</span>';
   html += '<span class="sc-year">' + year + '</span>';
-  html += '<span class="sc-streak">🔥 10d streak</span></div>';
+  html += '<span class="sc-streak">🔥 ' + (streak || 0) + 'd streak</span></div>';
   html += '<table class="sc-table"><tr>';
   for (const h of ['S','M','T','W','T','F','S']) html += '<th>' + h + '</th>';
   html += '</tr>';
@@ -718,13 +1092,14 @@ async function renderLearn(screen) {
     learnState.selectedNodeId = TREE_DATA[0].id;
   }
   if (learnState.selectedNodeId) persist('learnSelected', learnState.selectedNodeId);
+  expandPathToNode(learnState.selectedNodeId);
   const node = findNode(learnState.selectedNodeId);
   const isCourse = isCourseNode(node);
   let html = '<div class="tab-panel active"><div class="tree-split">';
 
-  html += '<div class="tree-panel"><div class="panel" style="height:100%;display:flex;flex-direction:column">';
+  html += '<div class="tree-panel"><div class="panel" style="display:flex;flex-direction:column;min-height:0">';
   html += '<div class="panel-title">Courses</div>';
-  html += '<div class="panel-body" style="overflow-y:auto;flex:1">';
+  html += '<div class="panel-body" style="flex:1;overflow-y:auto;min-height:0">';
   html += renderTree(TREE_DATA, 0, learnState.selectedNodeId);
   html += '</div></div></div>';
 
@@ -753,12 +1128,33 @@ async function renderLearn(screen) {
     }
     html += getMicroBanner(node.id);
 
+    // Ensure GLOBAL_STATS is loaded
+    if (!GLOBAL_STATS) await updateHeaderStats();
+    const streak = GLOBAL_STATS ? GLOBAL_STATS.streak : 0;
+
     html += '<div class="rmx-panels">';
-    html += '<div class="rmx-panel"><div class="rmx-plabel">Streak</div>' + renderStreakCalendar() + '</div>';
+    html += '<div class="rmx-panel"><div class="rmx-plabel">Streak</div>' + renderStreakCalendar(streak) + '</div>';
+    // Focus panel - derive from course tree
+    const focus = getFocusCourse();
     html += '<div class="rmx-panel"><div class="rmx-plabel">Focus</div><div class="help-content" style="padding:0.3em 0">';
-    html += '<div style="font-size:0.8rem;color:var(--text-muted)">Next review: <span style="color:var(--yellow)">closures</span></div>';
-    html += '<div style="font-size:0.8rem;color:var(--text-muted)">Focus area: <span style="color:var(--cyan)">JS Basics (65%)</span></div>';
-    html += '</div></div></div></div></div>';
+    if (focus) {
+      const pct = focus.lesson.progress || 0;
+      html += '<div style="font-size:0.8rem;color:var(--text-muted)">Next review: <span style="color:var(--yellow)">' + focus.lesson.name + '</span></div>';
+      html += '<div style="font-size:0.8rem;color:var(--text-muted)">Focus area: <span style="color:var(--cyan)">' + focus.course.name + ' (' + pct + '%)</span></div>';
+    } else {
+      html += '<div style="font-size:0.8rem;color:var(--text-dim)">All lessons complete! 🎉</div>';
+    }
+    html += '</div></div>';
+    // Recently Learned panel
+    const completed = getCompletedLessons();
+    if (completed.length > 0) {
+      html += '<div class="rmx-panel"><div class="rmx-plabel">Learned</div><div class="help-content" style="padding:0.3em 0">';
+      for (const item of completed.slice(-5).reverse()) {
+        html += '<div style="font-size:0.8rem;color:var(--text-muted);padding:0.1em 0"><span style="color:var(--green)">●</span> ' + item.lesson.name + ' <span style="color:var(--text-dim);font-size:0.75rem">\u2014 ' + item.courseName + '</span></div>';
+      }
+      html += '</div></div>';
+    }
+    html += '</div></div></div>';
   } else {
     html += '<div class="panel-body" style="overflow-y:auto;flex:1;min-height:0">';
     html += renderModuleTabs();
@@ -802,6 +1198,7 @@ function bindLearnEvents() {
     el.addEventListener('click', () => {
       learnState.activeModule = el.dataset.module;
       persist('learnModule', learnState.activeModule);
+      document.querySelectorAll('.module-tab').forEach(t => t.classList.toggle('active', t.dataset.module === learnState.activeModule));
       const node = findNode(learnState.selectedNodeId);
       if (!isCourseNode(node)) loadLearnModule(learnState.selectedNodeId);
     });
@@ -826,12 +1223,32 @@ async function loadLearnModule(lessonId) {
     switch (learnState.activeModule) {
       case 'learn':
         const lesson = await api('/api/lessons/' + lessonId);
-        html += '<div class="learn-section"><div class="ls-label">Notes</div><div class="ls-body">' + (lesson.notes || 'Content coming soon.') + '</div>';
-        if (lesson.mnemonic) html += '<div class="ls-mnemonic">🧠 ' + lesson.mnemonic + '</div>';
-        html += '</div><div class="learn-section"><div class="ls-label">Review Schedule</div>';
+        html += '<div class="learn-split">';
+        // LEFT: Notes
+        html += '<div class="learn-split-left"><div class="learn-section"><div class="ls-label">Notes</div><div class="ls-body">' + (lesson.notes ? marked.parse(lesson.notes) : 'Content coming soon.') + '</div></div>';
+        html += '<div class="learn-section"><div class="ls-label">Review Schedule</div>';
         initFcSchedule(lessonId);
         const nextReview = getNextReview(lessonId);
-        html += '<div class="ls-body" style="color:var(--text-muted);font-size:0.85rem">Next review: <span style="color:var(--yellow)">' + nextReview + '</span> · Ease: <span style="color:var(--cyan)">' + (flashcardSchedule[lessonId]?.ease || 2.5).toFixed(1) + '</span></div></div>';
+        html += '<div class="ls-body" style="color:var(--text-muted);font-size:0.85rem">Next review: <span style="color:var(--yellow)">' + nextReview + '</span> · Ease: <span style="color:var(--cyan)">' + (flashcardSchedule[lessonId]?.ease || 2.5).toFixed(1) + '</span></div></div></div>';
+        // RIGHT: Mnemonics panel
+        html += '<div class="learn-split-right">';
+        const mn = lesson.mnemonic || lesson.mnemonic_summary || lesson.mnemonic_keypoints;
+        if (mn) {
+          html += '<div class="mnemonic-card">';
+          html += '<div class="ls-label" style="font-size:0.75rem;padding:0;margin-bottom:0.3em">🧠 Mnemonic</div>';
+          if (lesson.mnemonic) html += '<div class="mc-trick">' + lesson.mnemonic.replace(/\n/g, '<br>') + '</div>';
+          if (lesson.mnemonic_summary) html += '<div class="mc-summary">' + lesson.mnemonic_summary.replace(/\n/g, '<br>') + '</div>';
+          if (lesson.mnemonic_keypoints) {
+            const kps = lesson.mnemonic_keypoints.split('\n').filter(k => k.trim());
+            html += '<div class="mc-keypoints">';
+            for (const kp of kps) {
+              html += '<div class="mc-kp-item">' + kp + '</div>';
+            }
+            html += '</div>';
+          }
+          html += '</div>';
+        }
+        html += '</div></div>';
         break;
 
       case 'quiz':
@@ -868,12 +1285,16 @@ async function loadLearnModule(lessonId) {
         const codingData = await api('/api/lessons/' + lessonId + '/coding').catch(() => null);
         const e = codingData && codingData.prompt ? codingData : null;
         if (!e) { html += '<div class="fc-empty">No coding exercise for this lesson.</div>'; break; }
-        if (!codeState[lessonId]) codeState[lessonId] = { output: '', showSolution: false };
+        if (!codeState[lessonId]) codeState[lessonId] = { output: '', showSolution: false, solution: e.solution, starter: e.starter };
         const s = codeState[lessonId];
         html += '<div class="code-prompt">' + e.prompt + '</div>';
-        html += '<div class="code-editor" contenteditable="true" id="codeEditor">' + e.starter + '<span style="animation:blink 1s step-end infinite">_</span></div>';
+        const editorContent = s.userCode || '';
+        html += '<div style="flex:1;display:flex;flex-direction:column;min-height:0">';
+        html += '<div class="code-editor" contenteditable="true" id="codeEditor">' + editorContent + '<span style="animation:blink 1s step-end infinite">_</span></div>';
+        html += '<div style="display:flex;gap:0.4em;flex-shrink:0">';
         html += '<button class="quiz-btn" data-action="code-run">▶ Run</button>';
         html += '<button class="quiz-btn alt" data-action="code-reveal">' + (s.showSolution ? 'Hide' : 'Reveal') + '</button>';
+        html += '</div>';
         if (s.output) html += '<div class="code-out">' + s.output + '</div>';
         if (s.showSolution) html += '<div class="code-out solution">// Solution<br>' + e.solution.replace(/\n/g, '<br>') + '</div>';
         break;
@@ -909,6 +1330,7 @@ async function loadLearnModule(lessonId) {
     bindModuleActions(lessonId);
     bindMicroBanners();
   } catch (e) {
+    console.error('Module error:', e);
     container.innerHTML = '<div class="module-card" style="color:var(--red)">Error loading module.</div>';
   }
 }
@@ -940,9 +1362,52 @@ function bindModuleActions(lessonId) {
       }
       else if (action === 'quiz-retry' && quizState[lessonId]) { quizState[lessonId] = { current: 0, answers: {}, done: false }; loadLearnModule(lessonId); }
       else if (action === 'code-run') {
-        if (codeState[lessonId]) { codeState[lessonId].output = '<span style="color:var(--green)">✓ Code runs (simulated)</span>'; loadLearnModule(lessonId); }
+        if (codeState[lessonId]) {
+          const editor = document.getElementById('codeEditor');
+          let userCode = '';
+          if (editor) {
+            userCode = (editor.textContent || editor.innerText || '').replace(/_\s*$/, '').trim();
+            codeState[lessonId].userCode = userCode;
+          }
+          // Reject blank / empty code
+          if (!userCode) {
+            showAlert('Write some code before running!');
+            return;
+          }
+          // Show loading state
+          codeState[lessonId].output = '<span style="color:var(--text-muted)">⏳ Verifying with AI...</span>';
+          loadLearnModule(lessonId);
+          // Call backend for AI verification via OpenCode
+          fetch('/api/verify-code', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ lessonId: lessonId, userCode: userCode }),
+          })
+          .then(res => res.json())
+          .then(data => {
+            if (data.passed) {
+              codeState[lessonId].output = '<span style="color:var(--green);font-weight:bold">✓ Correct!</span>' +
+                (data.feedback && data.feedback !== 'PASS' ? '<br><span style="color:var(--text-muted);font-size:0.8rem">' + data.feedback.replace(/^PASS\s*/i, '') + '</span>' : '');
+            } else {
+              let fb = data.feedback || 'Not quite right. Try again!';
+              fb = fb.replace(/^FAIL\s*/i, '');
+              codeState[lessonId].output = '<span style="color:var(--red);font-weight:bold">✗ ' + fb + '</span>';
+            }
+            loadLearnModule(lessonId);
+            markActive();
+          })
+          .catch(err => {
+            codeState[lessonId].output = '<span style="color:var(--red);font-weight:bold">✗ Verification failed: ' + (err.message || 'server error') + '</span>';
+            loadLearnModule(lessonId);
+          });
+        }
       }
-      else if (action === 'code-reveal' && codeState[lessonId]) { codeState[lessonId].showSolution = !codeState[lessonId].showSolution; loadLearnModule(lessonId); }
+      else if (action === 'code-reveal' && codeState[lessonId]) {
+        const editor = document.getElementById('codeEditor');
+        if (editor) codeState[lessonId].userCode = (editor.textContent || editor.innerText || '').replace(/_\s*$/, '').trim();
+        codeState[lessonId].showSolution = !codeState[lessonId].showSolution;
+        loadLearnModule(lessonId);
+      }
       else if (action === 'fc-flip') {
         initFcSchedule(lessonId);
         if (flashcardSchedule[lessonId]) { flashcardSchedule[lessonId].flipped = !flashcardSchedule[lessonId].flipped; loadLearnModule(lessonId); }
@@ -960,6 +1425,16 @@ function bindModuleActions(lessonId) {
       if (['quiz-next', 'code-run'].includes(action)) markActive();
     });
   });
+
+  // Auto-save code editor content as user types
+  const codeEditor = document.getElementById('codeEditor');
+  if (codeEditor) {
+    codeEditor.addEventListener('input', () => {
+      if (codeState[lessonId]) {
+        codeState[lessonId].userCode = (codeEditor.textContent || codeEditor.innerText || '').replace(/_\s*$/, '').trim();
+      }
+    });
+  }
 
   document.querySelectorAll('[data-fc-rate]').forEach(el => {
     el.addEventListener('click', async () => {
@@ -1228,7 +1703,7 @@ async function renderProgress(screen) {
   html += '<div style="display:flex;gap:0.5em;margin-bottom:0.5em">';
   html += '<span class="tag ok"><span>🔥 ' + stats.streak + ' day streak</span></span>';
   html += '<span class="tag"><span>⏱ ' + stats.total_hours + 'h total</span></span></div>';
-  html += renderStreakCalendar();
+  html += renderStreakCalendar(stats.streak);
   html += '</div></div>';
 
   // Strengths & Weaknesses report
@@ -1280,6 +1755,211 @@ let adminSelId = restore('adminSel', null);
 let adminStep = restore('adminStep', 1);
 let adminForm = null;
 let adminDirty = false;
+let pendingStandaloneImport = null;
+
+// Admin Modal Controller
+const adminModal = {
+  overlay: null,
+  modal: null,
+  titleEl: null,
+  bodyEl: null,
+  footerEl: null,
+  currentType: null,
+  currentIndex: null,
+  lessonId: null,
+
+  init() {
+    this.overlay = document.getElementById('adminModalOverlay');
+    this.modal = document.getElementById('adminModal');
+    this.titleEl = document.getElementById('adminModalTitle');
+    this.bodyEl = document.getElementById('adminModalBody');
+    this.footerEl = document.getElementById('adminModalFooter');
+    this.overlay.addEventListener('click', (e) => { if (e.target === this.overlay) this.close(); });
+  },
+
+  open(type, index, lessonId) {
+    this.currentType = type;
+    this.currentIndex = index;
+    this.lessonId = lessonId;
+    if (type === 'quiz') this.openQuizModal(index);
+    else if (type === 'flashcard') this.openFlashcardModal(index);
+    else if (type === 'coding') this.openCodingModal();
+    this.overlay.classList.add('active');
+  },
+
+  close() {
+    this.overlay.classList.remove('active');
+    this.currentType = null;
+    this.currentIndex = null;
+  },
+
+  confirmDelete(type, index) {
+    showConfirm('Delete this ' + type + '?', ok => {
+      if (ok) this.deleteItem(type, index);
+    });
+  },
+
+  async deleteItem(type, index) {
+    if (type === 'quiz') {
+      adminForm.quiz.splice(index, 1);
+    } else if (type === 'flashcard') {
+      adminForm.flashcards.splice(index, 1);
+    }
+
+    adminDirty = true;
+    this.close();
+
+    await api('/api/admin/lessons/' + this.lessonId, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        quiz: adminForm.quiz,
+        flashcards: adminForm.flashcards
+      })
+    });
+
+    renderAdminLesson();
+  },
+
+  openQuizModal(index) {
+    const isEdit = index >= 0;
+    const question = isEdit ? adminForm.quiz[index] : { question: '', options: ['', '', '', ''], correct_index: 0 };
+
+    this.titleEl.textContent = isEdit ? 'Edit Question' : 'Add Question';
+
+    this.bodyEl.innerHTML = `
+      <div class="form-group">
+        <label>Question</label>
+        <textarea id="modalQQuestion">${escapeHtml(question.question)}</textarea>
+      </div>
+      <div class="form-group">
+        <label>Options (select correct answer)</label>
+        ${[0,1,2,3].map(i => `
+          <div class="option-row">
+            <input type="radio" name="correctOpt" value="${i}" ${question.correct_index === i ? 'checked' : ''}>
+            <span class="option-label">${String.fromCharCode(65 + i)}.</span>
+            <input type="text" id="modalQOpt${i}" value="${escapeHtml(question.options[i])}" placeholder="Option ${i + 1}">
+          </div>
+        `).join('')}
+      </div>
+    `;
+
+    this.footerEl.innerHTML = `
+      <button class="btn btn-sm" onclick="adminModal.close()">Cancel</button>
+      <button class="btn btn-sm btn-primary" onclick="adminModal.saveQuiz(${index})">Save</button>
+    `;
+  },
+
+  saveQuiz(index) {
+    const question = document.getElementById('modalQQuestion').value.trim();
+    const options = [0,1,2,3].map(i => document.getElementById('modalQOpt' + i).value.trim());
+    const correct_index = parseInt(document.querySelector('input[name="correctOpt"]:checked')?.value || '0');
+
+    if (!question || options.some(o => !o)) {
+      showAlert('Question and all options required');
+      return;
+    }
+
+    if (!adminForm.quiz) adminForm.quiz = [];
+
+    const newQuestion = { question, options, correct_index };
+
+    if (index >= 0) {
+      adminForm.quiz[index] = newQuestion;
+    } else {
+      adminForm.quiz.push(newQuestion);
+    }
+
+    adminDirty = true;
+    this.close();
+    renderAdminLesson();
+  },
+
+  openFlashcardModal(index) {
+    const isEdit = index >= 0;
+    const card = isEdit ? adminForm.flashcards[index] : { front: '', back: '' };
+    
+    this.titleEl.textContent = isEdit ? 'Edit Flashcard' : 'Add Flashcard';
+    
+    this.bodyEl.innerHTML = `
+      <div class="form-group">
+        <label>Front (Question)</label>
+        <textarea id="modalFcFront">${escapeHtml(card.front)}</textarea>
+      </div>
+      <div class="form-group">
+        <label>Back (Answer)</label>
+        <textarea id="modalFcBack">${escapeHtml(card.back)}</textarea>
+      </div>
+    `;
+    
+    this.footerEl.innerHTML = `
+      <button class="btn btn-sm" onclick="adminModal.close()">Cancel</button>
+      <button class="btn btn-sm btn-primary" onclick="adminModal.saveFlashcard(${index})">Save</button>
+    `;
+  },
+
+  saveFlashcard(index) {
+    const front = document.getElementById('modalFcFront').value.trim();
+    const back = document.getElementById('modalFcBack').value.trim();
+    
+    if (!front || !back) {
+      showAlert('Both front and back are required');
+      return;
+    }
+    
+    if (!adminForm.flashcards) adminForm.flashcards = [];
+    
+    if (index >= 0) {
+      adminForm.flashcards[index] = { front, back };
+    } else {
+      adminForm.flashcards.push({ front, back });
+    }
+    
+    adminDirty = true;
+    this.close();
+    renderAdminLesson();
+  },
+
+  openCodingModal() {
+    const coding = adminForm.coding || { prompt: '', starter: '', solution: '' };
+    
+    this.titleEl.textContent = 'Edit Coding Exercise';
+    
+    this.bodyEl.innerHTML = `
+      <div class="form-group">
+        <label>Prompt</label>
+        <textarea id="modalCodPrompt" style="height: 80px">${escapeHtml(coding.prompt)}</textarea>
+      </div>
+      <div class="form-group">
+        <label>Starter Code</label>
+        <textarea id="modalCodStarter" style="height: 100px; font-family: monospace;">${escapeHtml(coding.starter)}</textarea>
+      </div>
+      <div class="form-group">
+        <label>Solution</label>
+        <textarea id="modalCodSolution" style="height: 100px; font-family: monospace;">${escapeHtml(coding.solution)}</textarea>
+      </div>
+    `;
+    
+    this.footerEl.innerHTML = `
+      <button class="btn btn-sm" onclick="adminModal.close()">Cancel</button>
+      <button class="btn btn-sm btn-primary" onclick="adminModal.saveCoding()">Save</button>
+    `;
+  },
+
+  saveCoding() {
+    const coding = {
+      prompt: document.getElementById('modalCodPrompt').value,
+      starter: document.getElementById('modalCodStarter').value,
+      solution: document.getElementById('modalCodSolution').value
+    };
+    
+    adminForm.coding = coding;
+    adminDirty = true;
+    this.close();
+    renderAdminLesson();
+  }
+};
+adminModal.init();
 
 async function loadAdminTree() {
   adminData = await api('/api/admin/courses').catch(() => []);
@@ -1294,6 +1974,8 @@ async function loadAdminLesson(id) {
       status: data.status || 'locked',
       notes: data.notes || '',
       mnemonic: data.mnemonic || '',
+      mnemonic_summary: data.mnemonic_summary || '',
+      mnemonic_keypoints: data.mnemonic_keypoints || '',
       course_id: data.course_id || '',
       quiz: Array.isArray(data.quiz) ? data.quiz : [],
       coding: data.coding && data.coding.prompt ? data.coding : { prompt: '', starter: '', solution: '' },
@@ -1342,6 +2024,7 @@ function renderAdminFull(screen) {
 
   // Table
   h += '<div class="admin-table-panel"><div class="admin-box"><div class="ad-header">Content Tree</div><div class="ad-body">';
+  h += '<div style="flex:1;overflow-y:auto">';
   h += '<table class="admin-table"><tr><th>Name</th><th>Type</th><th>Status</th></tr>';
   for (const n of all) {
     const depth = n.type === 'course' ? 1 : 2;
@@ -1351,15 +2034,16 @@ function renderAdminFull(screen) {
     h += '<td>' + badge(n.status) + '</td></tr>';
   }
   h += '</table>';
+  h += '</div>';
   // Tree action buttons
-  h += '<div class="btn-grp" style="padding:0.3em">';
+  h += '<div class="btn-grp" style="padding:0.3em;flex-shrink:0">';
   h += '<button class="btn btn-sm" id="admAddLesson">+ Lesson</button>';
   h += '<button class="btn btn-sm btn-alt" id="admAddCourse">+ Course</button>';
   if (adminSelId) h += '<button class="btn btn-sm btn-red" id="admDeleteNode">✕ Delete</button>';
   h += '</div></div></div></div>';
 
   // Editor
-  h += '<div class="admin-editor-panel"><div class="admin-box"><div class="ad-header">' + (sel ? (sel.name || sel.id) : 'Select a node') + '</div><div class="ad-body" style="padding:0.5em;overflow-y:auto">';
+  h += '<div class="admin-editor-panel"><div class="admin-box"><div class="ad-header" style="display:flex;justify-content:space-between;align-items:center"><span>' + (sel ? (sel.name || sel.id) : 'Select a node') + '</span><div class="btn-grp" style="gap:0.3em"><button class="btn btn-sm" id="admExportJsonBtn">📤 Export JSON</button><button class="btn btn-sm btn-alt" id="admImportJsonBtn">📥 Import JSON</button></div></div><div class="ad-body" style="padding:0.5em;overflow-y:auto">';
 
   if (sel && isLeaf && adminForm) {
     const infoFilled = adminForm.title && adminForm.title.trim().length > 0;
@@ -1380,52 +2064,89 @@ function renderAdminFull(screen) {
       adminStep = 1;
     }
 
+    h += '<div class="ad-form-scroll">';
     switch (adminStep) {
       case 1:
         h += '<div class="fld"><label class="fld-label">Title *</label><input class="fld-input" id="admFldTitle" value="' + escHtml(adminForm.title) + '"></div>';
+        h += '<div class="fld"><label class="fld-label">Course ID</label><input class="fld-input" id="admFldCourseId" value="' + escHtml(adminForm.course_id) + '" readonly style="background:var(--surface-alt);color:var(--text-dim);cursor:default"></div>';
         h += '<div class="fld"><label class="fld-label">Type</label><select class="fld-select" id="admFldType"><option' + (adminForm.type === 'lesson' ? ' selected' : '') + '>lesson</option><option' + (adminForm.type === 'coding' ? ' selected' : '') + '>coding</option></select></div>';
         h += '<div class="fld"><label class="fld-label">Status</label><select class="fld-select" id="admFldStatus"><option' + (adminForm.status === 'locked' ? ' selected' : '') + '>locked</option><option' + (adminForm.status === 'available' ? ' selected' : '') + '>available</option><option' + (adminForm.status === 'in_progress' ? ' selected' : '') + '>in_progress</option><option' + (adminForm.status === 'done' ? ' selected' : '') + '>done</option></select></div>';
         h += '<div style="font-size:0.75rem;color:var(--text-dim);margin-top:0.3em">' + (infoFilled ? '✅ Info complete — click any step above' : 'Fill in the Title above, then navigate freely') + '</div>';
         break;
       case 2:
-        h += '<div class="fld"><label class="fld-label">Notes</label><textarea class="fld-textarea" id="admFldNotes">' + escHtml(adminForm.notes) + '</textarea></div>';
-        h += '<div class="fld"><label class="fld-label">Mnemonic</label><input class="fld-input" id="admFldMnemonic" value="' + escHtml(adminForm.mnemonic) + '"></div>';
+        h += '<div style="flex:1;display:flex;flex-direction:column">';
+        h += '<div class="fld" style="flex:1;display:flex;flex-direction:column"><label class="fld-label">Notes</label><textarea class="fld-textarea" id="admFldNotes" style="flex:1;min-height:80px;resize:none">' + escHtml(adminForm.notes) + '</textarea></div>';
+        h += '</div>';
+        h += '<div class="fld" style="flex-shrink:0"><label class="fld-label">Mnemonic</label><input class="fld-input" id="admFldMnemonic" value="' + escHtml(adminForm.mnemonic) + '"></div>';
+        h += '<div class="fld" style="flex-shrink:0"><label class="fld-label">Mnemonic Summary</label><textarea class="fld-textarea" id="admFldMnemonicSummary" style="min-height:40px;resize:none">' + escHtml(adminForm.mnemonic_summary) + '</textarea></div>';
+        h += '<div class="fld" style="flex-shrink:0"><label class="fld-label">Mnemonic Key Points<br><span style="color:var(--text-dim);font-size:0.7rem">One per line</span></label><textarea class="fld-textarea" id="admFldMnemonicKeypoints" style="min-height:60px;resize:none">' + escHtml(adminForm.mnemonic_keypoints) + '</textarea></div>';
         break;
       case 3:
-        h += '<div class="fld"><label class="fld-label">Quiz Questions</label>';
-        (adminForm.quiz.length > 0 ? adminForm.quiz : [{ question: '', options: ['', '', '', ''], correct_index: 0 }]).forEach((q, qi) => {
-          h += '<div style="border:1px solid var(--border-dim);padding:0.4em;margin-bottom:0.4em">';
-          h += '<input class="fld-input" data-adm-q="' + qi + '" data-adm-qf="question" value="' + escHtml(q.question) + '" placeholder="Question ' + (qi + 1) + '" style="margin-bottom:0.2em">';
-          (q.options && q.options.length ? q.options : ['', '', '', '']).forEach((opt, oi) => {
-            h += '<div style="display:flex;align-items:center;gap:0.3em;margin-top:0.15em">';
-            h += '<input type="radio" name="q' + qi + '_correct" data-adm-q="' + qi + '" data-adm-qf="correct" value="' + oi + '"' + (oi === q.correct_index ? ' checked' : '') + '>';
-            h += '<input class="fld-input" data-adm-q="' + qi + '" data-adm-qf="opt-' + oi + '" value="' + escHtml(opt) + '" placeholder="Option ' + (oi + 1) + '" style="flex:1;font-size:0.75rem">';
+        h += '<div class="v1-ename">Step 3: Quiz</div>';
+        const questions = adminForm.quiz || [];
+        h += '<div style="flex:1;overflow-y:auto;margin-bottom:0.5em">';
+        if (questions.length === 0) {
+          h += '<div style="color: var(--text-dim); text-align: center; padding: 20px;">No questions yet</div>';
+        } else {
+          for (let i = 0; i < questions.length; i++) {
+            const q = questions[i];
+            h += '<div class="admin-item-card">';
+            h += '<div class="admin-item-content">';
+            h += '<div class="admin-item-num">Q' + (i + 1) + '</div>';
+            h += '<div class="admin-item-text">' + escapeHtml(q.question) + '</div>';
+            h += '<div class="admin-item-meta">Correct: ' + escapeHtml(q.options[q.correct_index]) + '</div>';
             h += '</div>';
-          });
-          h += '<button class="btn-icon" data-adm-q-del="' + qi + '" style="margin-top:0.2em;font-size:0.75rem">✕ Remove</button>';
-          h += '</div>';
-        });
-        h += '<button class="btn btn-sm" id="admAddQuestion">+ Add Question</button></div>';
+            h += '<div class="admin-item-actions">';
+            h += '<button class="btn btn-sm" onclick="adminModal.open(\'quiz\', ' + i + ', adminForm.id)">✏️</button>';
+            h += '<button class="btn btn-sm btn-red" onclick="adminModal.confirmDelete(\'quiz\', ' + i + ')">✕</button>';
+            h += '</div>';
+            h += '</div>';
+          }
+        }
+        h += '</div>';
+        h += '<button class="btn btn-sm btn-alt" style="flex-shrink:0" onclick="adminModal.open(\'quiz\', -1, adminForm.id)">+ Add Question</button>';
         break;
       case 4:
-        h += '<div class="fld"><label class="fld-label">Exercise Prompt</label><textarea class="fld-textarea" id="admFldCodingPrompt">' + escHtml(adminForm.coding.prompt || '') + '</textarea></div>';
-        h += '<div class="fld"><label class="fld-label">Starter Code</label><textarea class="fld-textarea" id="admFldCodingStarter">' + escHtml(adminForm.coding.starter || '') + '</textarea></div>';
-        h += '<div class="fld"><label class="fld-label">Solution</label><textarea class="fld-textarea" id="admFldCodingSolution">' + escHtml(adminForm.coding.solution || '') + '</textarea></div>';
+        h += '<div class="v1-ename">Step 4: Coding</div>';
+        const coding = adminForm.coding || {};
+        h += '<div class="admin-item-card" style="margin-bottom: 12px;">';
+        h += '<div class="admin-item-content">';
+        h += '<div class="admin-item-meta">Prompt: ' + escapeHtml((coding.prompt || '').substring(0, 60)) + '</div>';
+        h += '<div class="admin-item-meta">Starter: ' + escapeHtml((coding.starter || '').substring(0, 40)) + '</div>';
+        h += '</div>';
+        h += '<button class="btn btn-sm" onclick="adminModal.open(\'coding\', 0, adminForm.id)">✏️</button>';
+        h += '</div>';
         break;
       case 5:
-        h += '<div class="fld"><label class="fld-label">Flashcards</label>';
-        (adminForm.flashcards.length > 0 ? adminForm.flashcards : [{ front: '', back: '' }]).forEach((fc, fi) => {
-          h += '<div style="display:flex;gap:0.3em;margin-top:0.2em">';
-          h += '<input class="fld-input" data-adm-fc="' + fi + '" data-adm-fcf="front" value="' + escHtml(fc.front) + '" placeholder="Front" style="flex:1;font-size:0.75rem">';
-          h += '<input class="fld-input" data-adm-fc="' + fi + '" data-adm-fcf="back" value="' + escHtml(fc.back) + '" placeholder="Back" style="flex:1;font-size:0.75rem">';
-          h += '<button class="btn-icon" data-adm-fc-del="' + fi + '" style="font-size:0.75rem">✕</button></div>';
-        });
-        h += '<button class="btn btn-sm" id="admAddFlashcard" style="margin-top:0.3em">+ Add Card</button></div>';
+        h += '<div class="v1-ename">Step 5: Flashcards</div>';
+        const cards = adminForm.flashcards || [];
+        h += '<div style="flex:1;overflow-y:auto;margin-bottom:0.5em">';
+        if (cards.length === 0) {
+          h += '<div style="color: var(--text-dim); text-align: center; padding: 20px;">No flashcards yet</div>';
+        } else {
+          for (let i = 0; i < cards.length; i++) {
+            const card = cards[i];
+            h += '<div class="admin-item-card">';
+            h += '<div class="admin-item-content">';
+            h += '<div class="admin-item-num">Card ' + (i + 1) + '</div>';
+            h += '<div class="admin-item-text">' + escapeHtml(card.front.substring(0, 50)) + (card.front.length > 50 ? '...' : '') + '</div>';
+            h += '<div class="admin-item-meta">Back: ' + escapeHtml(card.back.substring(0, 30)) + (card.back.length > 30 ? '...' : '') + '</div>';
+            h += '</div>';
+            h += '<div class="admin-item-actions">';
+            h += '<button class="btn btn-sm" onclick="adminModal.open(\'flashcard\', ' + i + ', adminForm.id)">✏️</button>';
+            h += '<button class="btn btn-sm btn-red" onclick="adminModal.confirmDelete(\'flashcard\', ' + i + ')">✕</button>';
+            h += '</div>';
+            h += '</div>';
+          }
+        }
+        h += '</div>';
+        h += '<button class="btn btn-sm btn-alt" style="flex-shrink:0" onclick="adminModal.open(\'flashcard\', -1, adminForm.id)">+ Add Flashcard</button>';
         break;
     }
 
     // Bottom bar: Save button always visible + nav arrows
-    h += '<div class="btn-grp" style="margin-top:0.6em;justify-content:space-between">';
+    h += '</div>';
+    h += '<div class="btn-grp" style="padding:0.5em;border-top:1px solid var(--border-dim);flex-shrink:0;justify-content:space-between">';
     h += '<div class="btn-grp">';
     h += '<button class="btn btn-green" id="admSaveBtn">💾 Save</button>';
     h += '<span style="font-size:0.7rem;color:var(--text-dim);margin-left:0.3em">saves current step data</span>';
@@ -1492,6 +2213,10 @@ function renderAdminFull(screen) {
     if (nt) adminForm.notes = nt.value;
     const mn = document.getElementById('admFldMnemonic');
     if (mn) adminForm.mnemonic = mn.value;
+    const mns = document.getElementById('admFldMnemonicSummary');
+    if (mns) adminForm.mnemonic_summary = mns.value;
+    const mnk = document.getElementById('admFldMnemonicKeypoints');
+    if (mnk) adminForm.mnemonic_keypoints = mnk.value;
     const cp = document.getElementById('admFldCodingPrompt');
     if (cp) adminForm.coding.prompt = cp.value;
     const cs = document.getElementById('admFldCodingStarter');
@@ -1558,50 +2283,59 @@ function renderAdminFull(screen) {
   // Add lesson
   document.getElementById('admAddLesson')?.addEventListener('click', async () => {
     const courseId = adminSelId && sel && !isLeaf ? adminSelId : (sel ? (sel.course_id || 'react') : 'react');
-    const name = prompt('Lesson name:');
-    if (!name) return;
-    const id = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-    await fetch('/api/admin/lessons', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id, title: name, type: 'lesson', status: 'locked', course_id: courseId }),
+    showPrompt('Lesson name:', async name => {
+      if (!name) return;
+      const id = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+      await fetch('/api/admin/lessons', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, title: name, type: 'lesson', status: 'locked', course_id: courseId }),
+      });
+      adminDirty = true;
+      await loadAdminTree();
+      adminSelId = id;
+      persist('adminSel', id);
+      await loadAdminLesson(id);
+      renderAdminFull(screen);
     });
-    adminDirty = true;
-    await loadAdminTree();
-    adminSelId = id;
-    persist('adminSel', id);
-    await loadAdminLesson(id);
-    renderAdminFull(screen);
   });
 
   // Add course
   document.getElementById('admAddCourse')?.addEventListener('click', async () => {
     const parentId = '';
-    const name = prompt('Course name:');
-    if (!name) return;
-    const id = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-    await fetch('/api/admin/courses', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id, name, parent_id: parentId }),
+    showPrompt('Course name:', async name => {
+      if (!name) return;
+      const id = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+      await fetch('/api/admin/courses', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, name, parent_id: parentId }),
+      });
+      adminDirty = true;
+      await loadAdminTree();
+      if (adminSelId) {
+        const match = flattenTree(adminData).find(n => n.id === adminSelId);
+        if (!match) adminSelId = id;
+      }
+      renderAdminFull(screen);
     });
-    adminDirty = true;
-    await loadAdminTree();
-    renderAdminFull(screen);
   });
 
   // Delete node
   document.getElementById('admDeleteNode')?.addEventListener('click', async () => {
-    if (!adminSelId || !confirm('Delete "' + (sel ? sel.name || sel.id : '') + '"?')) return;
-    const node = flattenTree(adminData).find(n => n.id === adminSelId);
-    if (node && node.type !== 'course') {
-      await fetch('/api/admin/lessons/' + adminSelId, { method: 'DELETE' });
-    } else {
-      await fetch('/api/admin/courses/' + adminSelId, { method: 'DELETE' });
-    }
-    adminSelId = null;
-    persist('adminSel', null);
-    adminDirty = true;
-    await loadAdminTree();
-    renderAdminFull(screen);
+    if (!adminSelId) return;
+    showConfirm('Delete "' + (sel ? sel.name || sel.id : '') + '"?', async ok => {
+      if (!ok) return;
+      const node = flattenTree(adminData).find(n => n.id === adminSelId);
+      if (node && node.type !== 'course') {
+        await fetch('/api/admin/lessons/' + adminSelId, { method: 'DELETE' });
+      } else {
+        await fetch('/api/admin/courses/' + adminSelId, { method: 'DELETE' });
+      }
+      adminSelId = null;
+      persist('adminSel', null);
+      adminDirty = true;
+      await loadAdminTree();
+      renderAdminFull(screen);
+    });
   });
 
   // Save button — saves current step data
@@ -1614,7 +2348,9 @@ function renderAdminFull(screen) {
       method: 'PUT', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         title: adminForm.title, type: adminForm.type, status: adminForm.status,
-        notes: adminForm.notes, mnemonic: adminForm.mnemonic, course_id: adminForm.course_id,
+        notes: adminForm.notes, mnemonic: adminForm.mnemonic,
+        mnemonic_summary: adminForm.mnemonic_summary, mnemonic_keypoints: adminForm.mnemonic_keypoints,
+        course_id: adminForm.course_id,
       }),
     });
 
@@ -1651,7 +2387,7 @@ function renderAdminFull(screen) {
       <button class="btn btn-alt" id="syncImportBtn">📥 Import</button>
     </div>
     <span id="syncStatus" style="font-size:0.75rem;color:var(--text-dim);align-self:center"></span>`;
-  document.querySelector('.admin-box')?.closest('.admin-editor-panel')?.after(syncArea);
+  document.querySelector('.admin-split')?.after(syncArea);
 
   document.getElementById('syncExportBtn')?.addEventListener('click', async () => {
     const res = await api('/api/sync/export');
@@ -1674,34 +2410,139 @@ function renderAdminFull(screen) {
     }
   });
 
-  // Export as JSON section
-  const exportArea = document.createElement('div');
-  exportArea.style.cssText = 'border-top:1px solid var(--border-dim);flex-shrink:0';
-  exportArea.innerHTML = `
-    <div style="display:flex;justify-content:space-between;align-items:center;padding:0.4em 1em;cursor:pointer;background:var(--bg2)" id="jsonExportToggle">
-      <span style="font-size:0.7rem;color:var(--blue);letter-spacing:0.05em;text-transform:uppercase">📤 Export as JSON — copy current data to modify</span>
-      <span style="font-size:0.65rem;color:var(--text-dim)" id="jsonExportArrow">▼</span>
+  // ======== BACKUP MANAGER ========
+  const backupArea = document.createElement('div');
+  backupArea.style.cssText = 'display:flex;flex-direction:column;gap:0.3em;padding:0.5em 1em;flex-shrink:0;border-top:1px solid var(--border)';
+  backupArea.innerHTML = `
+    <div style="display:flex;align-items:center;gap:0.5em">
+      <span style="font-weight:600;font-size:0.8rem">💾 Database Backup</span>
+      <button class="btn btn-sm" id="backupCreateBtn">Backup Now</button>
+      <span id="backupStatus" style="font-size:0.75rem;color:var(--text-dim)"></span>
     </div>
-    <div id="jsonExportBody" style="padding:0.5em 1em">
-      <div class="btn-grp" style="margin-bottom:0.4em">
-        <button class="btn" id="jsonExportBtn">▶ Export as JSON</button>
-        <button class="btn btn-alt" id="jsonExportCopyBtn" style="display:none">📋 Copy</button>
-        <span id="jsonExportStatus" style="font-size:0.7rem;color:var(--text-dim);align-self:center"></span>
-      </div>
-      <textarea id="jsonExportTextarea" readonly placeholder="Click 'Export as JSON' to load current data..." style="width:100%;min-height:120px;font-family:'Courier New',monospace;font-size:0.7rem;padding:0.5em;background:var(--surface-alt);border:1px solid var(--border-dim);border-radius:4px;color:var(--text);resize:vertical"></textarea>
-      <div style="font-size:0.6rem;color:var(--text-dim);margin-top:0.3em;line-height:1.6">
-        <strong>Usage:</strong> Export → Copy → Modify in AI → Paste into <strong>JSON Import</strong> below → Import
-      </div>
-    </div>`;
-  document.querySelector('.admin-box')?.closest('.admin-editor-panel')?.after(exportArea);
+    <div id="backupList" style="font-size:0.75rem;color:var(--text-dim);max-height:120px;overflow-y:auto"></div>
+    <div style="font-size:0.65rem;color:var(--text-muted)">Auto-backup: daily on startup (keeps last 10)</div>`;
 
-  let exportExpanded = true;
-  document.getElementById('jsonExportToggle')?.addEventListener('click', () => {
-    exportExpanded = !exportExpanded;
-    document.getElementById('jsonExportBody').style.display = exportExpanded ? '' : 'none';
-    document.getElementById('jsonExportArrow').textContent = exportExpanded ? '▼' : '▶';
+  document.querySelector('.admin-split')?.after(backupArea);
+
+  async function refreshBackupList() {
+    const listEl = document.getElementById('backupList');
+    const statusEl = document.getElementById('backupStatus');
+    try {
+      const backups = await api('/api/backups');
+      if (!backups.length) {
+        listEl.innerHTML = '<span style="color:var(--text-muted)">No backups yet.</span>';
+        return;
+      }
+      let html = '';
+      for (const b of backups) {
+        const date = new Date(b.modified);
+        const dateStr = date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+        const sizeStr = b.size < 1024 ? b.size + ' B' : (b.size / 1024).toFixed(1) + ' KB';
+        const label = b.auto ? '🔄 ' : '💾 ';
+        html += '<div style="display:flex;align-items:center;gap:0.4em;padding:0.15em 0">';
+        html += '<span style="flex:1">' + label + dateStr + ' (' + sizeStr + ')</span>';
+        html += '<button class="btn btn-sm backup-restore" data-file="' + b.file + '" style="font-size:0.7rem;padding:0.1em 0.4em">↩ Restore</button>';
+        html += '<button class="btn btn-sm btn-red backup-delete" data-file="' + b.file + '" style="font-size:0.7rem;padding:0.1em 0.4em">✕</button>';
+        html += '</div>';
+      }
+      listEl.innerHTML = html;
+
+      // Bind restore buttons
+      document.querySelectorAll('.backup-restore').forEach(el => {
+        el.addEventListener('click', async () => {
+          const file = el.dataset.file;
+          showConfirm('Restore from "' + file + '"? Current data will be replaced.', async ok => {
+            if (!ok) return;
+            el.textContent = '⏳';
+            el.disabled = true;
+            try {
+              const res = await fetch('/api/backup/restore', {
+                method: 'POST', headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({file}),
+              });
+              if (res.ok) {
+                statusEl.textContent = '✅ Restored from ' + file;
+                adminDirty = true;
+                learnDirty = true;
+                refreshBackupList();
+              } else {
+                const err = await res.json();
+                statusEl.textContent = '❌ ' + (err.error || 'restore failed');
+              }
+            } catch(e) {
+              statusEl.textContent = '❌ ' + e.message;
+            }
+          });
+        });
+      });
+
+      // Bind delete buttons
+      document.querySelectorAll('.backup-delete').forEach(el => {
+        el.addEventListener('click', async () => {
+          const file = el.dataset.file;
+          showConfirm('Delete backup "' + file + '"? This cannot be undone.', async ok => {
+            if (!ok) return;
+            el.textContent = '...';
+            try {
+              const res = await fetch('/api/backup/delete', {
+                method: 'POST', headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({file}),
+              });
+              if (res.ok) {
+                statusEl.textContent = '🗑️ Deleted ' + file;
+                refreshBackupList();
+              } else {
+                statusEl.textContent = '❌ delete failed';
+              }
+            } catch(e) {
+              statusEl.textContent = '❌ ' + e.message;
+            }
+          });
+        });
+      });
+    } catch(e) {
+      listEl.innerHTML = '<span style="color:var(--red)">Failed to load backups.</span>';
+    }
+  }
+
+  document.getElementById('backupCreateBtn')?.addEventListener('click', async () => {
+    const btn = document.getElementById('backupCreateBtn');
+    const statusEl = document.getElementById('backupStatus');
+    btn.textContent = '⏳';
+    btn.disabled = true;
+    try {
+      const res = await fetch('/api/backup', { method: 'POST' });
+      if (res.ok) {
+        const data = await res.json();
+        const sizeStr = data.size < 1024 ? data.size + ' B' : (data.size / 1024).toFixed(1) + ' KB';
+        statusEl.textContent = '✅ Backup created (' + sizeStr + ')';
+        refreshBackupList();
+      } else {
+        const err = await res.json();
+        statusEl.textContent = '❌ ' + (err.error || 'backup failed');
+      }
+    } catch(e) {
+      statusEl.textContent = '❌ ' + e.message;
+    }
+    btn.textContent = 'Backup Now';
+    btn.disabled = false;
   });
 
+  refreshBackupList();
+
+  // Modal: Export JSON — open modal and run export on click
+  document.getElementById('admExportJsonBtn')?.addEventListener('click', () => {
+    const overlay = document.getElementById('jsonExportOverlay');
+    overlay.style.display = 'flex';
+    // Reset state on open
+    document.getElementById('jsonExportBtn').textContent = '▶ Export as JSON';
+    document.getElementById('jsonExportBtn').disabled = false;
+    document.getElementById('jsonExportCopyBtn').style.display = 'none';
+    document.getElementById('jsonExportTextarea').value = '';
+    document.getElementById('jsonExportStatus').textContent = '';
+  });
+
+  // Export button inside modal
   document.getElementById('jsonExportBtn')?.addEventListener('click', async () => {
     const btn = document.getElementById('jsonExportBtn');
     const status = document.getElementById('jsonExportStatus');
@@ -1714,7 +2555,6 @@ function renderAdminFull(screen) {
       const data = await res.json();
       const pretty = JSON.stringify(data, null, 2);
       textarea.value = pretty;
-      textarea.style.display = '';
       copyBtn.style.display = '';
       const courseCount = data.courses ? data.courses.length : 0;
       let lessonCount = 0;
@@ -1727,6 +2567,7 @@ function renderAdminFull(screen) {
     btn.disabled = false;
   });
 
+  // Copy button inside modal
   document.getElementById('jsonExportCopyBtn')?.addEventListener('click', async () => {
     const textarea = document.getElementById('jsonExportTextarea');
     try {
@@ -1739,67 +2580,97 @@ function renderAdminFull(screen) {
     }
   });
 
-  // JSON Import section
-  const jsonArea = document.createElement('div');
-  jsonArea.style.cssText = 'border-top:1px solid var(--border-dim);flex-shrink:0';
-  jsonArea.innerHTML = `
-    <div style="display:flex;justify-content:space-between;align-items:center;padding:0.4em 1em;cursor:pointer;background:var(--bg2)" id="jsonImportToggle">
-      <span style="font-size:0.7rem;color:var(--green);letter-spacing:0.05em;text-transform:uppercase">📥 JSON Import (Merge) — paste modified data here</span>
-      <span style="font-size:0.65rem;color:var(--text-dim)" id="jsonImportArrow">▼</span>
-    </div>
-    <div id="jsonImportBody" style="padding:0.5em 1em">
-      <div style="display:flex;gap:0.5em;margin-bottom:0.4em">
-        <select id="jsonImportMode" class="fld-select" style="font-size:0.75rem;width:auto">
-          <option value="courses">Import Courses (merge)</option>
-          <option value="lesson">Import Single Lesson</option>
-        </select>
-        <input class="fld-input" id="jsonImportCourseId" placeholder="Course ID (for lesson import)" style="width:12em;font-size:0.75rem;display:none">
-      </div>
-      <textarea id="jsonImportTextarea" placeholder='Paste your JSON here...' style="width:100%;min-height:120px;font-family:'Courier New',monospace;font-size:0.7rem;padding:0.5em;background:var(--bg);border:1px solid var(--border-dim);border-radius:4px;color:var(--text);resize:vertical">{
-  "courses": [
-    {
-      "id": "javascript",
-      "name": "JavaScript",
-      "lessons": [
-        {
-          "id": "vars-types",
-          "title": "Variables & Types",
-          "status": "done",
-          "notes": "...",
-          "quiz": [{"question":"...","options":["a","b","c","d"],"correct_index":0}],
-          "flashcards": [{"front":"...","back":"..."}]
-        }
-      ]
-    }
-  ]
-}</textarea>
-      <div class="btn-grp" style="margin-top:0.4em">
-        <button class="btn btn-green" id="jsonImportBtn">▶ Import JSON</button>
-        <span id="jsonImportStatus" style="font-size:0.7rem;color:var(--text-dim);align-self:center"></span>
-      </div>
-      <div style="font-size:0.6rem;color:var(--text-dim);margin-top:0.3em;line-height:1.6">
-        <strong>Format:</strong> Same as Export format above. Course import → <code>{ "courses": [...] }</code> with nested lessons (quiz, coding, flashcards).
-        Lesson import → <code>{ "lesson": { "id":"...", "title":"...", ... } }</code> with <code>course_id</code> in parent.
-        Uses <strong>merge mode</strong> — existing courses/lessons are updated, new ones added, items not in JSON preserved, progress and flashcard reviews kept.
-      </div>
-    </div>`;
-  document.querySelector('.admin-box')?.closest('.admin-editor-panel')?.after(jsonArea);
+  // Modal: Import JSON — open modal (triggers the change handler to set correct example)
+  document.getElementById('admImportJsonBtn')?.addEventListener('click', () => {
+    const overlay = document.getElementById('jsonImportOverlay');
+    document.getElementById('jsonImportStatus').textContent = '';
+    overlay.style.display = 'flex';
+    // Trigger change to set correct example for current mode
+    document.getElementById('jsonImportMode').dispatchEvent(new Event('change'));
+  });
 
-  // Show/hide course_id input based on import mode
+  // Show/hide course_id input and swap example JSON based on import mode
   document.getElementById('jsonImportMode')?.addEventListener('change', () => {
     const mode = document.getElementById('jsonImportMode').value;
     document.getElementById('jsonImportCourseId').style.display = mode === 'lesson' ? '' : 'none';
+    const textarea = document.getElementById('jsonImportTextarea');
+    if (mode === 'lesson') {
+      function qi(q, ci) { return { question: q, options: ['A', 'B', 'C', 'D'], correct_index: ci }; }
+      function fc(f, b) { return { front: f, back: b }; }
+      const quiz = []; for (let i = 1; i <= 5; i++) quiz.push(qi('Question ' + i + '?', (i - 1) % 4));
+      const fcs = []; for (let i = 1; i <= 5; i++) fcs.push(fc('Flashcard front ' + i + '?', 'Answer ' + i));
+      textarea.value = JSON.stringify({
+        lesson: {
+          id: 'my-lesson',
+          title: 'My Lesson',
+          status: 'available',
+          type: 'lesson',
+          notes: '## Introduction\nThis lesson covers **key concepts** with `code examples`.\n\n- Point one\n- Point two',
+          mnemonic: 'A memory trick',
+          quiz: quiz,
+          flashcards: fcs,
+        },
+        course_id: 'target-course-id',
+      }, null, 2);
+    } else {
+      function qi(q, ci) { return { question: q, options: ['A', 'B', 'C', 'D'], correct_index: ci }; }
+      function fc(f, b) { return { front: f, back: b }; }
+      const quiz = []; for (let i = 1; i <= 5; i++) quiz.push(qi('Q' + i + '?', (i - 1) % 4));
+      const fcs = []; for (let i = 1; i <= 5; i++) fcs.push(fc('Front ' + i, 'Back ' + i));
+      textarea.value = JSON.stringify({
+        courses: [{
+          id: 'javascript',
+          name: 'JavaScript',
+          lessons: [{
+            id: 'vars-types',
+            title: 'Variables & Types',
+            status: 'available',
+            notes: '## Variables\nUse `const` and `let` instead of `var`.\n\n- **const** for values that won\'t change\n- **let** for values that will',
+            quiz: quiz,
+            flashcards: fcs,
+          }],
+        }],
+      }, null, 2);
+    }
   });
 
-  // Collapse toggle
-  let jsonExpanded = true;
-  document.getElementById('jsonImportToggle')?.addEventListener('click', () => {
-    jsonExpanded = !jsonExpanded;
-    document.getElementById('jsonImportBody').style.display = jsonExpanded ? '' : 'none';
-    document.getElementById('jsonImportArrow').textContent = jsonExpanded ? '▼' : '▶';
+  // Copy Format button — copies the example JSON to clipboard
+  document.getElementById('jsonImportCopyFormatBtn')?.addEventListener('click', async () => {
+    const mode = document.getElementById('jsonImportMode').value;
+    const isCourses = mode === 'courses';
+    const instructions = `You are a learning content generator for BruteForce Learning, a terminal-themed interactive learning platform.
+
+Generate ${isCourses ? 'courses with lessons' : 'a single lesson'} in the JSON format below. Follow these rules:
+
+1. **NOTES must use Markdown formatting:**
+   - \`## headings\` for sections
+   - **bold** for key terms
+   - \`code\` for inline code, variables, function names
+   - Code fences (\`\`\`) for multi-line code blocks
+   - Bullet lists for enumerations
+   - Blank lines between paragraphs
+
+2. Each lesson should have:
+   - A clear, focused title
+   - At least 50 quiz questions with 4 options each (mark the correct one with \`correct_index\`)
+   - More than 50 flashcards (front/back pairs)
+   - Coding exercises when applicable (set \`"type": "coding"\`)
+
+3. Content should be beginner-friendly but technically accurate. Use real code examples, not placeholders.
+
+JSON format:\n\n`;
+    const textarea = document.getElementById('jsonImportTextarea');
+    try {
+      await navigator.clipboard.writeText(instructions + textarea.value);
+      document.getElementById('jsonImportStatus').textContent = '✅ Format + instructions copied! Paste into AI.';
+    } catch {
+      textarea.select();
+      document.execCommand('copy');
+      document.getElementById('jsonImportStatus').textContent = '✅ Format copied!';
+    }
   });
 
-  // Import button
+  // Import button inside modal
   document.getElementById('jsonImportBtn')?.addEventListener('click', async () => {
     const raw = document.getElementById('jsonImportTextarea').value.trim();
     if (!raw) { document.getElementById('jsonImportStatus').textContent = '❌ Paste JSON first'; return; }
@@ -1816,6 +2687,13 @@ function renderAdminFull(screen) {
       if (cid) parsed.course_id = cid;
       if (!parsed.lesson) {
         document.getElementById('jsonImportStatus').textContent = '❌ For lesson import, JSON must have a "lesson" key';
+        return;
+      }
+      // If no course_id, ask user before importing standalone
+      if (!parsed.course_id && !cid) {
+        pendingStandaloneImport = parsed;
+        document.getElementById('jsonImportOverlay').style.display = 'none';
+        document.getElementById('confirmStandaloneOverlay').style.display = 'flex';
         return;
       }
     } else if (!parsed.courses) {
@@ -1836,6 +2714,7 @@ function renderAdminFull(screen) {
           ? result.courses_imported + ' courses, ' + result.lessons_imported + ' lessons'
           : 'lesson: ' + (result.lesson_imported || 'ok');
         document.getElementById('jsonImportStatus').textContent = '✅ Imported: ' + info;
+        document.getElementById('jsonImportOverlay').style.display = 'none';
         adminDirty = true;
         await renderAdmin(screen);
       } else {
@@ -1846,12 +2725,72 @@ function renderAdminFull(screen) {
     }
   });
 
+  // Confirm standalone import — Yes: proceed with empty course_id
+  document.getElementById('confirmStandaloneYes')?.addEventListener('click', async () => {
+    if (!pendingStandaloneImport) return;
+    document.getElementById('confirmStandaloneOverlay').style.display = 'none';
+    document.getElementById('jsonImportStatus').textContent = '⏳ Importing as standalone...';
+    try {
+      pendingStandaloneImport.mode = 'merge';
+      const res = await fetch('/api/admin/import', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(pendingStandaloneImport),
+      });
+      const result = await res.json();
+      if (res.ok) {
+        document.getElementById('jsonImportStatus').textContent = '✅ Standalone lesson imported';
+        document.getElementById('jsonImportOverlay').style.display = 'none';
+        pendingStandaloneImport = null;
+        adminDirty = true;
+        await renderAdmin(screen);
+      } else {
+        document.getElementById('jsonImportStatus').textContent = '❌ ' + (result.error || 'import failed');
+        document.getElementById('jsonImportOverlay').style.display = 'flex';
+      }
+    } catch (e) {
+      document.getElementById('jsonImportStatus').textContent = '❌ Network error: ' + e.message;
+      document.getElementById('jsonImportOverlay').style.display = 'flex';
+    }
+  });
+
+  // Confirm standalone import — No: back to import modal with data preserved
+  document.getElementById('confirmStandaloneNo')?.addEventListener('click', () => {
+    document.getElementById('confirmStandaloneOverlay').style.display = 'none';
+    document.getElementById('jsonImportOverlay').style.display = 'flex';
+    pendingStandaloneImport = null;
+  });
+
+  // Modal close buttons
+  document.querySelectorAll('[data-modal-close]').forEach(el => {
+    el.addEventListener('click', () => {
+      const overlayId = el.dataset.modalClose;
+      document.getElementById(overlayId).style.display = 'none';
+      // If closing the standalone confirmation, restore import modal
+      if (overlayId === 'confirmStandaloneOverlay' && pendingStandaloneImport) {
+        document.getElementById('jsonImportOverlay').style.display = 'flex';
+        pendingStandaloneImport = null;
+      }
+    });
+  });
+
+  // Close modal on overlay click (only if clicking the overlay itself, not the box)
+  document.querySelectorAll('.modal-overlay').forEach(el => {
+    el.addEventListener('click', (e) => {
+      if (e.target === el) el.style.display = 'none';
+    });
+  });
+
   document.getElementById('statusBar').innerHTML = '<span class="prefix">›</span> Admin — content editor with wizard + sync + json';
 }
 
 function escHtml(s) {
   if (!s) return '';
   return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function escapeHtml(s) {
+  if (!s) return '';
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
 // ============ MICRO-COMMITMENT BANNERS ============
@@ -1938,16 +2877,17 @@ function showDopamineMenu(context) {
 }
 
 // ============ STREAK LOSS AVERSION ============
-function getStreakWarning() {
+function getStreakWarning(streak) {
   const today = new Date();
   const lastActive = localStorage.getItem('lastActive');
   if (lastActive) {
     const last = new Date(lastActive);
     const diffDays = Math.floor((today - last) / (1000 * 60 * 60 * 24));
     if (diffDays === 1) {
+      const s = streak || 5;
       return '<div class="streak-warning">' +
-        '<span class="sw-icon">⚠️</span>' +
-        '<span class="sw-text">You\'ll lose your <strong>10-day streak</strong> if you miss today! Complete a lesson now.</span></div>';
+        '<span class="sw-icon">\u26a0\ufe0f</span>' +
+        '<span class="sw-text">You\'ll lose your <strong>' + s + '-day streak</strong> if you miss today! Complete a lesson now.</span></div>';
     }
   }
   return '';
@@ -1957,8 +2897,10 @@ function updateStreakWarning() {
   const header = document.getElementById('headerBar');
   const existing = header.querySelector('.streak-warning');
   if (existing) existing.remove();
-  const warning = getStreakWarning();
-  if (warning) {
+  const streak = GLOBAL_STATS ? GLOBAL_STATS.streak : null;
+  const warning = getStreakWarning(streak);
+  // Only insert actual streak warning (not urgency timer - that goes in content area)
+  if (warning && warning.includes('streak-warning')) {
     header.insertAdjacentHTML('afterend', warning);
   }
 }
@@ -2145,12 +3087,786 @@ function renderAchievements() {
   return html;
 }
 
+// ============ ADDICTION ENGINE ============
+// Confetti, combo, level-up, spin wheel, urgency, fake social, audio, streaks
+
+// ---- Audio Engine ----
+const AUDIO_CTX = new (window.AudioContext || window.webkitAudioContext)();
+function playTone(freq, duration, type='sine', vol=0.15) {
+  try {
+    const osc = AUDIO_CTX.createOscillator();
+    const gain = AUDIO_CTX.createGain();
+    osc.type = type;
+    osc.frequency.value = freq;
+    gain.gain.setValueAtTime(vol, AUDIO_CTX.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, AUDIO_CTX.currentTime + duration);
+    osc.connect(gain);
+    gain.connect(AUDIO_CTX.destination);
+    osc.start();
+    osc.stop(AUDIO_CTX.currentTime + duration);
+  } catch(e) {}
+}
+function playCorrect() { playTone(523, 0.1); setTimeout(() => playTone(659, 0.1), 100); setTimeout(() => playTone(784, 0.15), 200); }
+function playWrong() { playTone(300, 0.15, 'sawtooth'); }
+function playLevelUp() { [523,587,659,784,880,1047].forEach((f,i) => setTimeout(() => playTone(f,0.12,'sine',0.12), i*60)); }
+function playComboX(n) { playTone(400 + n*60, 0.2, 'square', 0.08); }
+
+// ---- Confetti Engine ----
+const CONFETTI_CANVAS = document.getElementById('confettiCanvas');
+const CONFETTI_CTX = CONFETTI_CANVAS ? CONFETTI_CANVAS.getContext('2d') : null;
+let confettiPieces = [];
+let confettiAnimId = null;
+function resizeConfetti() { if(CONFETTI_CANVAS){CONFETTI_CANVAS.width=window.innerWidth;CONFETTI_CANVAS.height=window.innerHeight;} }
+window.addEventListener('resize', resizeConfetti);
+resizeConfetti();
+
+function fireConfetti(count, spread) {
+  count = count || 80; spread = spread || 1;
+  const colors = ['#9d7dea','#4ec9b0','#e5c07b','#e06c75','#98c379','#61afef','#ff6b6b','#ffd93d','#6bcb77','#4d96ff'];
+  for(let i=0;i<count;i++){
+    const isEmoji = Math.random() < 0.15;
+    confettiPieces.push({
+      x: window.innerWidth/2 + (Math.random()-0.5)*window.innerWidth*0.6*spread,
+      y: window.innerHeight/2 + (Math.random()-0.5)*100,
+      vx: (Math.random()-0.5)*12*spread,
+      vy: -(Math.random()*12 + 4)*spread,
+      size: 4 + Math.random()*6,
+      color: colors[Math.floor(Math.random()*colors.length)],
+      rotation: Math.random()*360,
+      rotSpeed: (Math.random()-0.5)*10,
+      life: 1,
+      decay: 0.008 + Math.random()*0.008,
+      emoji: isEmoji ? ['⭐','🔥','💥','🎉','✨','🏆','💪','⚡'][Math.floor(Math.random()*8)] : null,
+      gravity: 0.15 + Math.random()*0.1,
+    });
+  }
+  if(!confettiAnimId) animateConfetti();
+}
+function animateConfetti() {
+  CONFETTI_CTX.clearRect(0,0,CONFETTI_CANVAS.width,CONFETTI_CANVAS.height);
+  let alive = false;
+  for(const p of confettiPieces){
+    p.x += p.vx;
+    p.vy += p.gravity;
+    p.y += p.vy;
+    p.vx *= 0.99;
+    p.rotation += p.rotSpeed;
+    p.life -= p.decay;
+    if(p.life <= 0) continue;
+    alive = true;
+    CONFETTI_CTX.save();
+    CONFETTI_CTX.translate(p.x, p.y);
+    CONFETTI_CTX.rotate(p.rotation * Math.PI/180);
+    CONFETTI_CTX.globalAlpha = p.life;
+    if(p.emoji) {
+      CONFETTI_CTX.font = '20px sans-serif';
+      CONFETTI_CTX.textAlign = 'center';
+      CONFETTI_CTX.fillText(p.emoji, 0, 0);
+    } else {
+      CONFETTI_CTX.fillStyle = p.color;
+      CONFETTI_CTX.fillRect(-p.size/2, -p.size/2, p.size, p.size*0.6);
+    }
+    CONFETTI_CTX.restore();
+  }
+  confettiPieces = confettiPieces.filter(p => p.life > 0);
+  if(alive) confettiAnimId = requestAnimationFrame(animateConfetti);
+  else confettiAnimId = null;
+}
+
+// ---- XP Float Text ----
+function showXpFloat(text, x, y, color) {
+  const el = document.createElement('div');
+  el.className = 'xp-float';
+  el.textContent = text;
+  el.style.left = (x || window.innerWidth/2) + 'px';
+  el.style.top = (y || window.innerHeight/2) + 'px';
+  el.style.color = color || 'var(--yellow)';
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 1300);
+}
+
+// ---- Level System ----
+function calcLevel(xp) { return Math.floor(Math.sqrt(xp / 80)) + 1; }
+function calcLevelXp(xp) { const lvl = calcLevel(xp); return { level: lvl, current: xp - (lvl-1)*(lvl-1)*80, next: lvl*lvl*80 - (lvl-1)*(lvl-1)*80 }; }
+function getLevelBadgeHtml(xp) {
+  const info = calcLevelXp(xp);
+  return `<span class="lvl-badge"><span class="lvl-num">${info.level}</span> LV ${info.level}</span>`;
+}
+let lastLevel = 1;
+function checkLevelUp(xp) {
+  const newLevel = calcLevel(xp);
+  if(newLevel > lastLevel) {
+    lastLevel = newLevel;
+    playLevelUp();
+    fireConfetti(120, 1.5);
+    // Level up notification in header
+    const powerEl = document.getElementById('headerPower');
+    if(powerEl) powerEl.classList.add('lvl-up-flash');
+    showAlert(`⬆️ LEVEL UP! You reached level ${newLevel}! 🔥\n\nKeep going, master!`, () => {
+      if(powerEl) powerEl.classList.remove('lvl-up-flash');
+    });
+    // Check achievements
+    const achState = getAchievementState();
+    if(newLevel >= 5 && !achState['level-5']) { achState['level-5'] = true; saveAchievementState(achState); showAchievementPopup('🔥', 'Apprentice', 'Reach level 5'); }
+    if(newLevel >= 10 && !achState['level-10']) { achState['level-10'] = true; saveAchievementState(achState); showAchievementPopup('💥', 'Code Warrior', 'Reach level 10'); }
+    if(newLevel >= 20 && !achState['level-20']) { achState['level-20'] = true; saveAchievementState(achState); showAchievementPopup('🌟', 'Grandmaster', 'Reach level 20'); }
+  }
+}
+
+// ---- Combo Counter ----
+let COMBO = { count: 0, best: 0, multiplier: 1 };
+function addCombo() {
+  COMBO.count++;
+  if(COMBO.count > COMBO.best) COMBO.best = COMBO.count;
+  COMBO.multiplier = Math.floor(COMBO.count / 3) + 1;
+  playComboX(Math.min(COMBO.count, 20));
+  // Visual feedback
+  const xpEl = document.getElementById('headerXp');
+  if(xpEl) {
+    xpEl.style.transition = 'transform .15s';
+    xpEl.style.transform = 'scale(1.3)';
+    setTimeout(() => xpEl.style.transform = 'scale(1)', 150);
+  }
+  if(COMBO.count >= 5) {
+    fireConfetti(20, 0.5);
+    showXpFloat(`🔥 ${COMBO.count}x COMBO! x${COMBO.multiplier} MULTIPLIER!`, 0, 0, 'var(--red)');
+  }
+}
+function resetCombo() { COMBO.count = 0; COMBO.multiplier = 1; }
+function getComboHtml() {
+  if(COMBO.count < 2) return '';
+  const fireCls = COMBO.count >= 10 ? ' combo-fire' : '';
+  const mult = COMBO.multiplier > 1 ? ` <span style="color:var(--yellow)">x${COMBO.multiplier}</span>` : '';
+  return `<div class="combo-display${fireCls}">🔥 ${COMBO.count}x COMBO${mult}</div>`;
+}
+
+// ---- Spin Wheel (dopamine) ----
+const SPIN_REWARDS = [
+  { icon: '⭐', label: '+50 XP', xp: 50 },
+  { icon: '⚡', label: 'DOUBLE XP 30min', xp: 0, powerup: '2x' },
+  { icon: '💎', label: '+100 XP', xp: 100 },
+  { icon: '🔥', label: 'STREAK FREEZE', xp: 0, freeze: true },
+  { icon: '🎯', label: '+25 XP', xp: 25 },
+  { icon: '🌈', label: 'JACKPOT! +200 XP', xp: 200 },
+  { icon: '🛡️', label: 'BADGE', xp: 0, badge: true },
+  { icon: '💫', label: '+75 XP', xp: 75 },
+];
+const SPIN_COLORS = ['#9d7dea','#e06c75','#e5c07b','#61afef','#98c379','#ff6b6b','#4ec9b0','#ffd93d'];
+let spinState = { spinning: false, result: null };
+
+function initSpinWheel() {
+  const wheel = document.getElementById('spinWheel');
+  if(!wheel) return;
+  const segDeg = 360 / SPIN_REWARDS.length;
+  wheel.innerHTML = SPIN_REWARDS.map((r, i) => {
+    const deg = i * segDeg;
+    return `<div class="spin-segment" style="transform:rotate(${deg}deg);background:${SPIN_COLORS[i]}"><span style="transform:rotate(${segDeg/2}deg)">${r.icon} ${r.label}</span></div>`;
+  }).join('');
+}
+
+function showSpinWheel() {
+  const overlay = document.getElementById('spinOverlay');
+  const result = document.getElementById('spinResult');
+  const btn = document.getElementById('spinBtn');
+  const wheel = document.getElementById('spinWheel');
+  if(!overlay) { showDopamineMenuOld('quiz'); return; }
+  result.textContent = '';
+  spinState.spinning = false;
+  spinState.result = null;
+  wheel.style.transform = 'rotate(0deg)';
+  overlay.style.display = 'flex';
+  btn.disabled = false;
+  btn.textContent = '🎰 SPIN!';
+  document.getElementById('spinClose').style.display = 'inline-block';
+}
+function hideSpinWheel() {
+  document.getElementById('spinOverlay').style.display = 'none';
+}
+
+function doSpin() {
+  if(spinState.spinning) return;
+  spinState.spinning = true;
+  const btn = document.getElementById('spinBtn');
+  const wheel = document.getElementById('spinWheel');
+  const result = document.getElementById('spinResult');
+  btn.disabled = true;
+  btn.textContent = '🎰 Spinning...';
+  document.getElementById('spinClose').style.display = 'none';
+
+  const segDeg = 360 / SPIN_REWARDS.length;
+  const targetIdx = Math.floor(Math.random() * SPIN_REWARDS.length);
+  // Weight toward jackpot (lower probability)
+  const actualIdx = Math.random() < 0.08 ? 5 : targetIdx; // 8% jackpot chance
+
+  const spins = 5 + Math.floor(Math.random() * 3);
+  const totalDeg = spins * 360 + (360 - actualIdx * segDeg - segDeg/2);
+  wheel.style.transform = `rotate(${totalDeg}deg)`;
+
+  setTimeout(() => {
+    spinState.spinning = false;
+    spinState.result = SPIN_REWARDS[actualIdx];
+    const r = SPIN_REWARDS[actualIdx];
+    result.innerHTML = `<span style="font-size:2rem">${r.icon}</span><br>${r.label}!`;
+
+    // Apply reward
+    applySpinReward(r);
+
+    btn.textContent = '🎉 COLLECT!';
+    btn.disabled = false;
+    btn.onclick = () => { hideSpinWheel(); };
+    document.getElementById('spinClose').style.display = 'inline-block';
+    document.getElementById('spinClose').onclick = hideSpinWheel;
+  }, 3200);
+}
+
+function applySpinReward(r) {
+  if(r.xp > 0) {
+    const current = parseInt(document.getElementById('headerXp').textContent) || 0;
+    document.getElementById('headerXp').textContent = current + r.xp;
+    fireConfetti(60, 1);
+    playLevelUp();
+    showXpFloat(`+${r.xp} XP!`, 0, 0, 'var(--yellow)');
+    // Level check
+    checkLevelUp(current + r.xp);
+    // Status bar
+    document.getElementById('statusBar').innerHTML = `<span class="prefix">›</span> 🎰 Spun <span style="color:var(--yellow);font-weight:bold">${r.label}</span>! +${r.xp} XP`;
+  }
+  if(r.powerup === '2x') {
+    document.getElementById('statusBar').innerHTML = `<span class="prefix">›</span> <span style="color:var(--yellow);font-weight:bold">⚡ DOUBLE XP ACTIVE for 30 minutes!</span>`;
+    // Visual indicator
+    document.getElementById('headerBar').style.borderColor = 'var(--yellow)';
+    document.getElementById('headerBar').style.animation = 'urgentPulse 1.5s ease infinite';
+    setTimeout(() => {
+      document.getElementById('headerBar').style.borderColor = '';
+      document.getElementById('headerBar').style.animation = '';
+    }, 30*60*1000);
+  }
+  if(r.freeze) {
+    localStorage.setItem('bfl_streakFreeze', 'true');
+    document.getElementById('statusBar').innerHTML = `<span class="prefix">›</span> 🧊 Streak freeze active! You won't lose your streak tomorrow.`;
+  }
+  if(r.badge) {
+    const achState = getAchievementState();
+    achState['spin-badge'] = true;
+    saveAchievementState(achState);
+    showAchievementPopup('🛡️', 'Lucky Streak', 'Earn a badge from the spin wheel');
+  }
+}
+
+// ---- Dopamine Menu (upgraded) ----
+function showDopamineMenu(context) {
+  showSpinWheel();
+}
+
+// ---- Old dopamine menu fallback ----
+function showDopamineMenuOld(context) {
+  const overlay = document.getElementById('dopamineOverlay');
+  const title = document.getElementById('dmTitle');
+  const sub = document.getElementById('dmSub');
+  const rewards = document.getElementById('dmRewards');
+  const claimBtn = document.getElementById('dmClaimBtn');
+  const skip = document.getElementById('dmSkip');
+
+  const rewardOptions = [
+    { icon: '⭐', label: 'XP Bonus', value: '+50 XP' },
+    { icon: '🏅', label: 'Badge', value: 'Unlock' },
+    { icon: '⚡', label: 'Power-Up', value: '2x XP 15min' },
+  ];
+
+  title.textContent = context === 'quiz' ? '🎉 Quiz Complete!' : '🎉 Exercise Complete!';
+  sub.textContent = context === 'quiz'
+    ? 'You passed the quiz! Claim your reward:'
+    : 'Great work! Pick your reward:';
+  rewards.innerHTML = rewardOptions.map((r, i) =>
+    '<div class="dm-reward" data-idx="' + i + '">' +
+    '<span class="dmr-icon">' + r.icon + '</span>' +
+    '<span class="dmr-label">' + r.label + '</span>' +
+    '<span class="dmr-value">' + r.value + '</span></div>'
+  ).join('');
+
+  let selected = 0;
+  rewards.querySelectorAll('.dm-reward').forEach(el => {
+    el.addEventListener('click', () => {
+      rewards.querySelectorAll('.dm-reward').forEach(e => e.style.borderColor = '');
+      el.style.borderColor = 'var(--yellow)';
+      selected = parseInt(el.dataset.idx);
+    });
+  });
+
+  overlay.style.display = 'flex';
+
+  claimBtn.onclick = () => {
+    overlay.style.display = 'none';
+    const xpBonus = selected === 0 ? 50 : selected === 1 ? 25 : 0;
+    const currentXp = parseInt(document.getElementById('headerXp').textContent) || 0;
+    document.getElementById('headerXp').textContent = currentXp + xpBonus;
+    checkLevelUp(currentXp + xpBonus);
+
+    // Surprise double XP (random 20% chance)
+    if (Math.random() < 0.2) {
+      document.getElementById('headerXp').textContent = parseInt(document.getElementById('headerXp').textContent) + xpBonus;
+      document.getElementById('statusBar').innerHTML = '<span class=\"prefix\">›</span> <span style="color:var(--yellow);font-weight:bold">✨ DOUBLE XP BONUS!</span> +' + xpBonus + ' extra XP';
+    } else {
+      document.getElementById('statusBar').innerHTML = '<span class=\"prefix\">›</span> Reward claimed! +' + xpBonus + ' XP';
+    }
+    fireConfetti(40, 0.8);
+    playLevelUp();
+  };
+
+  skip.onclick = () => { overlay.style.display = 'none'; };
+}
+
+// ---- Streak Fire Animation ----
+function getStreakFireClass(streak) {
+  if(!streak || streak < 3) return 'f0';
+  if(streak < 7) return 'f1';
+  if(streak < 14) return 'f2';
+  return 'f3';
+}
+function renderStreakWithFire(streak) {
+  const cls = getStreakFireClass(streak);
+  return `<span class="streak-fire ${cls}">🔥</span> ${streak || 0}d`;
+}
+
+// ---- Urgency Timer ----
+function getUrgencyTimerHtml() {
+  const now = new Date();
+  const tomorrow = new Date(now);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  tomorrow.setHours(0,0,0,0);
+  const msLeft = tomorrow - now;
+  const hours = Math.floor(msLeft / 3600000);
+  const mins = Math.floor((msLeft % 3600000) / 60000);
+  const safe = hours > 4;
+  const timeStr = `${hours}h ${mins}m`;
+  return `<span class="urgency-timer${safe ? ' safe' : ''}">⏰ Streak resets in ${timeStr}</span>`;
+}
+
+// ---- Dynamic Fake Social Pressure ----
+let fakeScoreTimer = null;
+let lastFakeNotification = 0;
+
+function initFakeSocial() {
+  if(fakeScoreTimer) clearInterval(fakeScoreTimer);
+  fakeScoreTimer = setInterval(() => {
+    // Randomly bump an AI competitor's score
+    const aiPlayers = AI_COMPETITORS.filter(c => c.ai);
+    if(aiPlayers.length === 0) return;
+    const target = aiPlayers[Math.floor(Math.random() * aiPlayers.length)];
+    const bump = Math.floor(50 + Math.random() * 150);
+    target.score += bump;
+
+    // Check if someone overtook "you"
+    const sorted = [...AI_COMPETITORS].sort((a, b) => b.score - a.score);
+    const yourIdx = sorted.findIndex(c => !c.ai);
+    const aboveYou = sorted[yourIdx - 1];
+    if(aboveYou && aboveYou.ai && Date.now() - lastFakeNotification > 30000) {
+      lastFakeNotification = Date.now();
+      showOvertakeNotification(aboveYou.name);
+    }
+
+    // Re-render leaderboard if on dashboard
+    const lbPanel = document.querySelector('.leaderboard');
+    if(lbPanel) {
+      const parent = lbPanel.closest('.panel-body');
+      if(parent) parent.innerHTML = renderLeaderboard();
+    }
+  }, 8000 + Math.random() * 4000);
+}
+
+function showOvertakeNotification(name) {
+  const container = document.getElementById('overtakeContainer');
+  if(!container) return;
+  const pop = document.createElement('div');
+  pop.className = 'overTakePop';
+  pop.innerHTML = `<span style="color:var(--yellow);font-weight:bold">⚠️ OVERTAKEN!</span><br><span style="color:var(--text)">${name}</span> <span style="color:var(--text-muted)">just passed you on the leaderboard!</span>`;
+  container.appendChild(pop);
+  setTimeout(() => pop.remove(), 4000);
+  // Minor urgency
+  playTone(440, 0.1, 'square', 0.05);
+}
+
+// ---- Achievement Popup ----
+function showAchievementPopup(icon, name, desc) {
+  const existing = document.querySelector('.ach-popup');
+  if(existing) existing.remove();
+  const pop = document.createElement('div');
+  pop.className = 'ach-popup';
+  pop.innerHTML = `<span class="ach-icon">${icon}</span><span class="ach-title">🏆 ${name}</span><span class="ach-desc">${desc}</span>`;
+  document.body.appendChild(pop);
+  fireConfetti(100, 1.2);
+  playLevelUp();
+  setTimeout(() => pop.remove(), 3500);
+}
+
+// ---- Enhanced updateHeaderStats with level + streak fire ----
+const ORIG_updateHeaderStats = updateHeaderStats;
+async function updateHeaderStats() {
+  if (statsLoading) return statsLoading;
+  statsLoading = (async () => {
+    const [stats, ps] = await Promise.all([
+      api('/api/progress').catch(() => ({ problems: 18, streak: 5, mastery: 42, solved: 18, xp: 320, xpMax: 500 })),
+      api('/api/powerscore').catch(() => ({ power_score: 0 })),
+    ]);
+    GLOBAL_STATS = stats;
+    const streakEl = document.getElementById('headerStreak');
+    if(streakEl) {
+      streakEl.innerHTML = renderStreakWithFire(stats.streak);
+    }
+    document.getElementById('headerXp').textContent = stats.xp;
+    document.getElementById('headerXpMax').textContent = stats.xpMax;
+    document.getElementById('headerMastery').textContent = stats.mastery + '%';
+    const powerEl = document.getElementById('headerPower');
+    if(powerEl) {
+      powerEl.innerHTML = ps.power_score + ' ' + getLevelBadgeHtml(stats.xp);
+    }
+    // Level check
+    lastLevel = calcLevel(stats.xp);
+    updateStreakWarning();
+
+    // Streak freeze check
+    const freeze = localStorage.getItem('bfl_streakFreeze');
+    if(freeze === 'true') {
+      document.getElementById('statusBar').innerHTML = `<span class="prefix">›</span> 🧊 Streak freeze active — you're safe today!`;
+    }
+    return stats;
+  })();
+  statsLoading.finally(() => { statsLoading = null; });
+  return statsLoading;
+}
+
+// ---- Enhanced renderLeaderboard with overtaking animation ----
+const ORIG_renderLeaderboard = renderLeaderboard;
+function renderLeaderboard() {
+  const sorted = [...AI_COMPETITORS].sort((a, b) => b.score - a.score);
+  const yourRank = sorted.findIndex(c => !c.ai) + 1;
+  const total = AI_COMPETITORS.length;
+  let html = '<div class="leaderboard">';
+  html += `<div style="font-size:0.75rem;color:var(--text-dim);margin-bottom:0.3em">Rank #${yourRank} · ${total} players · Top ${Math.round(yourRank/total*100)}%</div>`;
+  sorted.forEach((c, i) => {
+    const cls = c.ai ? 'lb-ai' : '';
+    const youCls = !c.ai ? ' lb-you' : '';
+    const rankChange = c.ai ? (Math.random() > 0.5 ? ' ▲' : ' ▼') : '';
+    html += `<div class="lb-row${youCls}">`;
+    html += `<span class="lb-rank">#${i + 1}</span>`;
+    html += `<span class="lb-name">${c.name}${rankChange}${c.ai ? ' <span class="lb-ai">AI</span>' : ' <span style="color:var(--yellow)">👑</span>'}</span>`;
+    html += `<span class="lb-score">${c.score}</span></div>`;
+  });
+  html += '</div>';
+  return html;
+}
+
+// ---- Enhanced getStreakWarning with fire animation ----
+const ORIG_getStreakWarning = getStreakWarning;
+function getStreakWarning(streak) {
+  const today = new Date();
+  const lastActive = localStorage.getItem('lastActive');
+  if (lastActive) {
+    const last = new Date(lastActive);
+    const diffDays = Math.floor((today - last) / (1000 * 60 * 60 * 24));
+    if (diffDays === 1) {
+      const s = streak || 5;
+      const fire = getStreakFireClass(s);
+      return `<div class="streak-warning">` +
+        `<span class="sw-icon" style="font-size:1.5rem;animation:fireDance .5s ease infinite">🔥</span>` +
+        `<span class="sw-text">You'll lose your <strong>${s}-day streak</strong> if you miss today! <span class="streak-fire ${fire}">🔥</span> Complete a lesson now.</span></div>`;
+    }
+  }
+  // Show urgency timer on dashboard - only when no streak warning
+  const today2 = new Date();
+  const lastActive2 = localStorage.getItem('lastActive');
+  let showUrgency = true;
+  if (lastActive2) {
+    const last2 = new Date(lastActive2);
+    const diffDays2 = Math.floor((today2 - last2) / (1000 * 60 * 60 * 24));
+    if (diffDays2 === 1) showUrgency = false; // Already has streak warning
+  }
+  if (showUrgency) {
+    return `<div style="font-size:0.75rem;color:var(--text-muted);padding:0.2em 0.4em;text-align:center">${getUrgencyTimerHtml()}</div>`;
+  }
+  return '';
+}
+
+// ---- Enhanced markActive with streak check ----
+const ORIG_markActive = markActive;
+function markActive() {
+  const today = new Date().toISOString().split('T')[0];
+  const lastActive = localStorage.getItem('lastActive');
+  localStorage.setItem('lastActive', today);
+  // Check for streak comeback
+  if(lastActive && lastActive !== today) {
+    const lastDate = new Date(lastActive);
+    const diff = Math.floor((new Date(today) - lastDate) / (1000*60*60*24));
+    if(diff === 0) { /* same day, fine */ }
+    else if(diff === 1) { /* consecutive, will increment on server */ }
+    else {
+      // Streak would have been broken - check freeze
+      const freeze = localStorage.getItem('bfl_streakFreeze');
+      if(freeze === 'true') {
+        localStorage.removeItem('bfl_streakFreeze');
+        document.getElementById('statusBar').innerHTML = '<span class="prefix">›</span> 🧊 Streak freeze used! Your streak is preserved.';
+      }
+    }
+  }
+}
+
+// ---- Enhanced quiz/code completion celebration ----
+const ORIG_bindModuleActions = bindModuleActions;
+function bindModuleActions(lessonId) {
+  document.querySelectorAll('.quiz-opt').forEach(el => {
+    el.addEventListener('click', () => {
+      if (quizState[lessonId] && quizState[lessonId].answers[quizState[lessonId].current] === undefined) {
+        quizState[lessonId].answers[quizState[lessonId].current] = parseInt(el.dataset.idx);
+        loadLearnModule(lessonId);
+      }
+    });
+  });
+
+  document.querySelectorAll('[data-action]').forEach(el => {
+    el.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const action = el.dataset.action;
+      if (action === 'quiz-next' && quizState[lessonId]) { quizState[lessonId].current++; loadLearnModule(lessonId); }
+      else if (action === 'quiz-done' && quizState[lessonId]) {
+        quizState[lessonId].done = true;
+        loadLearnModule(lessonId);
+        // Calculate score
+        const questions = Object.keys(quizState[lessonId].answers).length;
+        const correct = Object.entries(quizState[lessonId].answers).filter(([k,v]) => v === findNode(lessonId)?.correctIndex).length;
+        const pct = questions > 0 ? Math.round(correct/questions*100) : 0;
+        if(pct >= 80) {
+          addCombo();
+          playCorrect();
+          fireConfetti(100, 1.2);
+          showXpFloat('🎉 QUIZ PASSED!', 0, 0, 'var(--green)');
+        } else {
+          playWrong();
+          resetCombo();
+        }
+        setTimeout(() => showDopamineMenu('quiz'), 500);
+        markActive();
+      }
+      else if (action === 'quiz-retry' && quizState[lessonId]) { quizState[lessonId] = { current: 0, answers: {}, done: false }; loadLearnModule(lessonId); }
+      else if (action === 'code-run') {
+        if (codeState[lessonId]) {
+          const editor = document.getElementById('codeEditor');
+          let userCode = '';
+          if (editor) {
+            userCode = (editor.textContent || editor.innerText || '').replace(/_\\s*$/, '').trim();
+            codeState[lessonId].userCode = userCode;
+          }
+          if (!userCode) {
+            showAlert('Write some code before running!');
+            return;
+          }
+          codeState[lessonId].output = '<span style="color:var(--text-muted)">⏳ Verifying with AI...</span>';
+          loadLearnModule(lessonId);
+          fetch('/api/verify-code', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ lessonId: lessonId, userCode: userCode }),
+          })
+          .then(res => res.json())
+          .then(data => {
+            if (data.passed) {
+              addCombo();
+              playCorrect();
+              fireConfetti(100, 1.2);
+              showXpFloat('✅ CODE PASSED!', 0, 0, 'var(--green)');
+              codeState[lessonId].output = '<span style="color:var(--green);font-weight:bold">✓ Correct!</span>' +
+                (data.feedback && data.feedback !== 'PASS' ? '<br><span style="color:var(--text-muted);font-size:0.8rem">' + data.feedback.replace(/^PASS\\s*/i, '') + '</span>' : '');
+              setTimeout(() => showDopamineMenu('code'), 800);
+            } else {
+              playWrong();
+              resetCombo();
+              let fb = data.feedback || 'Not quite right. Try again!';
+              fb = fb.replace(/^FAIL\\s*/i, '');
+              codeState[lessonId].output = '<span style="color:var(--red);font-weight:bold">✗ ' + fb + '</span>';
+            }
+            loadLearnModule(lessonId);
+            markActive();
+          })
+          .catch(err => {
+            codeState[lessonId].output = '<span style="color:var(--red);font-weight:bold">✗ Verification failed: ' + (err.message || 'server error') + '</span>';
+            loadLearnModule(lessonId);
+          });
+        }
+      }
+      else if (action === 'code-reveal' && codeState[lessonId]) {
+        const editor = document.getElementById('codeEditor');
+        if (editor) codeState[lessonId].userCode = (editor.textContent || editor.innerText || '').replace(/_\\s*$/, '').trim();
+        codeState[lessonId].showSolution = !codeState[lessonId].showSolution;
+        loadLearnModule(lessonId);
+      }
+      else if (action === 'fc-flip') {
+        initFcSchedule(lessonId);
+        if (flashcardSchedule[lessonId]) { flashcardSchedule[lessonId].flipped = !flashcardSchedule[lessonId].flipped; loadLearnModule(lessonId); }
+      }
+      else if (action === 'fc-next') {
+        initFcSchedule(lessonId);
+        const s = flashcardSchedule[lessonId];
+        if (s && s.current < s.cards.length - 1) { s.current++; s.flipped = false; loadLearnModule(lessonId); }
+      }
+      else if (action === 'fc-prev') {
+        initFcSchedule(lessonId);
+        const s = flashcardSchedule[lessonId];
+        if (s && s.current > 0) { s.current--; s.flipped = false; loadLearnModule(lessonId); }
+      }
+      if (['quiz-next', 'code-run'].includes(action)) markActive();
+    });
+  });
+
+  // Auto-save code editor content
+  const codeEditor = document.getElementById('codeEditor');
+  if (codeEditor) {
+    codeEditor.addEventListener('input', () => {
+      if (codeState[lessonId]) {
+        codeState[lessonId].userCode = (codeEditor.textContent || codeEditor.innerText || '').replace(/_\\s*$/, '').trim();
+      }
+    });
+  }
+
+  document.querySelectorAll('[data-fc-rate]').forEach(el => {
+    el.addEventListener('click', async () => {
+      const rate = parseInt(el.dataset.fcRate);
+      await initFcSchedule(lessonId);
+      const s = flashcardSchedule[lessonId];
+      if (!s) return;
+
+      const result = await submitFcReview(lessonId, s.current, rate);
+      s.reviews.push({ date: new Date().toISOString(), rating: rate, result: result });
+
+      // Update XP
+      const resp = await api('/api/progress');
+      document.getElementById('headerXp').textContent = resp.xp;
+
+      if (rate >= 3 && COMBO) { addCombo(); }
+      if (rate >= 3) { playCorrect(); } else { playWrong(); }
+
+      if (s.current < s.cards.length - 1) {
+        s.current++;
+        s.flipped = false;
+        loadLearnModule(lessonId);
+      } else {
+        fireConfetti(60, 1);
+        setTimeout(() => showDopamineMenu('quiz'), 200);
+        markActive();
+      }
+    });
+  });
+
+  // Add combo display if active
+  if(COMBO.count >= 2) {
+    const container = document.querySelector('.module-card');
+    if(container) container.insertAdjacentHTML('afterbegin', getComboHtml());
+  }
+}
+
+// ---- Achievement state persistence helpers ----
+function saveAchievementState(state) {
+  try { localStorage.setItem('bfl_achievements', JSON.stringify(state)); } catch {}
+}
+function getAchievementState() {
+  try { return JSON.parse(localStorage.getItem('bfl_achievements')) || {}; } catch { return {}; }
+}
+
+// ---- Add new achievements ----
+const ADDICTION_ACHIEVEMENTS = [
+  { id: 'level-5', icon: '🔥', name: 'Apprentice', desc: 'Reach level 5' },
+  { id: 'level-10', icon: '💥', name: 'Code Warrior', desc: 'Reach level 10' },
+  { id: 'level-20', icon: '🌟', name: 'Grandmaster', desc: 'Reach level 20' },
+  { id: 'spin-badge', icon: '🛡️', name: 'Lucky Streak', desc: 'Earn a badge from the spin wheel' },
+  { id: 'combo-10', icon: '⚡', name: 'Combo King', desc: 'Get a 10x combo' },
+];
+
+// ---- Init Addiction Engine ----
+function initAddictionEngine() {
+  initSpinWheel();
+  initFakeSocial();
+  // Spin wheel events
+  document.getElementById('spinBtn').addEventListener('click', doSpin);
+  document.getElementById('spinClose').addEventListener('click', hideSpinWheel);
+  // Restore combo from session
+  try {
+    const saved = JSON.parse(sessionStorage.getItem('bfl_combo'));
+    if(saved) COMBO = saved;
+  } catch {}
+  // Save combo periodically
+  setInterval(() => {
+    try { sessionStorage.setItem('bfl_combo', JSON.stringify(COMBO)); } catch {}
+  }, 5000);
+}
+
+// ---- Enhanced renderProgress with combo ----
+const ORIG_renderProgress = renderProgress;
+async function renderProgress(screen) {
+  const [stats, ps] = await Promise.all([
+    api('/api/progress').catch(() => ({ problems: 18, streak: 5, mastery: 42, solved: 18, xp: 320, xpMax: 500, xp_history: [30,45,20,60,35,50,40] })),
+    api('/api/powerscore').catch(() => ({ power_score: 0 })),
+  ]);
+
+  const streakWarning = getStreakWarning(stats.streak);
+
+  // XP history bar chart
+  const xpHist = stats.xp_history || [30,45,20,60,35,50,40];
+  const days = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  const maxXp = Math.max(...xpHist, 1);
+
+  screen.innerHTML = `<div class="tab-panel active" style="overflow-y:auto;flex:1">
+    <div class="dash-unified" style="padding:0.5em 1em">
+      ${streakWarning}
+
+      ${getComboHtml()}
+
+      <div style="display:flex;gap:0.8em;flex-shrink:0">
+        <div class="panel" style="flex:1">
+          <div class="panel-title">Focus Timer</div>
+          <div class="panel-body" style="padding:0.5em;text-align:center">${renderTimer()}</div>
+        </div>
+        <div class="panel" style="flex:2">
+          <div class="panel-title">Daily Checklist</div>
+          <div class="panel-body">${renderChecklist()}</div>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:0.8em;flex-shrink:0">
+        <div class="panel" style="flex:1">
+          <div class="panel-title">XP This Week</div>
+          <div class="panel-body" style="padding:0.5em;display:flex;align-items:flex-end;gap:0.3em;height:120px">
+            ${xpHist.map((v,i) => `<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%">
+              <div style="width:100%;background:var(--purple);height:${Math.round(v/maxXp*100)}%;min-height:4px;border-radius:2px 2px 0 0;transition:height .5s;opacity:${v > 0 ? 1 : 0.3}"></div>
+              <span style="font-size:0.55rem;color:var(--text-dim);margin-top:0.2em">${days[i]}</span>
+            </div>`).join('')}
+          </div>
+        </div>
+        <div class="panel" style="flex:2">
+          <div class="panel-title">Achievements</div>
+          <div class="panel-body">${renderAchievements()}</div>
+        </div>
+      </div>
+
+      <div class="panel" style="flex-shrink:0">
+        <div class="panel-title">Activity Calendar</div>
+        <div class="panel-body">${renderStreakCalendar(stats.streak)}</div>
+        <div style="font-size:0.75rem;color:var(--text-dim);text-align:center;padding:0.2em">⏱ ${stats.total_hours || 0}h total · ${getUrgencyTimerHtml()}</div>
+      </div>
+    </div>
+  </div>`;
+
+  // Bind timer and checklist after rendering
+  setTimeout(() => {
+    initTimer();
+    bindChecklist();
+  }, 50);
+}
+
 // ============ ENHANCED FLASHCARD SCHEDULE (API-backed) ============
 const flashcardSchedule = {};
 
 async function initFcSchedule(lessonId) {
   if (!flashcardSchedule[lessonId]) {
-    const cards = await api('/api/flashcards/' + lessonId + '/schedule').catch(() => []);
+    let cards = await api('/api/flashcards/' + lessonId + '/schedule').catch(() => []);
+    if (!cards) cards = [];
     flashcardSchedule[lessonId] = {
       cards: cards.length ? cards : null,
       current: 0,
@@ -2213,6 +3929,8 @@ function init() {
 
   updateStreakWarning();
   markActive();
+  updateHeaderStats();
+  initAddictionEngine();
   switchTab(activeTab);
 }
 

@@ -1,0 +1,812 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BruteForce Learning — Approach 2 (Modular Workspace)</title>
+<style>
+:root {
+  --bg: #0d0d0f; --surface: #111318; --surface-alt: #161820;
+  --border: #2a2d3a; --border-dim: #1e2130;
+  --text: #c8ccd8; --text-muted: #5a5f72; --text-dim: #3f4252;
+  --purple: #9d7dea; --cyan: #4ec9b0; --yellow: #e5c07b;
+  --red: #e06c75; --green: #98c379; --blue: #61afef;
+  --font-mono: "JetBrains Mono","Fira Code","Cascadia Code","Hack","Courier New",monospace;
+}
+*::-webkit-scrollbar { display: none; }
+* { scrollbar-width: none; -ms-overflow-style: none; }
+html { font-size: clamp(12px, 1.6vh, 28px); }
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--text);
+  font-family: var(--font-mono); font-size: 1rem; line-height: 1.5;
+  height: 100vh; overflow: hidden;
+  display: flex; flex-direction: column;
+}
+#app { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+
+.title-bar {
+  background: #1a1d26; border-bottom: 1px solid var(--border);
+  padding: 0.55em 1em; display: flex; align-items: center; gap: 1em;
+  font-size: 0.95rem; color: var(--text-muted); user-select: none; flex-shrink: 0;
+}
+.title-bar .tb-brand { color: var(--purple); font-weight: bold; }
+.title-bar .tb-sub { color: var(--text-dim); font-size: 0.85rem; }
+
+.header-bar {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 0.5em 1.2em; border: 1px solid var(--purple);
+  margin: 0.7em 1em 0; flex-shrink: 0;
+}
+.h-l { color: var(--text-muted); font-size: 0.95rem; }
+.h-y { color: var(--yellow); font-weight: bold; }
+.h-g { color: var(--green); }
+.h-p { color: var(--purple); font-weight: bold; }
+.h-s { color: var(--text-dim); }
+.h-stat { display: flex; align-items: baseline; gap: 0.3em; font-size: 0.95rem; }
+
+.main-area {
+  flex: 1; display: flex;
+  padding: 0.5em 1em 0.5em 0.5em; gap: 0.5em; min-height: 0;
+}
+
+/* ===== Sidebar ===== */
+.sidebar {
+  flex: 0 0 13em; display: flex; flex-direction: column;
+  border: 1px solid var(--border); background: var(--surface);
+  overflow-y: auto;
+}
+.sidebar-header {
+  padding: 0.4em 0.6em; font-size: 0.8rem; text-transform: uppercase;
+  letter-spacing: 0.08em; color: var(--text-muted);
+  border-bottom: 1px solid var(--border-dim); flex-shrink: 0;
+}
+.sidebar-item {
+  padding: 0.35em 0.6em; font-size: 0.85rem; cursor: pointer;
+  border-left: 2px solid transparent; display: flex; align-items: center; gap: 0.3em;
+}
+.sidebar-item:hover { background: #1a1d2e; }
+.sidebar-item.active { background: #2a1f5a; border-left-color: var(--purple); }
+.sidebar-item .si-icon { width: 1em; text-align: center; flex-shrink: 0; }
+.sidebar-item .si-name { color: var(--text); }
+.sidebar-item .si-type {
+  margin-left: auto; font-size: 0.7rem; color: var(--text-dim);
+  text-transform: uppercase; letter-spacing: 0.05em;
+}
+.sidebar-children { padding-left: 1em; }
+.sidebar .si-expand { color: var(--text-dim); width: 0.8em; cursor: pointer; flex-shrink: 0; font-size: 0.75rem; }
+
+.si-locked { color: var(--text-dim); }
+.si-available { color: var(--text-muted); }
+.si-progress { color: var(--yellow); }
+.si-done { color: var(--green); }
+
+/* ===== Workspace ===== */
+.workspace {
+  flex: 1; display: flex; flex-direction: column; min-width: 0;
+}
+
+/* Module Tabs */
+.module-tabs {
+  display: flex; gap: 0; border-bottom: 1px solid var(--border-dim);
+  flex-shrink: 0;
+}
+.module-tab {
+  padding: 0.4em 1em; font-size: 0.85rem; color: var(--text-muted);
+  cursor: pointer; user-select: none; text-transform: uppercase;
+  letter-spacing: 0.06em; border-bottom: 2px solid transparent;
+  display: flex; align-items: center; gap: 0.4em;
+}
+.module-tab.active { color: var(--purple); border-bottom-color: var(--purple); font-weight: bold; }
+.module-tab:hover { color: var(--text); background: #1a1d2e; }
+.module-tab .mt-badge {
+  font-size: 0.65rem; background: var(--surface-alt); color: var(--text-dim);
+  padding: 0.1em 0.4em; border: 1px solid var(--border-dim);
+}
+
+/* Module Container */
+.module-container {
+  flex: 1; min-height: 0; overflow-y: auto; position: relative;
+}
+.module-card {
+  padding: 1em; animation: fadeIn 0.2s ease;
+}
+@keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+
+/* ===== Loading Skeleton ===== */
+.module-loading {
+  display: flex; flex-direction: column; gap: 0.8em; padding: 1.5em;
+}
+.skel-line {
+  height: 0.8em; background: var(--surface-alt); border: 1px solid var(--border-dim);
+  animation: skelPulse 1.2s ease-in-out infinite;
+}
+.skel-line.w60 { width: 60%; }
+.skel-line.w80 { width: 80%; }
+.skel-line.w40 { width: 40%; }
+.skel-line.h2 { height: 1.5em; }
+.skel-line.h4 { height: 4em; }
+@keyframes skelPulse { 0%,100% { opacity: 0.4; } 50% { opacity: 0.8; } }
+
+/* ===== Module: Learn ===== */
+.learn-section { padding: 0.3em 0; }
+.learn-section + .learn-section { border-top: 1px solid var(--border-dim); padding-top: 0.6em; margin-top: 0.3em; }
+.ls-label {
+  font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;
+  letter-spacing: 0.08em; margin-bottom: 0.4em;
+}
+.ls-body { font-size: 0.9rem; line-height: 1.6; color: var(--text); }
+.ls-mnemonic { font-size: 0.85rem; color: var(--text-muted); margin-top: 0.5em; }
+
+/* ===== Module: Quiz ===== */
+.quiz-q { font-size: 0.95rem; font-weight: bold; margin-bottom: 0.6em; }
+.quiz-opt {
+  display: flex; align-items: center; gap: 0.5em; padding: 0.4em 0.6em;
+  cursor: pointer; font-size: 0.85rem; border: 1px solid var(--border-dim);
+  margin-bottom: 0.3em; transition: border-color 0.15s;
+}
+.quiz-opt:hover { border-color: var(--border); background: #1a1d2e; }
+.quiz-opt .qo-letter { color: var(--text-muted); font-weight: bold; min-width: 1.5em; }
+.quiz-opt.correct { border-color: var(--green); background: #0f2a1a; }
+.quiz-opt.correct .qo-letter { color: var(--green); }
+.quiz-opt.wrong { border-color: var(--red); background: #2a0f0f; }
+.quiz-opt.wrong .qo-letter { color: var(--red); }
+.quiz-counter { font-size: 0.75rem; color: var(--text-dim); margin-bottom: 0.3em; }
+.quiz-result { font-size: 0.85rem; margin-top: 0.3em; }
+.quiz-result.pass { color: var(--green); }
+.quiz-result.fail { color: var(--red); }
+.quiz-btn {
+  background: var(--purple); color: #fff; border: none;
+  font-family: var(--font-mono); font-size: 0.75rem; text-transform: uppercase;
+  letter-spacing: 0.06em; padding: 0.3em 0.7em; cursor: pointer; font-weight: bold;
+  margin-top: 0.5em;
+}
+.quiz-btn:hover { opacity: 0.85; }
+.quiz-btn.alt { background: var(--surface-alt); color: var(--text-muted); }
+
+/* ===== Module: Code ===== */
+.code-prompt { font-weight: bold; font-size: 0.9rem; margin-bottom: 0.5em; }
+.code-editor {
+  background: var(--surface); border: 1px solid var(--border-dim);
+  padding: 0.6em; font-size: 0.85rem; font-family: var(--font-mono);
+  min-height: 5em; white-space: pre-wrap; color: var(--text-dim);
+  margin-bottom: 0.4em;
+}
+.code-out {
+  background: var(--surface-alt); border: 1px solid var(--border-dim);
+  padding: 0.5em; font-size: 0.85rem; margin-top: 0.3em; min-height: 2em;
+  color: var(--text-muted); white-space: pre-wrap;
+}
+.code-out.solution { border-color: var(--purple); color: var(--cyan); }
+
+/* ===== Module: Flashcards ===== */
+.fc-card {
+  border: 2px solid var(--border); padding: 2em 1.5em;
+  min-height: 8em; cursor: pointer; display: flex;
+  align-items: center; justify-content: center; text-align: center;
+  font-size: 1.1rem; user-select: none; background: var(--surface);
+  transition: border-color 0.2s;
+}
+.fc-card:hover { border-color: var(--purple); }
+.fc-card .fc-front { color: var(--text); }
+.fc-card .fc-back { color: var(--cyan); }
+.fc-card.flipped { border-color: var(--cyan); }
+.fc-counter { font-size: 0.75rem; color: var(--text-dim); text-align: center; margin-top: 0.4em; }
+.fc-hint { font-size: 0.7rem; color: var(--text-dim); text-align: center; margin-top: 0.2em; }
+.fc-nav { display: flex; gap: 0.5em; justify-content: center; margin-top: 0.6em; }
+.fc-btn {
+  background: var(--surface-alt); color: var(--text); border: 1px solid var(--border-dim);
+  font-family: var(--font-mono); font-size: 0.75rem; text-transform: uppercase;
+  letter-spacing: 0.06em; padding: 0.3em 0.7em; cursor: pointer;
+}
+.fc-btn:hover { border-color: var(--purple); color: var(--purple); }
+.fc-empty { color: var(--text-dim); padding: 1em; text-align: center; font-size: 0.9rem; }
+
+.keybind-bar {
+  border-top: 1px solid var(--border); padding: 0.45em 1em;
+  font-size: 0.85rem; display: flex; gap: 0.7em; flex-wrap: wrap; flex-shrink: 0;
+}
+.kb-key { color: var(--text); font-weight: bold; }
+.kb-action { color: var(--text-muted); }
+.kb-pos { color: var(--text-muted); margin-right: auto; }
+
+.status-bar {
+  border-top: 1px solid var(--border); padding: 0.3em 1em;
+  font-size: 0.85rem; color: var(--text-dim); display: flex; align-items: center; gap: 0.3em;
+  flex-shrink: 0;
+}
+.status-bar .prefix { color: var(--text-muted); }
+
+@keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0; } }
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="title-bar">
+    <span class="tb-brand">BF Learning</span>
+    <span class="tb-sub">Approach 2 — Modular Workspace</span>
+    <span style="margin-left:auto;color:var(--text-dim);font-size:0.8rem">[ modules load async ]</span>
+  </div>
+
+  <div class="header-bar">
+    <div class="h-stat"><span class="h-l">course</span> <span class="h-y">React</span></div>
+    <div class="h-stat"><span class="h-l">lessons</span> <span class="h-g">6</span><span class="h-s">/</span><span class="h-l">12</span></div>
+    <div class="h-stat"><span class="h-l">xp today</span> <span class="h-p">120</span><span class="h-s">/</span><span class="h-l">200</span></div>
+    <div class="h-stat"><span class="h-l">streak</span> <span class="h-y">10d</span></div>
+  </div>
+
+  <div class="main-area" id="mainArea">
+    <div class="sidebar" id="sidebar"></div>
+    <div class="workspace" id="workspace"></div>
+  </div>
+
+  <div class="keybind-bar" id="keybindBar">
+    <span class="kb-pos">—</span>
+    <span class="kb-key">j</span><span class="kb-action">/</span><span class="kb-key">k</span><span class="kb-action"> nav</span>
+    <span class="kb-key">h</span><span class="kb-action">/</span><span class="kb-key">l</span><span class="kb-action"> module</span>
+  </div>
+  <div class="status-bar" id="statusBar">
+    <span class="prefix">›</span> PROTOTYPE — Approach 2 (modular, async)
+  </div>
+</div>
+
+<script>
+// =====================================================================
+// CORE — shared data & bus
+// =====================================================================
+const TREE = [
+  { id: 'react', name: 'React', expanded: true,
+    children: [
+      { id: 'js-basics', name: 'JS Basics', status: 'in_progress', progress: 65, expanded: true,
+        children: [
+          { id: 'vars-types', name: 'Variables & Types', type: 'lesson', status: 'done', progress: 100 },
+          { id: 'functions-scope', name: 'Functions & Scope', type: 'lesson', status: 'done', progress: 100 },
+          { id: 'arrays-objects', name: 'Arrays & Objects', type: 'lesson', status: 'in_progress', progress: 60 },
+          { id: 'closures', name: 'Closures', type: 'lesson', status: 'available', progress: 0 },
+        ] },
+      { id: 'usestate', name: 'useState', status: 'locked', progress: 0,
+        children: [
+          { id: 'what-is-state', name: 'What is state?', type: 'lesson', status: 'locked', progress: 0 },
+          { id: 'counter', name: 'Counter exercise', type: 'coding', status: 'locked', progress: 0 },
+        ] },
+    ] },
+  { id: 'js', name: 'JavaScript', status: 'available', progress: 40, expanded: false,
+    children: [
+      { id: 'js-vars', name: 'Variables & Types', type: 'lesson', status: 'done', progress: 100 },
+      { id: 'js-funcs', name: 'Functions & Scope', type: 'lesson', status: 'done', progress: 100 },
+    ] },
+];
+
+const ICONS = { locked: '◌', available: '○', in_progress: '▶', done: '●' };
+const CLS = { locked: 'si-locked', available: 'si-available', in_progress: 'si-progress', done: 'si-done' };
+
+let state = {
+  selectedId: 'vars-types',
+  module: 'learn', // learn | quiz | code | flashcards
+};
+
+function getAllLeafIds(nodes) {
+  let ids = [];
+  for (const n of nodes) {
+    if (n.children) ids = ids.concat(getAllLeafIds(n.children));
+    else ids.push(n.id);
+  }
+  return ids;
+}
+const ALL_IDS = getAllLeafIds(TREE);
+
+// =====================================================================
+// SIDEBAR MODULE
+// =====================================================================
+const SidebarModule = {
+  render() {
+    let html = '<div class="sidebar-header">Skill Tree</div>';
+    html += this._renderNodes(TREE, 0);
+    document.getElementById('sidebar').innerHTML = html;
+    this._bind();
+  },
+  _renderNodes(nodes, depth) {
+    let html = '';
+    for (const n of nodes) {
+      const isLeaf = !n.children || !n.children.length;
+      const active = n.id === state.selectedId && isLeaf;
+      const hasKids = n.children && n.children.length > 0;
+      html += '<div class="sidebar-item' + (active ? ' active' : '') + '" data-id="' + n.id + '">';
+      if (hasKids) {
+        html += '<span class="si-expand" data-toggle="' + n.id + '">' + (n.expanded ? '▼' : '▶') + '</span>';
+      } else {
+        html += '<span class="si-expand" style="visibility:hidden">▶</span>';
+      }
+      html += '<span class="si-icon ' + CLS[n.status] + '">' + ICONS[n.status] + '</span>';
+      html += '<span class="si-name">' + n.name + '</span>';
+      if (isLeaf && n.type) {
+        html += '<span class="si-type">' + n.type + '</span>';
+      }
+      html += '</div>';
+      if (hasKids && n.expanded) {
+        html += '<div class="sidebar-children">' + this._renderNodes(n.children, depth + 1) + '</div>';
+      }
+    }
+    return html;
+  },
+  _bind() {
+    document.querySelectorAll('.sidebar-item').forEach(el => {
+      el.addEventListener('click', (e) => {
+        const id = el.dataset.id;
+        if (e.target.classList.contains('si-expand')) {
+          const node = findNode(e.target.dataset.toggle);
+          if (node) node.expanded = !node.expanded;
+          this.render();
+          return;
+        }
+        const leaf = findLeaf(id);
+        if (leaf) {
+          state.selectedId = id;
+          this.render();
+          AppBus.emit('lessonChange', id);
+        }
+      });
+    });
+  }
+};
+
+// =====================================================================
+// MODULE: Learn — notes + schedule
+// =====================================================================
+const LearnModule = {
+  _cache: {},
+  async load(lessonId) {
+    const NOTES = {
+      'vars-types': 'Variables store data. JavaScript has <span style="color:var(--cyan)">let</span>, const, and var. Types: string, number, boolean, null, undefined, object.',
+      'functions-scope': 'Functions are reusable blocks of code. Declare with function keyword or arrow syntax. Scope determines where variables are accessible.',
+      'arrays-objects': 'Arrays store ordered collections. Objects store key-value pairs. Both are reference types.',
+      'closures': 'A closure is a function that remembers its outer variables even after the outer function returns.',
+      'what-is-state': 'State is data that changes over time. In React, useState adds state to function components.',
+      'counter': 'Build a counter with React. Use the functional updater pattern.',
+      'js-vars': 'Use let for reassignable values, const for constants.',
+      'js-funcs': 'Functions are first-class — they can be assigned, passed, and returned.',
+    };
+    const MNEM = {
+      'vars-types': '"SNOB NUN" — String, Number, Object, Boolean, Null, Undefined, aNd more.',
+      'functions-scope': '"GLB" — Global, Local, Block scope.',
+      'closures': '"Backpack" — inner function carries a backpack of outer scope.',
+    };
+
+    await delay(200); // simulate module load
+
+    const notes = NOTES[lessonId] || 'Content coming soon.';
+    const mnem = MNEM[lessonId] || '';
+    return `<div class="module-card">
+      <div class="learn-section">
+        <div class="ls-label">Notes</div>
+        <div class="ls-body">${notes}</div>
+        ${mnem ? '<div class="ls-mnemonic">🧠 ' + mnem + '</div>' : ''}
+      </div>
+      <div class="learn-section">
+        <div class="ls-label">Review Schedule</div>
+        <div class="ls-body" style="color:var(--text-muted);font-size:0.85rem">Next review: <span style="color:var(--yellow)">in 3 days</span> · SM-2 ease: <span style="color:var(--cyan)">2.5</span></div>
+      </div>
+    </div>`;
+  }
+};
+
+// =====================================================================
+// MODULE: Quiz
+// =====================================================================
+const QuizModule = {
+  _state: {},
+  async load(lessonId) {
+    const DATA = {
+      'vars-types': [
+        { q: 'Which keyword is block-scoped?', opts: ['let', 'const', 'var'], correct: [0, 1] },
+        { q: 'Which JS type is NOT primitive?', opts: ['string', 'number', 'object'], correct: [2] },
+        { q: 'What does typeof null return?', opts: ['null', 'undefined', 'object'], correct: [2] },
+      ],
+      'functions-scope': [
+        { q: 'Arrow functions inherit this from:', opts: ['their own scope', 'parent scope', 'global'], correct: [1] },
+        { q: 'What does let allow?', opts: ['reassignment', 'redeclaration', 'both'], correct: [0] },
+      ],
+      'arrays-objects': [
+        { q: 'Which method adds to the end of an array?', opts: ['push()', 'pop()', 'shift()'], correct: [0] },
+      ],
+      'closures': [
+        { q: 'A closure has access to:', opts: ['local only', 'outer + global', 'global only'], correct: [1] },
+      ],
+      'what-is-state': [
+        { q: 'Which React hook adds state?', opts: ['useEffect', 'useState', 'useContext'], correct: [1] },
+      ],
+      'js-vars': [
+        { q: 'Can const be reassigned?', opts: ['yes', 'no'], correct: [1] },
+      ],
+      'js-funcs': [
+        { q: 'What does IIFE stand for?', opts: ['Immediately Invoked Function Expression', 'Inline Function Execution'], correct: [0] },
+      ],
+    };
+
+    await delay(350); // simulate module loading
+
+    const questions = DATA[lessonId];
+    if (!questions || !questions.length) {
+      return '<div class="module-card fc-empty">No quiz questions for this lesson.</div>';
+    }
+
+    if (!this._state[lessonId]) {
+      this._state[lessonId] = { current: 0, answers: {}, done: false, score: 0 };
+    }
+    const s = this._state[lessonId];
+    const q = questions[s.current];
+
+    let html = '<div class="module-card">';
+    html += '<div class="quiz-counter">Q' + (s.current + 1) + '/' + questions.length + '</div>';
+    html += '<div class="quiz-q">' + q.q + '</div>';
+
+    const letters = ['A', 'B', 'C', 'D'];
+    for (let i = 0; i < q.opts.length; i++) {
+      let cls = 'quiz-opt';
+      if (s.answers[s.current] !== undefined) {
+        if (q.correct.includes(i)) cls += ' correct';
+        else if (s.answers[s.current] === i) cls += ' wrong';
+      }
+      html += '<div class="' + cls + '" data-idx="' + i + '">';
+      html += '<span class="qo-letter">' + letters[i] + '</span>';
+      html += '<span class="qo-text">' + q.opts[i] + '</span>';
+      html += '</div>';
+    }
+
+    if (s.answers[s.current] === undefined) {
+      html += '<div style="font-size:0.75rem;color:var(--text-dim);margin-top:0.3em">Select an answer</div>';
+    } else {
+      const ok = q.correct.includes(s.answers[s.current]);
+      html += '<div class="quiz-result ' + (ok ? 'pass' : 'fail') + '">' + (ok ? '✓ Correct' : '✗ Answer: ' + q.correct.map(i => q.opts[i]).join(', ')) + '</div>';
+      if (s.current < questions.length - 1) {
+        html += '<button class="quiz-btn" data-action="next">Next →</button>';
+      } else {
+        html += '<button class="quiz-btn" data-action="done">Score</button>';
+      }
+    }
+
+    if (s.done) {
+      const total = questions.length;
+      const correct = questions.filter((qq, i) => qq.correct.includes(s.answers[i])).length;
+      html += '<div style="margin-top:1em;padding:0.8em;border:1px solid var(--border);text-align:center">';
+      html += '<div style="font-size:1.4rem;font-weight:bold;color:' + (correct/total >= 0.7 ? 'var(--green)' : 'var(--red)') + '">' + correct + '/' + total + '</div>';
+      html += '<div style="color:var(--text-muted);font-size:0.85rem">' + (correct/total >= 0.7 ? 'Passed!' : 'Keep practicing') + '</div>';
+      html += '<button class="quiz-btn" data-action="retry">Retry</button>';
+      html += '</div>';
+    }
+
+    html += '</div>';
+    return html;
+  },
+  handleAction(lessonId, action, payload) {
+    if (!this._state[lessonId]) this._state[lessonId] = { current: 0, answers: {}, done: false };
+    const s = this._state[lessonId];
+    if (action === 'answer') {
+      if (s.answers[s.current] !== undefined) return;
+      s.answers[s.current] = payload;
+      AppBus.emit('rerender');
+    } else if (action === 'next') {
+      s.current++;
+      AppBus.emit('rerender');
+    } else if (action === 'done') {
+      s.done = true;
+      AppBus.emit('rerender');
+    } else if (action === 'retry') {
+      this._state[lessonId] = { current: 0, answers: {}, done: false };
+      AppBus.emit('rerender');
+    }
+  }
+};
+
+// =====================================================================
+// MODULE: Code
+// =====================================================================
+const CodeModule = {
+  _state: {},
+  async load(lessonId) {
+    const DATA = {
+      'vars-types': [
+        { prompt: 'Declare a variable `name` with value "Alice". Then reassign it to "Bob".', starter: '// declare name', solution: 'let name = "Alice";\nname = "Bob";' },
+      ],
+      'functions-scope': [
+        { prompt: 'Write an arrow function `add` that returns the sum of two numbers.', starter: 'const add = ', solution: 'const add = (a, b) => a + b;' },
+      ],
+      'arrays-objects': [
+        { prompt: 'Create array nums with 1,2,3. Push 4.', starter: 'let nums = ', solution: 'let nums = [1,2,3];\nnums.push(4);' },
+      ],
+      'closures': [
+        { prompt: 'Write makeCounter that returns a function counting up.', starter: 'function makeCounter() {', solution: 'function makeCounter() {\n  let count = 0;\n  return () => ++count;\n}' },
+      ],
+      'what-is-state': [
+        { prompt: 'Write useState call for count starting at 0.', starter: 'const [count, setCount] = ', solution: 'const [count, setCount] = useState(0);' },
+      ],
+    };
+
+    await delay(250);
+
+    const exs = DATA[lessonId];
+    if (!exs || !exs.length) {
+      return '<div class="module-card fc-empty">No coding exercises for this lesson.</div>';
+    }
+
+    if (!this._state[lessonId]) this._state[lessonId] = { current: 0, output: '', showSolution: false };
+    const s = this._state[lessonId];
+    const ex = exs[s.current];
+
+    let html = '<div class="module-card">';
+    html += '<div class="quiz-counter">Exercise ' + (s.current + 1) + '/' + exs.length + '</div>';
+    html += '<div class="code-prompt">' + ex.prompt + '</div>';
+    html += '<div class="code-editor" contenteditable="true" data-editor="code">' + ex.starter + '\n<span style="animation:blink 1s step-end infinite">_</span></div>';
+    html += '<button class="quiz-btn" data-action="run">▶ Run</button>';
+    html += '<button class="quiz-btn alt" data-action="reveal">' + (s.showSolution ? 'Hide' : 'Reveal') + '</button>';
+
+    if (s.output) {
+      html += '<div class="code-out">' + s.output + '</div>';
+    }
+    if (s.showSolution) {
+      html += '<div class="code-out solution">// Solution<br>' + ex.solution.replace(/\n/g, '<br>') + '</div>';
+    }
+    html += '</div>';
+    return html;
+  },
+  handleAction(lessonId, action) {
+    if (!this._state[lessonId]) this._state[lessonId] = { current: 0, output: '', showSolution: false };
+    const s = this._state[lessonId];
+    if (action === 'run') {
+      s.output = '<span style="color:var(--green)">✓ Code runs (simulated)</span>';
+      AppBus.emit('rerender');
+    } else if (action === 'reveal') {
+      s.showSolution = !s.showSolution;
+      AppBus.emit('rerender');
+    }
+  }
+};
+
+// =====================================================================
+// MODULE: Flashcards
+// =====================================================================
+const FlashcardsModule = {
+  _state: {},
+  async load(lessonId) {
+    const DATA = {
+      'vars-types': [
+        { front: 'What keyword declares a block-scoped variable?', back: 'let / const' },
+        { front: 'How many primitive types in JS?', back: '7 (string, number, boolean, null, undefined, symbol, bigint)' },
+        { front: 'What does typeof [] return?', back: '"object"' },
+      ],
+      'functions-scope': [
+        { front: 'What is a closure?', back: 'A function that remembers its outer scope' },
+        { front: 'Difference between let and var?', back: 'let is block-scoped, var is function-scoped' },
+      ],
+      'arrays-objects': [
+        { front: 'What does .push() return?', back: 'The new length of the array' },
+      ],
+      'closures': [
+        { front: 'What 3 scopes does a closure access?', back: 'Local, outer function, and global' },
+      ],
+      'what-is-state': [
+        { front: 'What does useState return?', back: '[currentValue, setterFunction]' },
+      ],
+    };
+
+    await delay(300);
+
+    const cards = DATA[lessonId];
+    if (!cards || !cards.length) {
+      return '<div class="module-card fc-empty">No flashcards for this lesson.</div>';
+    }
+
+    if (!this._state[lessonId]) this._state[lessonId] = { current: 0, flipped: false };
+    const s = this._state[lessonId];
+    const card = cards[s.current];
+
+    let html = '<div class="module-card">';
+    html += '<div class="fc-counter">Card ' + (s.current + 1) + '/' + cards.length + '</div>';
+    html += '<div class="fc-card' + (s.flipped ? ' flipped' : '') + '" data-action="flip">';
+    if (s.flipped) {
+      html += '<div class="fc-back">' + card.back + '</div>';
+    } else {
+      html += '<div class="fc-front">' + card.front + '</div>';
+      html += '<div class="fc-hint">[ click to reveal ]</div>';
+    }
+    html += '</div>';
+    html += '<div class="fc-nav">';
+    html += '<button class="fc-btn" data-action="prev" ' + (s.current === 0 ? 'disabled style="opacity:0.3"' : '') + '>◀ Prev</button>';
+    html += '<button class="fc-btn" data-action="next" ' + (s.current === cards.length - 1 ? 'disabled style="opacity:0.3"' : '') + '>Next ▶</button>';
+    html += '</div></div>';
+    return html;
+  },
+  handleAction(lessonId, action) {
+    if (!this._state[lessonId]) this._state[lessonId] = { current: 0, flipped: false };
+    const s = this._state[lessonId];
+    if (action === 'flip') {
+      s.flipped = !s.flipped;
+      AppBus.emit('rerender');
+    } else if (action === 'next') {
+      if (s.current < 99) s.current++;
+      s.flipped = false;
+      AppBus.emit('rerender');
+    } else if (action === 'prev') {
+      if (s.current > 0) s.current--;
+      s.flipped = false;
+      AppBus.emit('rerender');
+    }
+  }
+};
+
+// =====================================================================
+// APP BUS — event system between modules
+// =====================================================================
+const AppBus = {
+  _listeners: {},
+  on(evt, fn) {
+    if (!this._listeners[evt]) this._listeners[evt] = [];
+    this._listeners[evt].push(fn);
+  },
+  emit(evt, data) {
+    (this._listeners[evt] || []).forEach(fn => fn(data));
+  }
+};
+
+// =====================================================================
+// WORKSPACE — module loader
+// =====================================================================
+const MODULES = {
+  learn: LearnModule,
+  quiz: QuizModule,
+  code: CodeModule,
+  flashcards: FlashcardsModule,
+};
+
+const MODULE_META = {
+  learn: { label: 'Learn', icon: '📖' },
+  quiz: { label: 'Quiz', icon: '?' },
+  code: { label: 'Code', icon: '◈' },
+  flashcards: { label: 'Flashcards', icon: '▣' },
+};
+
+const Workspace = {
+  _loading: false,
+
+  render() {
+    const ws = document.getElementById('workspace');
+    ws.innerHTML = this._renderTabs() + '<div class="module-container" id="moduleContainer">' + this._renderLoading() + '</div>';
+    this._bindTabs();
+    this._loadModule(state.module);
+  },
+
+  _renderTabs() {
+    let html = '<div class="module-tabs">';
+    for (const [id, meta] of Object.entries(MODULE_META)) {
+      const active = id === state.module ? ' active' : '';
+      html += '<div class="module-tab' + active + '" data-module="' + id + '">' + meta.icon + ' ' + meta.label + '</div>';
+    }
+    html += '</div>';
+    return html;
+  },
+
+  _renderLoading() {
+    return '<div class="module-loading"><div class="skel-line w60 h2"></div><div class="skel-line w80"></div><div class="skel-line w40"></div><div class="skel-line h4"></div><div class="skel-line w80"></div></div>';
+  },
+
+  _bindTabs() {
+    document.querySelectorAll('.module-tab').forEach(el => {
+      el.addEventListener('click', () => {
+        if (this._loading) return;
+        state.module = el.dataset.module;
+        this.render();
+      });
+    });
+  },
+
+  async _loadModule(modId) {
+    this._loading = true;
+    const container = document.getElementById('moduleContainer');
+    const mod = MODULES[modId];
+    try {
+      const html = await mod.load(state.selectedId);
+      container.innerHTML = html;
+      this._bindModuleActions(modId);
+    } catch (e) {
+      container.innerHTML = '<div class="module-card" style="color:var(--red)">Error loading module.</div>';
+    }
+    this._loading = false;
+  },
+
+  _bindModuleActions(modId) {
+    const mod = MODULES[modId];
+    if (!mod) return;
+
+    // Quiz option clicks
+    document.querySelectorAll('.quiz-opt').forEach(el => {
+      el.addEventListener('click', () => {
+        mod.handleAction(state.selectedId, 'answer', parseInt(el.dataset.idx));
+      });
+    });
+
+    // Generic button actions
+    document.querySelectorAll('[data-action]').forEach(el => {
+      el.addEventListener('click', () => {
+        const action = el.dataset.action;
+        mod.handleAction(state.selectedId, action);
+      });
+    });
+
+    // Flashcard flip
+    document.querySelectorAll('.fc-card').forEach(el => {
+      el.addEventListener('click', () => {
+        mod.handleAction(state.selectedId, 'flip');
+      });
+    });
+  }
+};
+
+// =====================================================================
+// HELPERS
+// =====================================================================
+function delay(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+function findNode(id, nodes) {
+  nodes = nodes || TREE;
+  for (const n of nodes) {
+    if (n.id === id) return n;
+    if (n.children) { const f = findNode(id, n.children); if (f) return f; }
+  }
+  return null;
+}
+
+function findLeaf(id, nodes) {
+  nodes = nodes || TREE;
+  for (const n of nodes) {
+    if (n.id === id) return n;
+    if (n.children) { const f = findLeaf(id, n.children); if (f) return f; }
+  }
+  return null;
+}
+
+// =====================================================================
+// INIT
+// =====================================================================
+function updateKeybinds() {
+  const kb = document.getElementById('keybindBar');
+  const sb = document.getElementById('statusBar');
+  const idx = ALL_IDS.indexOf(state.selectedId);
+  kb.innerHTML = '<span class="kb-pos">' + (idx + 1) + '/' + ALL_IDS.length + '</span><span class="kb-key">j</span><span class="kb-action">/</span><span class="kb-key">k</span><span class="kb-action"> nav</span> <span class="kb-key">h</span><span class="kb-action">/</span><span class="kb-key">l</span><span class="kb-action"> module</span>';
+  sb.innerHTML = '<span class="prefix">›</span> ' + state.selectedId + ' [' + state.module + '] <span style="margin-left:auto;color:var(--text-muted)">PROTOTYPE — modular async</span>';
+}
+
+function init() {
+  SidebarModule.render();
+  Workspace.render();
+  updateKeybinds();
+
+  // Bus: lesson change
+  AppBus.on('lessonChange', (id) => {
+    Workspace._loadModule(state.module);
+    updateKeybinds();
+  });
+
+  // Bus: rerender current module
+  AppBus.on('rerender', () => {
+    Workspace._loadModule(state.module);
+    updateKeybinds();
+  });
+
+  // Keyboard
+  document.addEventListener('keydown', (e) => {
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable) return;
+    const all = ALL_IDS;
+    const cur = all.indexOf(state.selectedId);
+    const mods = ['learn', 'quiz', 'code', 'flashcards'];
+    const mi = mods.indexOf(state.module);
+    if (e.key === 'j' || e.key === 'ArrowDown') { e.preventDefault(); state.selectedId = all[Math.min(cur + 1, all.length - 1)]; SidebarModule.render(); Workspace._loadModule(state.module); updateKeybinds(); }
+    if (e.key === 'k' || e.key === 'ArrowUp') { e.preventDefault(); state.selectedId = all[Math.max(cur - 1, 0)]; SidebarModule.render(); Workspace._loadModule(state.module); updateKeybinds(); }
+    if (e.key === 'h' || e.key === 'ArrowLeft') { e.preventDefault(); state.module = mods[Math.max(mi - 1, 0)]; Workspace.render(); updateKeybinds(); }
+    if (e.key === 'l' || e.key === 'ArrowRight') { e.preventDefault(); state.module = mods[Math.min(mi + 1, mods.length - 1)]; Workspace.render(); updateKeybinds(); }
+  });
+}
+
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>

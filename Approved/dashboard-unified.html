@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BruteForce Learning — Dashboard</title>
+<style>
+:root {
+  --bg: #0d0d0f; --surface: #111318; --surface-alt: #161820;
+  --border: #2a2d3a; --border-dim: #1e2130;
+  --text: #c8ccd8; --text-muted: #5a5f72; --text-dim: #3f4252;
+  --purple: #9d7dea; --cyan: #4ec9b0; --yellow: #e5c07b;
+  --red: #e06c75; --green: #98c379; --blue: #61afef;
+  --font-mono: "JetBrains Mono","Fira Code","Cascadia Code","Hack","Courier New",monospace;
+  --font-display: "Share Tech Mono","Courier New",monospace;
+}
+*::-webkit-scrollbar { display: none; }
+* { scrollbar-width: none; -ms-overflow-style: none; }
+html { font-size: clamp(12px, 1.6vh, 28px); }
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--text);
+  font-family: var(--font-mono); font-size: 1rem; line-height: 1.5;
+  height: 100vh; margin: 0; padding: 0; overflow: hidden;
+  display: flex; flex-direction: column;
+}
+#app {
+  flex: 1; display: flex; flex-direction: column; min-height: 0;
+  width: 100%; margin: 0 auto;
+}
+#app.layout-wide { max-width: none; }
+#app.layout-narrow { max-width: min(86rem, 1100px); }
+
+.title-bar {
+  background: #1a1d26; border-bottom: 1px solid var(--border);
+  padding: 0.55em 1em; display: flex; align-items: center; justify-content: center;
+  font-size: 0.95rem; color: var(--text-muted); user-select: none; flex-shrink: 0;
+  position: relative;
+}
+.title-bar .tb-center { margin: 0 auto; }
+.title-bar .tb-toggle {
+  position: absolute; right: 1em; top: 50%; transform: translateY(-50%);
+  cursor: pointer; font-size: 0.8rem; letter-spacing: 0.08em;
+  background: var(--purple); color: #fff; border: none; padding: 0.35em 0.7em;
+  font-family: var(--font-mono); text-transform: uppercase; font-weight: bold;
+  line-height: 1;
+}
+
+.header-bar {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 0.5em 1.2em; border: 1px solid var(--purple);
+  margin: 0.7em 1em 0; flex-shrink: 0;
+}
+.h-l { color: var(--text-muted); font-size: 0.95rem; }
+.h-y { color: var(--yellow); font-weight: bold; }
+.h-g { color: var(--green); }
+.h-p { color: var(--purple); font-weight: bold; }
+.h-s { color: var(--text-dim); }
+.h-stat { display: flex; align-items: baseline; gap: 0.3em; font-size: 0.95rem; }
+
+.main-area {
+  flex: 1; display: flex; flex-direction: column;
+  padding: 0.5em 1em; gap: 0.8em; overflow-y: auto; min-height: 0;
+}
+.screen-tabs {
+  display: flex; gap: 0; border-bottom: 1px solid var(--border-dim);
+  flex-shrink: 0;
+}
+.screen-tab {
+  padding: 0.35em 1em; font-size: 0.95rem; color: var(--text-muted);
+  cursor: pointer; user-select: none; text-transform: uppercase;
+  letter-spacing: 0.06em; border-bottom: 2px solid transparent;
+}
+.screen-tab.active { color: var(--purple); border-bottom-color: var(--purple); font-weight: bold; }
+.screen-tab:hover { color: var(--text); background: #1a1d2e; }
+.screen-content {
+  flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 1em;
+}
+
+.panel {
+  border: 1px solid var(--border); position: relative;
+  padding: 0.8em; margin-bottom: 0;
+}
+.panel-title {
+  position: absolute; top: -0.9em; left: 0.8em; background: var(--bg);
+  padding: 0 0.6em; color: var(--purple); font-weight: bold;
+  font-size: 0.9rem; letter-spacing: 0.08em; text-transform: uppercase;
+  line-height: 1.3;
+}
+.panel-body { padding: 0; }
+
+.stat-4up { display: flex; gap: 0.8em; flex-shrink: 0; }
+.stat-card {
+  flex: 1; border: 1px solid var(--border); text-align: center;
+  padding: 1.5em 0.8em;
+}
+.stat-card-num {
+  font-family: var(--font-display); font-size: 1.8rem; line-height: 1;
+}
+.stat-card-label {
+  font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase;
+  letter-spacing: 0.08em; margin-top: 0.6em;
+}
+
+.pb-row { display: flex; align-items: center; gap: 0.5em; font-size: 0.95rem; padding: 0.15em 0; }
+.pb-label { color: var(--text); width: 20ch; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pb-track { flex: 1; height: 1.1em; position: relative; line-height: 1.1em; letter-spacing: 0.15em; color: var(--border); font-size: 0.95rem; overflow: hidden; }
+.pb-fill-text { position: absolute; top: 0; left: 0; overflow: hidden; white-space: nowrap; letter-spacing: 0.15em; }
+.pb-pct { text-align: right; font-size: 0.85rem; min-width: 4ch; }
+.pb-pct.c0 { color: var(--red); } .pb-pct.c1 { color: var(--yellow); } .pb-pct.c2 { color: var(--green); }
+
+.selected-dot { color: var(--purple); }
+
+.tag-row { display: flex; gap: 0.4em; flex-wrap: wrap; }
+.tag {
+  font-size: 0.8rem; padding: 0.1em 0.5em; border: 1px solid var(--border-dim);
+  color: var(--text-muted); display: flex; align-items: center; gap: 0.4em;
+}
+.tag .tag-pct { font-weight: bold; color: var(--purple); }
+.tag.critical .tag-pct { color: var(--red); }
+.tag.warning .tag-pct { color: var(--yellow); }
+.tag.ok .tag-pct { color: var(--green); }
+
+.mini-feed { display: flex; flex-direction: column; gap: 0.2em; font-size: 0.85rem; }
+.mini-feed-item { display: flex; align-items: center; gap: 0.5em; color: var(--text-dim); }
+.mini-feed-item .mf-dot { color: var(--green); }
+.mini-feed-item .mf-rating { color: var(--yellow); margin-left: auto; }
+
+.keybind-bar {
+  border-top: 1px solid var(--border); padding: 0.45em 1em;
+  font-size: 0.85rem; display: flex; gap: 0.7em; flex-wrap: wrap; flex-shrink: 0;
+}
+.kb-key { color: var(--text); font-weight: bold; }
+.kb-action { color: var(--text-muted); }
+.kb-pos { color: var(--text-muted); margin-right: auto; }
+
+.status-bar {
+  border-top: 1px solid var(--border); padding: 0.3em 1em;
+  font-size: 0.85rem; color: var(--text-dim); display: flex; align-items: center; gap: 0.3em;
+  flex-shrink: 0;
+}
+.status-bar .prefix { color: var(--text-muted); }
+
+@keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0; } }
+
+.dash-unified { display: flex; flex-direction: column; gap: 0.8em; flex: 1; }
+.dash-u-split { display: flex; gap: 0.8em; flex: 1; min-height: 0; }
+.dash-u-left { flex: 1; display: flex; flex-direction: column; gap: 0.8em; min-width: 0; }
+.dash-u-right { flex: 1; display: flex; flex-direction: column; gap: 0.8em; min-width: 0; }
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="title-bar">
+    <span class="tb-center">BruteForce Learning — Dashboard</span>
+    <button class="tb-toggle" id="widthToggle">[––]</button>
+  </div>
+
+  <div class="header-bar">
+    <div class="h-stat"><span class="h-l">rating</span> <span class="h-y">1847</span></div>
+    <div class="h-stat"><span class="h-l">solved</span> <span class="h-g">31</span><span class="h-s">/</span><span class="h-l">48</span></div>
+    <div class="h-stat"><span class="h-l">streak</span> <span class="h-y">10d</span></div>
+    <div class="h-stat"><span class="h-l">xp</span> <span class="h-p">450</span><span class="h-s">/</span><span class="h-l">600</span></div>
+  </div>
+
+  <div class="main-area" id="mainArea">
+    <div class="screen-tabs">
+      <div class="screen-tab active">Dashboard</div>
+      <div class="screen-tab">Problems</div>
+      <div class="screen-tab">Contests</div>
+      <div class="screen-tab">Analytics</div>
+      <div class="screen-tab">Recommend</div>
+    </div>
+    <div class="screen-content" id="screenContent"></div>
+  </div>
+
+  <div class="keybind-bar">
+    <span class="kb-pos">1/5</span>
+    <span class="kb-key">j</span><span class="kb-action">/</span><span class="kb-key">k</span><span class="kb-action"> navigate</span>
+    <span class="kb-key">r</span><span class="kb-action"> sync</span>
+  </div>
+  <div class="status-bar">
+    <span class="prefix">›</span> Synced 2m ago — ready
+  </div>
+</div>
+
+<script>
+function renderDashboard() {
+  return `
+    <div class="dash-unified">
+      <div class="stat-4up">
+        <div class="stat-card"><div class="stat-card-num" style="color:var(--yellow)">48</div><div class="stat-card-label">Problems</div></div>
+        <div class="stat-card"><div class="stat-card-num" style="color:var(--purple)">10d</div><div class="stat-card-label">Streak</div></div>
+        <div class="stat-card"><div class="stat-card-num" style="color:var(--cyan)">73%</div><div class="stat-card-label">Mastery</div></div>
+        <div class="stat-card"><div class="stat-card-num" style="color:var(--green)">31</div><div class="stat-card-label">Solved</div></div>
+      </div>
+
+      <div class="dash-u-split">
+        <div class="dash-u-left">
+          <div class="panel" style="flex:1;display:flex;flex-direction:column;min-height:0">
+            <div class="panel-title">Progress</div>
+            <div class="panel-body" style="padding:0.15em 0;flex:1">
+              <div class="pb-row"><span class="pb-label">data structures</span><div class="pb-track">████████████████████████████████<span class="pb-fill-text" style="width:0%;color:var(--red)"></span></div><span class="pb-pct c0">0%</span></div>
+              <div class="pb-row"><span class="pb-label">graphs</span><div class="pb-track">████████████████████████████████<span class="pb-fill-text" style="width:40%;color:var(--cyan)">████████████</span></div><span class="pb-pct c1">40%</span></div>
+              <div class="pb-row"><span class="pb-label">dynamic programming</span><div class="pb-track">████████████████████████████████<span class="pb-fill-text" style="width:65%;color:var(--yellow)">████████████████████</span></div><span class="pb-pct c1">65%</span></div>
+              <div class="pb-row"><span class="pb-label">math</span><div class="pb-track">████████████████████████████████<span class="pb-fill-text" style="width:90%;color:var(--green)">████████████████████████████</span></div><span class="pb-pct c2">90%</span></div>
+            </div>
+          </div>
+
+          <div class="panel" style="flex-shrink:0">
+            <div class="panel-title">Topics</div>
+            <div class="panel-body tag-row" style="padding:0.4em">
+              <span class="tag critical"><span>data structures</span> <span class="tag-pct">0%</span></span>
+              <span class="tag critical"><span>graphs</span> <span class="tag-pct">40%</span></span>
+              <span class="tag warning"><span>dynamic programming</span> <span class="tag-pct">65%</span></span>
+              <span class="tag ok"><span>math</span> <span class="tag-pct">90%</span></span>
+              <span class="tag critical"><span>sortings</span> <span class="tag-pct">25%</span></span>
+              <span class="tag warning"><span>bfs</span> <span class="tag-pct">50%</span></span>
+            </div>
+          </div>
+        </div>
+
+        <div class="dash-u-right">
+          <div class="panel">
+            <div class="panel-title">Continue</div>
+            <div class="panel-body" style="padding:0.3em 0.4em">
+              <div style="display:flex;align-items:center;gap:0.4em;margin-bottom:0.3em">
+                <span class="selected-dot">►</span>
+                <span style="color:var(--purple);font-weight:bold">graphs → dijkstra</span>
+              </div>
+              <div style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.4em">Shortest Path — 65% complete</div>
+              <div style="display:flex;align-items:center;gap:0.4em">
+                <span style="font-size:0.85rem;color:var(--text-muted)">65%</span>
+                <div style="flex:1;height:0.5em;background:var(--surface-alt);border:1px solid var(--border-dim)"><div style="width:65%;height:100%;background:var(--purple)"></div></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="panel" style="flex:1;min-height:0">
+            <div class="panel-title">Recent Solves</div>
+            <div class="panel-body mini-feed" style="padding:0.3em 0.4em">
+              <div class="mini-feed-item"><span class="mf-dot">●</span> <span>Sum of Two Values</span> <span class="mf-rating">1100</span></div>
+              <div class="mini-feed-item"><span class="mf-dot">●</span> <span>Message Route</span> <span class="mf-rating">1400</span></div>
+              <div class="mini-feed-item"><span class="mf-dot">●</span> <span>Counting Rooms</span> <span class="mf-rating">1300</span></div>
+              <div class="mini-feed-item"><span class="mf-dot">●</span> <span>Book Shop</span> <span class="mf-rating">1500</span></div>
+              <div class="mini-feed-item" style="margin-top:0.3em;color:var(--text-muted);font-size:0.85rem">› 4 solves this week</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function init() {
+  const app = document.getElementById('app');
+  const toggle = document.getElementById('widthToggle');
+  let wide = localStorage.getItem('tui-wide') === 'true';
+  function applyWidth(w) {
+    wide = w;
+    app.classList.toggle('layout-wide', wide);
+    app.classList.toggle('layout-narrow', !wide);
+    toggle.textContent = wide ? '[==]' : '[––]';
+    localStorage.setItem('tui-wide', wide);
+  }
+  applyWidth(wide);
+  toggle.addEventListener('click', () => applyWidth(!wide));
+  document.getElementById('screenContent').innerHTML = renderDashboard();
+}
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>
